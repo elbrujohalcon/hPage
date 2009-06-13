@@ -10,20 +10,14 @@ import Graphics.UI.WXCore.Dialogs
 import Control.Concurrent.Process ( Process )
 import qualified Control.Concurrent.Process as P
 import qualified Language.Haskell.Interpreter.Server as HS
-import qualified Language.Haskell.Interpreter.Server.Command as HS
 
 data HpState = HPS { workingPath :: Maybe FilePath,
-                     serverHandle :: P.Handle HS.Command }
-
-type ClientProcess a = Process HS.Result a 
+                     serverHandle :: HS.ServerHandle }
 
 mainWindow :: IO ()
-mainWindow = P.runHere clientProcess
-
-clientProcess :: ClientProcess ()
-clientProcess = do
-                    server <- P.spawn HS.start
-                    liftIO $ drawWindow $ HPS Nothing server
+mainWindow = do
+                server <- P.spawn HS.start
+                drawWindow $ HPS Nothing server
 
 drawWindow :: HpState -> IO ()
 drawWindow initState =
