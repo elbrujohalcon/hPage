@@ -8,14 +8,11 @@ module Control.Concurrent.Process (
         Handle, sendTo,
         ReceiverT, recv, self,
         sendRecv,
-        Process, init, runHere, spawn,
-        initWithState
+        Process, makeProcess, runHere, spawn
     ) where
 
-import Prelude hiding ( init , catch )
 import Control.Monad.Reader
 import Control.Monad.State.Class
-import Control.Monad.State (StateT, evalStateT)
 import Control.Monad.Writer.Class
 import Control.Monad.Error.Class
 import Control.Monad.CatchIO
@@ -54,11 +51,8 @@ runHere p = liftIO (runReaderT (internalReader p) . PH =<< newChan)
 self :: Monad m => ReceiverT r m (Handle r)
 self = RT ask
 
-init :: (m t -> IO s) -> ReceiverT r m t -> Process r s 
-init f (RT a) = RT (mapReaderT f a)
-
-initWithState :: a -> ReceiverT r (StateT a IO) t -> Process r t
-initWithState = init . (flip evalStateT)
+makeProcess :: (m t -> IO s) -> ReceiverT r m t -> Process r s 
+makeProcess f (RT a) = RT (mapReaderT f a)
 
 instance MonadState s m => MonadState s (ReceiverT r m) where
     get = lift get
