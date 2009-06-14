@@ -14,7 +14,7 @@ data HpState = HPS { workingPath :: Maybe FilePath,
 
 mainWindow :: IO ()
 mainWindow = do
-                server <- HS.spawn
+                server <- HS.start
                 drawWindow $ HPS Nothing server
 
 drawWindow :: HpState -> IO ()
