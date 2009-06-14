@@ -4,11 +4,11 @@ module HPage.MainWindow (
     ) where
 
 import Control.Monad
-import Control.Monad.Trans
+import Control.Monad.Trans (liftIO)
 import Graphics.UI.WX
 import Graphics.UI.WXCore.Dialogs
-import Control.Concurrent.Process ( Process )
 import qualified Control.Concurrent.Process as P
+import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 
 data HpState = HPS { workingPath :: Maybe FilePath,
@@ -165,50 +165,49 @@ saveDocumentAs state frMain textBox =
                         return ()
 
 -- Haskell functions -----------------------------------------------------------
-withServer :: Textual s => HS.CommandBuilder a -> a -> s -> Var HpState -> IO HS.Result
-withServer cmdBuilder expr status state =
+withServer :: Textual statusBar => Hint.InterpreterT IO a -> statusBar -> Var HpState -> IO (Either Hint.InterpreterError a)
+withServer action status state =
     do
         s <- varGet state
         set status [text := "Processing..."]
-        res <- P.runHere $ do
-                                me <- P.self
-                                P.sendRecv (serverHandle s) $ cmdBuilder me expr
+        res <- HS.runIn (serverHandle s) action
         set status [text := "Ready"]
         return res
 
-withServerAndTextBox :: (Textual s, Textual t) => HS.CommandBuilder String -> t -> s -> Var HpState -> IO ()
-withServerAndTextBox cmdBuilder textBox status state =
+withServerAndTextBox :: (Textual text, Textual statusBar, Show a) =>
+                        (String -> Hint.InterpreterT IO a) -> text -> statusBar -> Var HpState -> IO ()
+withServerAndTextBox actionBuilder textBox status state =
     do
         expr <- get textBox text
-        ret <- withServer cmdBuilder expr status state
+        ret <- withServer (actionBuilder expr) status state
         case ret of
             Left e ->
                 set textBox [text := (expr ++ " " ++ (show e))]
             Right s ->
                 set textBox [text := (expr ++ " " ++ show s)]
 
-withServerAndWindow :: Textual s => HS.CommandBuilder a -> a -> Frame b -> s -> Var HpState -> IO ()
-withServerAndWindow cmdBuilder expr win status state =
+withServerAndWindow :: Textual statusBar => Hint.InterpreterT IO a -> Frame b -> statusBar -> Var HpState -> IO ()
+withServerAndWindow action win status state =
     do
-        ret <- withServer cmdBuilder expr status state
+        ret <- withServer action status state
         case ret of
             Left e -> do
                         title <- liftIO $ get win text
                         errorDialog win title (show e)
-            _ ->
+            Right _ ->
                 return ()
 
 
 runSelection, getKindOfSelection, getTypeOfSelection :: (Textual s, Textual t) =>
                                                         Var HpState -> s -> t -> IO ()
 runSelection state status textBox =
-    withServerAndTextBox HS.eval textBox status state
+    withServerAndTextBox Hint.eval textBox status state
 
 getKindOfSelection state status textBox =
-    withServerAndTextBox HS.kindOf textBox status state
+    withServerAndTextBox Hint.kindOf textBox status state
 
 getTypeOfSelection state status textBox =
-    withServerAndTextBox HS.typeOf textBox status state
+    withServerAndTextBox Hint.typeOf textBox status state
 
 loadModule, browseModules, reloadModules :: Textual s => Var HpState -> Frame a -> s -> IO ()
 loadModule state frMain status =
@@ -218,41 +217,32 @@ loadModule state frMain status =
             Nothing ->
                 return ()
             Just f -> do
-                        withServerAndWindow HS.loadModules [f] frMain status state
-                        res <- withServer HS.getLoadedModules () status state
-                        case res of
-                            Left _ ->
-                                return ()
-                            Right ms ->
-                                withServerAndWindow HS.setTopLevelModules (HS.unwrapModules ms) frMain status state
+                        withServerAndWindow (loadModules [f]) frMain status state
+    where loadModules ms = do
+                                Hint.loadModules ms
+                                lms <- Hint.getLoadedModules
+                                Hint.setTopLevelModules lms
 
 browseModules state frMain status =
     do
-        modules <- withServer HS.getLoadedModules () status state
-        case modules of
+        res <- withServer browseModules' status state
+        case res of
             Left e ->
-                errorDialog frMain "Browse Modules" (show e)
-            Right ms -> do
-                result <- foldM (\acc m -> do
-                                             exs <- withServer HS.getModuleExports m status state
-                                             let thisRes = case exs of
-                                                                Left err ->
-                                                                    "Error: " ++ (show err)
-                                                                Right elems ->
-                                                                    "Module " ++ m ++ ":\n" ++ (showElems elems)
-                                             return $ acc ++ thisRes ++ "\n")
-                                "" (HS.unwrapModules ms)
-                infoDialog frMain "Browse Modules" result
-    where showElems mes = foldl (\res me ->
-                                    res ++ "\t" ++ (show me) ++ "\n")
-                                "" (HS.unwrapElems mes)
+                errorDialog frMain "Browse Modules Error" (show e)
+            Right ms ->
+                infoDialog frMain "Browse Modules" ms
+    where browseModules' = do
+                              ms <- Hint.getLoadedModules
+                              foldM (\acc m -> do
+                                                    exs <- Hint.getModuleExports m
+                                                    return $ acc ++ (showElems m exs) ++ "\n")
+                                                 "" ms
+          showElems m mes = "Module " ++ m ++ ":\n" ++
+                            (foldl (\res me -> res ++ "\t" ++ (show me) ++ "\n") "" mes)
 
 reloadModules state frMain status =
-    do
-        msRes <- withServer HS.getLoadedModules () status state
-        case msRes of
-            Left e ->
-                errorDialog frMain "Reload Modules" (show e)
-            Right ms -> do
-                            withServerAndWindow HS.loadModules (HS.unwrapModules ms) frMain status state
-                            withServerAndWindow HS.setTopLevelModules (HS.unwrapModules ms) frMain status state
+    withServerAndWindow reloadModules' frMain status state
+    where reloadModules' = do
+                                ms <- Hint.getLoadedModules
+                                Hint.loadModules ms
+                                Hint.setTopLevelModules ms
