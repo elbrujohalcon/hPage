@@ -1,0 +1,6 @@
+#!/bin/sh
+cd src
+ghc Main.hs --make -package wx -o ../bin/theResult -odir ../out -hidir ../out
+cd ../bin
+/usr/local/wxhaskell/bin/macosx-app theResult
+open theResult.app/

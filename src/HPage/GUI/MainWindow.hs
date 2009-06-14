@@ -1,5 +1,5 @@
 
-module HPage.MainWindow (
+module HPage.GUI.MainWindow (
     mainWindow
     ) where
 
@@ -94,14 +94,14 @@ drawWindow initState =
     
     	-- Tool bar...
     	tbMain <- toolBarEx frMain True True []
-    	toolMenu tbMain mitNew "New"  "HPage/images/new.png" [tooltip := "New"]
-    	toolMenu tbMain mitOpen "Open" "HPage/images/open.png" [tooltip := "Open"]
-    	toolMenu tbMain mitSave "Save" "HPage/images/save.png" [tooltip := "Save"]
-    	toolMenu tbMain mitCut "Cut"  "HPage/images/cut.png" [tooltip := "Cut"]
-    	toolMenu tbMain mitCopy "Copy" "HPage/images/copy.png" [tooltip := "Copy"]
-    	toolMenu tbMain mitPaste "Paste" "HPage/images/paste.png" [tooltip := "Paste"]
-    	toolMenu tbMain mitRun "Evaluate" "HPage/images/run.png" [tooltip := "Evaluate"]
-    	toolMenu tbMain mitReload "Reload" "HPage/images/reload.png" [tooltip := "Reload"]
+    	toolMenu tbMain mitNew "New"  "../res/images/new.png" [tooltip := "New"]
+    	toolMenu tbMain mitOpen "Open" "../res/images/open.png" [tooltip := "Open"]
+    	toolMenu tbMain mitSave "Save" "../res/images/save.png" [tooltip := "Save"]
+    	toolMenu tbMain mitCut "Cut"  "../res/images/cut.png" [tooltip := "Cut"]
+    	toolMenu tbMain mitCopy "Copy" "../res/images/copy.png" [tooltip := "Copy"]
+    	toolMenu tbMain mitPaste "Paste" "../res/images/paste.png" [tooltip := "Paste"]
+    	toolMenu tbMain mitRun "Evaluate" "../res/images/run.png" [tooltip := "Evaluate"]
+    	toolMenu tbMain mitReload "Reload" "../res/images/reload.png" [tooltip := "Reload"]
             
     	
     	-- Layout settings
