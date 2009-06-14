@@ -4,10 +4,8 @@ module HPage.MainWindow (
     ) where
 
 import Control.Monad
-import Control.Monad.Trans (liftIO)
 import Graphics.UI.WX
 import Graphics.UI.WXCore.Dialogs
-import qualified Control.Concurrent.Process as P
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 
@@ -16,7 +14,7 @@ data HpState = HPS { workingPath :: Maybe FilePath,
 
 mainWindow :: IO ()
 mainWindow = do
-                server <- P.spawn HS.start
+                server <- HS.spawn
                 drawWindow $ HPS Nothing server
 
 drawWindow :: HpState -> IO ()
@@ -192,7 +190,7 @@ withServerAndWindow action win status state =
         ret <- withServer action status state
         case ret of
             Left e -> do
-                        title <- liftIO $ get win text
+                        title <- get win text
                         errorDialog win title (show e)
             Right _ ->
                 return ()

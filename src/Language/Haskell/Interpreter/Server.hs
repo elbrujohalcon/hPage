@@ -1,15 +1,20 @@
+{-# LANGUAGE NoMonomorphismRestriction #-} 
 
 module Language.Haskell.Interpreter.Server (
-    start, runIn, asyncRunIn, ServerHandle
+    spawn, start, runIn, asyncRunIn, ServerHandle
     ) where
 
 import Control.Concurrent.MVar
 import Control.Monad.Error
 import Control.Monad.State
-import Control.Concurrent.Process
+import Control.Concurrent.Process hiding (spawn)
+import qualified Control.Concurrent.Process as P (spawn)
 import Language.Haskell.Interpreter
 
 type ServerHandle = Handle (InterpreterT IO ())
+
+spawn :: IO (Handle (InterpreterT IO a))
+spawn = P.spawn start
 
 start :: Process (InterpreterT IO a) (Either InterpreterError ())
 start = makeProcess runInterpreter interpreter
