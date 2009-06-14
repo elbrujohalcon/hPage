@@ -1,5 +1,3 @@
-{-# LANGUAGE NoMonomorphismRestriction #-} 
-
 module Language.Haskell.Interpreter.Server (
     start, runIn, asyncRunIn, ServerHandle
     ) where
