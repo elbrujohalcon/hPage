@@ -5,7 +5,7 @@
              UndecidableInstances #-} 
 
 module HPage.Control (
-    HPage, start, setText, evalFirst
+    HPage, setText, evalFirst, evalHPage
  ) where
 
 import Control.Monad.State
@@ -14,7 +14,10 @@ import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 
 newtype Expression = Exp {asString :: String}
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show Expression where
+    show = asString
  
 data Page = Page { expressions :: [Expression],
                    server :: HS.ServerHandle }
@@ -27,15 +30,13 @@ newtype HPageT m a = HPT { state :: StateT Page m a }
 
 type HPage = HPageT IO
 
-start :: HPage ()
-start = HPT $ do
-               hs <- liftIO $ HS.start
-               let emptyPage = Page [] hs
-               put emptyPage
-
 setText :: String -> HPage ()
-setText s = HPT $ modify (\page -> page{expressions = fromString s})
-    where fromString = (filter (/= Exp "")) . map (Exp . concat) . (splitOn "") . lines
+setText s = HPT $ do
+                    let x = fromString s
+                    liftIO $ putStrLn $ show x
+                    modify (\page -> page{expressions = fromString s})
+    where fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
+          toExp = Exp . concat . map ('\n':)
 
 evalFirst :: HPage (Either Hint.InterpreterError String)
 evalFirst = HPT $ do
@@ -43,6 +44,12 @@ evalFirst = HPT $ do
                     let expr = asString $ head $ expressions page
                     let serv = server page
                     liftIO $ HS.runIn serv (Hint.eval expr)
+                    
+evalHPage :: HPage a -> IO a
+evalHPage hpt = do
+                    hs <- liftIO $ HS.start
+                    let emptyPage = Page [] hs
+                    (state hpt) `evalStateT` emptyPage 
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
 splitOn :: Eq a => a -> [a] -> [[a]]
