@@ -3,25 +3,21 @@ module HPage.GUI.MainWindow (
     mainWindow
     ) where
 
-import Control.Monad
+import Control.Monad.Error
 import Graphics.UI.WX
 import Graphics.UI.WXCore.Dialogs
-import qualified Language.Haskell.Interpreter as Hint
-import qualified Language.Haskell.Interpreter.Server as HS
-
-data HpState = HPS { workingPath :: Maybe FilePath,
-                     serverHandle :: HS.ServerHandle }
+import HPage.Control (HPage)
+import qualified HPage.Control as HP hiding (HPage)
+import qualified HPage.Server as HPS
 
 mainWindow :: IO ()
 mainWindow = do
-                server <- HS.start
-                drawWindow $ HPS Nothing server
+                server <- HPS.start
+                drawWindow server
 
-drawWindow :: HpState -> IO ()
-drawWindow initState =
+drawWindow :: HPS.ServerHandle -> IO ()
+drawWindow server =
     do
-        state <- varCreate initState
-    
     	frMain <- frame [text := "h page"]
     	
     	-- Text page...
@@ -33,58 +29,54 @@ drawWindow initState =
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
         set frMain [statusBar := [status]]
         
+        let run = runPage server frMain txtCode status
         
         -- Menu bar...
     	mnuPage <- menuPane [text := "Page"]
-    	mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",
-                                     on command := newDocument state txtCode]
+    	mitNew <- menuItem mnuPage [text := "&New\tCtrl-n",
+                                    on command := run clearPage]
     	menuLine mnuPage
     	mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o",
-                                     on command := openDocument state frMain txtCode]
+                                     on command := run $ openPage frMain]
     	mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",
-                                     on command := saveDocument state frMain txtCode]
+                                     on command := run $ savePage frMain]
     	menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",
-                          on command := saveDocumentAs state frMain txtCode]
+                          on command := run $ savePageAs frMain]
     	menuLine mnuPage
     	menuQuit mnuPage []
     	
     	mnuEdit <- menuPane [text := "Edit"]
     	menuItem mnuEdit [text := "&Undo\tCtrl-z",
-                          on command := infoDialog frMain "Undo" "work in progress"]
+                          on command := run undo]
     	menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",
-                          on command := infoDialog frMain "Redo" "work in progress"]
+                          on command := run redo]
     	menuLine mnuEdit
-    	mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",
-                                     on command := infoDialog frMain "Cut" "work in progress"]
+    	mitCut <- menuItem mnuEdit [text := "C&ut\tCtrl-x",
+                                    on command := run cut]
     	mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",
-                                     on command := infoDialog frMain "Copy" "work in progress"]
+                                     on command := run copy]
     	mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",
-                                      on command := infoDialog frMain "Paste" "work in progress"]
+                                      on command := run paste]
     	menuLine mnuEdit
     	menuItem mnuEdit [text := "&Find...\tCtrl-f",
-                          on command := infoDialog frMain "Find" "work in progress"]
+                          on command := run find]
     	menuItem mnuEdit [text := "&Find Next\tCtrl-g",
-                          on command := infoDialog frMain "Find Next" "work in progress"]
+                          on command := run findNext]
     	menuItem mnuEdit [text := "&Replace...\tCtrl-h",
-                          on command := infoDialog frMain "Replace" "work in progress"]
-    	menuLine mnuEdit
-    	menuItem mnuEdit [text := "&Select All\tCtrl-a",
-                          on command := infoDialog frMain "Select All" "work in progress"]
-    
+                          on command := run replace]
+
     	mnuHask <- menuPane [text := "Haskell"]
     	menuItem mnuHask [text := "&Load module...\tCtrl-l",
-                          on command := loadModule state frMain status]
-    	menuItem mnuHask [text := "&Browse modules\tCtrl-b",
-                          on command := browseModules state frMain status]
+                          on command := run $ loadModule frMain]
     	mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",
-                                       on command := reloadModules state frMain status]
+                                       on command := run reloadModules]
     	menuLine mnuHask
-    	mitRun  <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",
-                                     on command := runSelection state status txtCode]
+    	mitRun <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",
+                                    on command := run eval]
     	menuItem mnuHask [text := "&Kind\tCtrl-k",
-                          on command := getKindOfSelection state status txtCode]
+                          on command := run kindOf]
     	menuItem mnuHask [text := "&Type\tCtrl-t",
-                          on command := getTypeOfSelection state status txtCode]
+                          on command := run typeOf]
     	
     	mnuHelp <- menuHelp []
     	menuAbout mnuHelp [on command := infoDialog frMain "About hPage" "Author: Fernando Brujo Benavides"]
@@ -110,137 +102,85 @@ drawWindow initState =
                 
 
 --- THAT WAS THE SCREEN... NOW FOR THE REAL CODE -------------------------------
-
--- File functions --------------------------------------------------------------
-cleanWorkingPath :: Var HpState -> IO HpState
-cleanWorkingPath state = varUpdate state $ \s -> s { workingPath = Nothing }
-modifyWorkingPath :: Var HpState -> FilePath -> IO HpState
-modifyWorkingPath state f = varUpdate state $ \s -> s { workingPath = Just f } 
-
-newDocument :: Textual t => Var HpState -> t -> IO ()
-newDocument state textBox =
+runPage :: (Textual text, Textual statusBar) =>
+           HPS.ServerHandle -> Frame a -> text -> statusBar -> HPage b -> IO () 
+runPage srv win textBox status action =
     do
-        cleanWorkingPath state
-        set textBox [text := ""]
-
-openDocument :: Textual t => Var HpState -> Window a -> t -> IO ()
-openDocument state frMain textBox =
-    do
-        fileName <- fileOpenDialog frMain True True "Open file..." [("Haskells",["*.hs"]),
-                                                                    ("Any file",["*.*"])] "" ""
-        case fileName of
-            Nothing ->
-                return ()
-            Just f -> do
-                        newText <- readFile f
-                        set textBox [text := newText]
-                        modifyWorkingPath state f
-                        return ()
-
-saveDocument :: Textual t => Var HpState -> Window a -> t -> IO ()
-saveDocument state frMain textBox =
-    do
-        s <- varGet state
-        case workingPath s of
-            Nothing ->
-                saveDocumentAs state frMain textBox
-            Just f -> do
-                        fileText <- get textBox text
-                        writeFile f fileText
-
-saveDocumentAs :: Textual t => Var HpState -> Window a -> t -> IO ()
-saveDocumentAs state frMain textBox =
-    do
-        fileName <- fileSaveDialog frMain True True "Save file..." [("Haskells",["*.hs"]),
-                                                                    ("Any file",["*.*"])] "" ""
-        fileText <- get textBox text
-        case fileName of
-            Nothing ->
-                return ()
-            Just f -> do
-                        writeFile f fileText
-                        modifyWorkingPath state f
-                        return ()
-
--- Haskell functions -----------------------------------------------------------
-withServer :: Textual statusBar => Hint.InterpreterT IO a -> statusBar -> Var HpState -> IO (Either Hint.InterpreterError a)
-withServer action status state =
-    do
-        s <- varGet state
         set status [text := "Processing..."]
-        res <- HS.runIn (serverHandle s) action
-        set status [text := "Ready"]
-        return res
-
-withServerAndTextBox :: (Textual text, Textual statusBar, Show a) =>
-                        (String -> Hint.InterpreterT IO a) -> text -> statusBar -> Var HpState -> IO ()
-withServerAndTextBox actionBuilder textBox status state =
-    do
-        expr <- get textBox text
-        ret <- withServer (actionBuilder expr) status state
-        case ret of
-            Left e ->
-                set textBox [text := (expr ++ " " ++ (show e))]
-            Right s ->
-                set textBox [text := (expr ++ " " ++ show s)]
-
-withServerAndWindow :: Textual statusBar => Hint.InterpreterT IO a -> Frame b -> statusBar -> Var HpState -> IO ()
-withServerAndWindow action win status state =
-    do
-        ret <- withServer action status state
-        case ret of
-            Left e -> do
-                        title <- get win text
-                        errorDialog win title (show e)
+        t <- get textBox text
+        HPS.runIn srv $ HP.setText t 
+        res <- HPS.runIn srv (try action)
+        case res of
+            Left err ->
+                do
+                    title <- get win text
+                    errorDialog win title (show err)
             Right _ ->
-                return ()
+                do
+                    newText <- HPS.runIn srv HP.getText
+                    set textBox [text := newText]
+        set status [text := "Ready"]
+    where try a = (a >>= return . Right) `catchError` (return . Left)
 
 
-runSelection, getKindOfSelection, getTypeOfSelection :: (Textual s, Textual t) =>
-                                                        Var HpState -> s -> t -> IO ()
-runSelection state status textBox =
-    withServerAndTextBox Hint.eval textBox status state
+clearPage :: HPage ()
+openPage, savePage, savePageAs :: Frame a -> HPage ()
+undo, redo, cut, copy, paste, find, findNext, replace :: HPage ()
+loadModule :: Frame a -> HPage ()
+reloadModules :: HPage ()
+eval, typeOf, kindOf :: HPage ()
 
-getKindOfSelection state status textBox =
-    withServerAndTextBox Hint.kindOf textBox status state
+clearPage = HP.clearPage
 
-getTypeOfSelection state status textBox =
-    withServerAndTextBox Hint.typeOf textBox status state
-
-loadModule, browseModules, reloadModules :: Textual s => Var HpState -> Frame a -> s -> IO ()
-loadModule state frMain status =
+openPage win =
     do
-        fileName <- fileOpenDialog frMain True True "Open file..." [("Haskells",["*.hs"])] "" ""
+        fileName <- liftIO $ fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
+                                                                          ("Any file",["*.*"])] "" ""
         case fileName of
             Nothing ->
                 return ()
-            Just f -> do
-                        withServerAndWindow (loadModules [f]) frMain status state
-    where loadModules ms = do
-                                Hint.loadModules ms
-                                lms <- Hint.getLoadedModules
-                                Hint.setTopLevelModules lms
+            Just f ->
+                HP.openPage f
 
-browseModules state frMain status =
+savePage win =
     do
-        res <- withServer browseModules' status state
-        case res of
-            Left e ->
-                errorDialog frMain "Browse Modules Error" (show e)
-            Right ms ->
-                infoDialog frMain "Browse Modules" ms
-    where browseModules' = do
-                              ms <- Hint.getLoadedModules
-                              foldM (\acc m -> do
-                                                    exs <- Hint.getModuleExports m
-                                                    return $ acc ++ (showElems m exs) ++ "\n")
-                                                 "" ms
-          showElems m mes = "Module " ++ m ++ ":\n" ++
-                            (foldl (\res me -> res ++ "\t" ++ (show me) ++ "\n") "" mes)
+        file <- HP.currentPage
+        case file of
+            Nothing ->
+                savePageAs win
+            Just f ->
+                HP.savePage f
 
-reloadModules state frMain status =
-    withServerAndWindow reloadModules' frMain status state
-    where reloadModules' = do
-                                ms <- Hint.getLoadedModules
-                                Hint.loadModules ms
-                                Hint.setTopLevelModules ms
+savePageAs win =
+    do
+        fileName <- liftIO $ fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
+                                                                          ("Any file",["*.*"])] "" ""
+        case fileName of
+            Nothing ->
+                return ()
+            Just f ->
+                HP.savePage f
+
+undo = HP.undo
+redo = HP.redo
+cut = HP.cut
+copy = HP.copy
+paste = HP.paste
+find = HP.find
+findNext = HP.findNext
+replace = HP.replace
+
+eval = HP.eval >> return ()
+kindOf = HP.kindOf >> return ()
+typeOf = HP.typeOf >> return ()
+
+loadModule win =
+    do
+        fileName <- liftIO $ fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"])] "" ""
+        case fileName of
+            Nothing ->
+                return ()
+            Just f ->
+                HP.loadModule f
+
+reloadModules = HP.reloadModules

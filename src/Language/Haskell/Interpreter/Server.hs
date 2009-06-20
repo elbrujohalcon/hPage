@@ -1,10 +1,10 @@
+
 module Language.Haskell.Interpreter.Server (
     start, runIn, asyncRunIn, ServerHandle
     ) where
 
 import Control.Concurrent.MVar
 import Control.Monad.Error
-import Control.Monad.State
 import Control.Concurrent.Process
 import Language.Haskell.Interpreter
 
