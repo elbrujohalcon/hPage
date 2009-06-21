@@ -52,11 +52,13 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
-                    let emptyPage = Page [] 0 Nothing hs
+                    let emptyPage = Page [] (-1) Nothing hs
                     (state hpt) `evalStateT` emptyPage 
 
 setText :: String -> HPage ()
-setText s = modify (\page -> page{expressions = fromString s})
+setText s = let exprs = fromString s in
+                modify (\page -> page{expressions = exprs,
+                                      currentExpr = (length exprs - 1)})
 
 getText :: HPage String
 getText = get >>= return . toString
@@ -108,14 +110,19 @@ runInNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage String
 runInNth action i = do
                         page <- get
                         let exprs = expressions page
-                        let expr = asString $ exprs !! i
-                        let serv = server page
-                        res <- liftIO $ HS.runIn serv $ action expr
-                        case res of
-                            Left e ->
-                                fail $ show e
-                            Right s ->
-                                return s
+                        case i of
+                            -1 ->
+                                fail "Nothing selected"
+                            _ ->
+                                do
+                                    let expr = asString $ exprs !! i
+                                    let serv = server page
+                                    res <- liftIO $ HS.runIn serv $ action expr
+                                    case res of
+                                        Left e ->
+                                            fail $ show e
+                                        Right s ->
+                                            return s
 
 loadModule :: FilePath -> HPage ()
 loadModule f = runIn $ do
@@ -142,10 +149,10 @@ runIn action = do
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
 fromString :: String -> [Expression]
 fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
-    where toExp = Exp . concat . map ('\n':)
+    where toExp = Exp . joinWith "\n"
 
 toString :: Page -> String
-toString = drop 2 . concat . map ("\n\n" ++) . map show . expressions
+toString = joinWith "\n\n" . map show . expressions
 
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn sep = reverse . (map reverse) . (foldl (\(acc:accs) el ->
@@ -154,8 +161,12 @@ splitOn sep = reverse . (map reverse) . (foldl (\(acc:accs) el ->
                                                 else (el:acc):accs)
                                          [[]])
 
+joinWith :: [a] -> [[a]] -> [a]
+joinWith _ [] = []
+joinWith sep (x:xs) = x ++ (concat . map (sep ++) $ xs)
+
 showExpressions :: Page -> String
-showExpressions p = drop 2 . concat $ map (showNth allExps current) [1..expNum]
+showExpressions p = drop 2 . concat $ map (showNth allExps current) [0..expNum - 1]
     where allExps = expressions p
           current = currentExpr p
           expNum  = length allExps

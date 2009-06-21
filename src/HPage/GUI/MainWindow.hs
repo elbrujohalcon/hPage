@@ -102,7 +102,7 @@ drawWindow server =
                 
 
 --- THAT WAS THE SCREEN... NOW FOR THE REAL CODE -------------------------------
-runPage :: (Textual text, Textual statusBar) =>
+runPage :: (Textual text, Textual statusBar, Show b) =>
            HPS.ServerHandle -> Frame a -> text -> statusBar -> HPage b -> IO () 
 runPage srv win textBox status action =
     do
@@ -110,13 +110,14 @@ runPage srv win textBox status action =
         t <- get textBox text
         HPS.runIn srv $ HP.setText t 
         res <- HPS.runIn srv (try action)
+        title <- get win text
         case res of
             Left err ->
                 do
-                    title <- get win text
                     errorDialog win title (show err)
-            Right _ ->
+            Right s ->
                 do
+                    infoDialog win title (show s)
                     newText <- HPS.runIn srv HP.getText
                     set textBox [text := newText]
         set status [text := "Ready"]
