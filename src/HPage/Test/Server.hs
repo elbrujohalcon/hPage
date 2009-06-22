@@ -18,7 +18,7 @@ instance Arbitrary Char where
 options :: TestOptions
 options = TestOptions
       { no_of_tests         = 200
-      , length_of_tests     = 10
+      , length_of_tests     = 1
       , debug_tests         = False }
 
 main :: IO ()
@@ -29,6 +29,8 @@ main =
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_same_response hps hs
+                 ,  run $ prop_load_module hps hs
+                 ,  run $ prop_reload_modules hps hs
                  ]
 
 prop_same_response :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
@@ -47,3 +49,30 @@ prop_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ "user error (" ++ show hsr ++ ")" == show hpsr
     where try a = (a >>= return . Right) `catchError` (return . Left)
+    
+prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_load_module hps hs txt =
+    unsafePerformIO $ do
+                        let expr = "test = length \"" ++ txt ++ "\"" 
+                        hpsr <- HPS.runIn hps $ do
+                                                    HP.setText expr
+                                                    HP.savePage "../documents/test.hs"
+                                                    HP.setText "test"
+                                                    HP.loadModule "../documents/test.hs"
+                                                    HP.eval
+                        Right hsr <- HS.runIn hs $ Hint.eval expr
+                        return $ hpsr == hsr
+
+prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_reload_modules hps hs txt =
+    unsafePerformIO $ do
+                        let expr = "test = show \"" ++ txt ++ "\"" 
+                        hpsr <- HPS.runIn hps $ do
+                                                    HP.setText expr
+                                                    HP.savePage "../documents/test.hs"
+                                                    HP.setText "test"
+                                                    HP.loadModule "../documents/test.hs"
+                                                    HP.reloadModules
+                                                    HP.eval
+                        Right hsr <- HS.runIn hs $ Hint.eval expr
+                        return $ hpsr == hsr

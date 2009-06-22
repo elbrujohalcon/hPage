@@ -14,6 +14,8 @@ module HPage.Control (
     loadModule, reloadModules 
  ) where
 
+import System.IO
+import Data.Set (Set, empty, insert, toList)
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.State.Class
@@ -29,6 +31,7 @@ instance Show Expression where
 data Page = Page { expressions :: [Expression],
                    currentExpr :: Int,
                    filePath :: Maybe FilePath,
+                   loadedModules :: Set FilePath,
                    server :: HS.ServerHandle }
 
 instance Show Page where
@@ -52,7 +55,7 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
-                    let emptyPage = Page [] (-1) Nothing hs
+                    let emptyPage = Page [] (-1) Nothing empty hs
                     (state hpt) `evalStateT` emptyPage 
 
 setText :: String -> HPage ()
@@ -125,15 +128,25 @@ runInNth action i = do
                                             return s
 
 loadModule :: FilePath -> HPage ()
-loadModule f = runIn $ do
-                            Hint.loadModules [f]
-                            Hint.setTopLevelModules [f]
+loadModule f = do
+                    res <- runIn $ do
+                                        Hint.loadModules [f]
+                                        ms <- Hint.getLoadedModules
+                                        Hint.setTopLevelModules ms
+                    modify (\page ->
+                                let mods = loadedModules page in
+                                    page{loadedModules = insert f mods})
+                    return res
+                            
 
 reloadModules :: HPage ()
-reloadModules = runIn $ do
-                            ms <- Hint.getLoadedModules
-                            Hint.loadModules ms
-                            Hint.setTopLevelModules ms
+reloadModules = do
+                    page <- get
+                    let ms = toList $ loadedModules page
+                    runIn $ do
+                                Hint.loadModules ms
+                                ms <- Hint.getLoadedModules
+                                Hint.setTopLevelModules ms
 
 runIn :: Hint.InterpreterT IO a -> HPage ()
 runIn action = do
