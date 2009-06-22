@@ -29,7 +29,8 @@ drawWindow server =
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
         set frMain [statusBar := [status]]
         
-        let run = runPage server frMain txtCode status
+        let run :: Show b => HPage b -> IO ()
+            run = runPage server frMain txtCode status
         
         -- Menu bar...
     	mnuPage <- menuPane [text := "Page"]
@@ -106,20 +107,26 @@ runPage :: (Textual text, Textual statusBar, Show b) =>
            HPS.ServerHandle -> Frame a -> text -> statusBar -> HPage b -> IO () 
 runPage srv win textBox status action =
     do
+        title <- get win text
         set status [text := "Processing..."]
         t <- get textBox text
         HPS.runIn srv $ HP.setText t 
-        res <- HPS.runIn srv (try action)
-        title <- get win text
+        res <- HPS.runIn srv $ try action
         case res of
             Left err ->
                 do
                     errorDialog win title (show err)
             Right s ->
-                do
-                    infoDialog win title (show s)
-                    newText <- HPS.runIn srv HP.getText
-                    set textBox [text := newText]
+                case show s of
+                    "()" ->
+                        do
+                            newText <- HPS.runIn srv HP.getText
+                            set textBox [text := newText]
+                    _ ->                            
+                        do
+                            infoDialog win title $ show s
+                            newText <- HPS.runIn srv HP.getText
+                            set textBox [text := newText]
         set status [text := "Ready"]
     where try a = (a >>= return . Right) `catchError` (return . Left)
 
@@ -129,7 +136,7 @@ openPage, savePage, savePageAs :: Frame a -> HPage ()
 undo, redo, cut, copy, paste, find, findNext, replace :: HPage ()
 loadModule :: Frame a -> HPage ()
 reloadModules :: HPage ()
-eval, typeOf, kindOf :: HPage ()
+eval, typeOf, kindOf :: HPage String
 
 clearPage = HP.clearPage
 
@@ -170,10 +177,9 @@ paste = HP.paste
 find = HP.find
 findNext = HP.findNext
 replace = HP.replace
-
-eval = HP.eval >> return ()
-kindOf = HP.kindOf >> return ()
-typeOf = HP.typeOf >> return ()
+eval = HP.eval
+kindOf = HP.kindOf
+typeOf = HP.typeOf
 
 loadModule win =
     do
