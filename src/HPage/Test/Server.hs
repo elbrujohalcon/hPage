@@ -15,6 +15,13 @@ instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'] ++ " ~!@#$%^&*()")
     coarbitrary c = variant (ord c `rem` 16)
 
+newtype ClassName = CN {asString :: String}
+    deriving (Eq, Show)
+
+instance Arbitrary ClassName where
+    arbitrary = elements $ map CN [ "HPage", "IO", "IO a", "Int", "String"]
+    coarbitrary _ = undefined
+
 options :: TestOptions
 options = TestOptions
       { no_of_tests         = 200
@@ -28,16 +35,34 @@ main =
         hs <- HS.start
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
-                 ,  run $ prop_same_response hps hs
+                 ,  run $ prop_eval hps hs
+                 ,  run $ prop_typeOf hps hs
+                 ,  run $ prop_kindOf hps hs
                  ,  run $ prop_load_module hps hs
                  ,  run $ prop_reload_modules hps hs
                  ]
 
-prop_same_response :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
-prop_same_response hps hs txt =
+prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_eval hps hs txt =
     unsafePerformIO $ do
                         let expr = "length \"" ++ txt ++ "\"" 
                         hpsr <- HPS.runIn hps $ HP.setText expr >> HP.eval
+                        Right hsr <- HS.runIn hs $ Hint.eval expr
+                        return $ hpsr == hsr
+
+prop_typeOf :: HPS.ServerHandle -> HS.ServerHandle -> String -> Property
+prop_typeOf hps hs txt = txt /= "" ==>
+    unsafePerformIO $ do
+                        let h = head txt
+                        let expr = if isNumber h then [h, h] else "\"" ++ txt ++ "\""
+                        hpsr <- HPS.runIn hps $ HP.setText expr >> HP.typeOf
+                        Right hsr <- HS.runIn hs $ Hint.eval expr
+                        return $ hpsr == hsr
+
+prop_kindOf :: HPS.ServerHandle -> HS.ServerHandle -> ClassName -> Bool
+prop_kindOf hps hs (CN expr) =
+    unsafePerformIO $ do
+                        hpsr <- HPS.runIn hps $ HP.setText expr >> HP.kindOf
                         Right hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hpsr == hsr
 
