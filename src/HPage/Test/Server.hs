@@ -41,6 +41,11 @@ main =
                  ,  run $ prop_load_module hps hs
                  ,  run $ prop_reload_modules hps hs
                  ]
+        runTests "Cancelation" options
+                 [  run $ prop_cancel_load hps
+                 ,  run $ prop_sync_one_at_a_time hps
+                 ,  run $ prop_async_one_at_a_time hps
+                 ]
 
 prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_eval hps hs txt =
@@ -101,3 +106,34 @@ prop_reload_modules hps hs txt =
                                                     HP.eval
                         Right hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hpsr == hsr
+
+prop_async_one_at_a_time :: HPS.ServerHandle -> String -> Bool
+prop_async_one_at_a_time hps txt =
+    unsafePerformIO $ do
+                        let expr = "length \"" ++ txt ++ "\""
+                        HPS.asyncRunIn hps $ HP.setText expr >> HP.eval
+                        (HPS.asyncRunIn hps HP.eval >> return False) `catchError` (\_ -> return True)
+    
+prop_sync_one_at_a_time :: HPS.ServerHandle -> String -> Bool
+prop_sync_one_at_a_time hps txt =
+    unsafePerformIO $ do
+                        let expr = "length \"" ++ txt ++ "\""
+                        HPS.asyncRunIn hps $ HP.setText expr >> HP.eval
+                        (HPS.runIn hps $ return False) `catchError` (\_ -> return True)
+    
+prop_cancel_load :: HPS.ServerHandle -> String -> Bool
+prop_cancel_load hps txt =
+    unsafePerformIO $ do
+                        let expr1 = "fact = (1,2,3)"
+                        oldType <- HPS.runIn hps $ typeOfFact expr1
+                        let expr2 = "fact = foldl (*) 1 [1.." ++ show (length txt) ++ "]"
+                        HPS.asyncRunIn hps $ typeOfFact expr2
+                        HPS.cancel hps
+                        newType <- HPS.runIn hps $ HP.setText "fact" >> HP.typeOf
+                        return $ newType == oldType
+    where typeOfFact expr = do
+                                HP.setText expr
+                                HP.savePage "../documents/test.hs"
+                                HP.loadModule "../documents/test.hs"
+                                HP.setText "fact"
+                                HP.typeOf

@@ -145,8 +145,8 @@ reloadModules = do
                     let ms = toList $ loadedModules page
                     runIn $ do
                                 Hint.loadModules ms
-                                ms <- Hint.getLoadedModules
-                                Hint.setTopLevelModules ms
+                                newMs <- Hint.getLoadedModules
+                                Hint.setTopLevelModules newMs
 
 runIn :: Hint.InterpreterT IO a -> HPage ()
 runIn action = do

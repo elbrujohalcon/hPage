@@ -1,6 +1,6 @@
 
 module HPage.Server (
-    start, runIn, asyncRunIn, ServerHandle
+    start, runIn, asyncRunIn, ServerHandle, cancel
     ) where
 
 import Control.Concurrent.MVar
@@ -23,3 +23,6 @@ asyncRunIn server action = do
 
 runIn :: ServerHandle -> HPage a -> IO a
 runIn server action = readMVar =<< asyncRunIn server action
+
+cancel :: ServerHandle -> IO a
+cancel = undefined
