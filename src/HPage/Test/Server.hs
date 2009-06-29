@@ -56,7 +56,7 @@ prop_typeOf hps hs txt = txt /= "" ==>
                         let h = head txt
                         let expr = if isNumber h then [h, h] else "\"" ++ txt ++ "\""
                         hpsr <- HPS.runIn hps $ HP.setText expr >> HP.typeOf
-                        Right hsr <- HS.runIn hs $ Hint.eval expr
+                        Right hsr <- HS.runIn hs $ Hint.typeOf expr
                         return $ hpsr == hsr
 
 prop_kindOf :: HPS.ServerHandle -> HS.ServerHandle -> ClassName -> Bool
