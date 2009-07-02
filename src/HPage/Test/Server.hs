@@ -6,7 +6,7 @@ import GHC.IOBase
 import Control.Monad.Error
 import Test.QuickCheck
 import Test.QuickCheck.Batch
-import qualified HPage.Control as HP hiding (HPage)
+import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
@@ -33,6 +33,7 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
+--        verboseCheck $ prop_async_one_at_a_time hps
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -42,9 +43,9 @@ main =
                  ,  run $ prop_reload_modules hps hs
                  ]
         runTests "Cancelation" options
-                 [  run $ prop_cancel_load hps
+                 [  run $ prop_async_one_at_a_time hps
                  ,  run $ prop_sync_one_at_a_time hps
-                 ,  run $ prop_async_one_at_a_time hps
+                 ,  run $ prop_cancel_load hps
                  ]
 
 prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
@@ -110,30 +111,34 @@ prop_reload_modules hps hs txt =
 prop_async_one_at_a_time :: HPS.ServerHandle -> String -> Bool
 prop_async_one_at_a_time hps txt =
     unsafePerformIO $ do
-                        let expr = "length \"" ++ txt ++ "\""
-                        HPS.asyncRunIn hps $ HP.setText expr >> HP.eval
-                        (HPS.asyncRunIn hps HP.eval >> return False) `catchError` (\_ -> return True)
+                        let expr = "foldl (*) 1 [1.. ((length \"" ++ txt ++ "\") + 1)*10000]"
+                        x <- try $ HPS.runIn hps $ HP.setText expr >> HP.eval' >> HP.eval'
+                        case x of
+                            Left _ ->
+                                return True
+                            Right _ ->
+                                return False
+    where try a = (a >>= return . Right) `catchError` (return . Left)
     
 prop_sync_one_at_a_time :: HPS.ServerHandle -> String -> Bool
 prop_sync_one_at_a_time hps txt =
     unsafePerformIO $ do
                         let expr = "length \"" ++ txt ++ "\""
-                        HPS.asyncRunIn hps $ HP.setText expr >> HP.eval
-                        (HPS.runIn hps $ return False) `catchError` (\_ -> return True)
+                        HPS.runIn hps $ HP.setText expr >> HP.eval'
+                        return . isBottom $ HPS.runIn hps $ return ()
     
 prop_cancel_load :: HPS.ServerHandle -> String -> Bool
 prop_cancel_load hps txt =
     unsafePerformIO $ do
                         let expr1 = "fact = (1,2,3)"
-                        oldType <- HPS.runIn hps $ typeOfFact expr1
+                        oldType <- HPS.runIn hps $ setFact expr1 >> HP.typeOf
                         let expr2 = "fact = foldl (*) 1 [1.." ++ show (length txt) ++ "]"
-                        HPS.asyncRunIn hps $ typeOfFact expr2
-                        HPS.cancel hps
+                        HPS.runIn hps $ setFact expr2 >> HP.typeOf'
+                        HPS.runIn hps HP.cancel
                         newType <- HPS.runIn hps $ HP.setText "fact" >> HP.typeOf
                         return $ newType == oldType
-    where typeOfFact expr = do
-                                HP.setText expr
-                                HP.savePage "../documents/test.hs"
-                                HP.loadModule "../documents/test.hs"
-                                HP.setText "fact"
-                                HP.typeOf
+    where setFact expr = do
+                            HP.setText expr
+                            HP.savePage "../documents/test.hs"
+                            HP.loadModule "../documents/test.hs"
+                            HP.setText "fact"
