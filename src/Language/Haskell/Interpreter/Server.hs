@@ -22,7 +22,12 @@ asyncRunIn server action = do
                                 resVar <- liftIO newEmptyMVar
                                 sendTo (handle server) (try action >>= liftIO . putMVar resVar)
                                 return resVar
-    where try a = (a >>= return . Right) `catchError` (return . Left)
 
 runIn :: ServerHandle -> InterpreterT IO a -> IO (Either InterpreterError a)
-runIn server action = readMVar =<< asyncRunIn server action
+runIn server action = runHere $ do
+                                    me <- self
+                                    sendTo (handle server) $ try action >>= sendTo me
+                                    recv
+
+try :: InterpreterT IO b -> InterpreterT IO (Either InterpreterError b)
+try a = (a >>= return . Right) `catchError` (return . Left)
