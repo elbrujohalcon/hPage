@@ -33,7 +33,6 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
---        verboseCheck $ prop_async_one_at_a_time hps
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -43,8 +42,7 @@ main =
                  ,  run $ prop_reload_modules hps hs
                  ]
         runTests "Cancelation" options
-                 [  run $ prop_async_one_at_a_time hps
-                 ,  run $ prop_sync_one_at_a_time hps
+                 [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
                  ]
 
@@ -107,26 +105,20 @@ prop_reload_modules hps hs txt =
                                                     HP.eval
                         Right hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hpsr == hsr
+    
+prop_sequential :: HPS.ServerHandle -> String -> Bool
+prop_sequential hps txt =
+    unsafePerformIO $ do
+                        let expr = "test = \"" ++ txt ++ "\""
+                        HPS.runIn hps $ do
+                                            HP.setText expr
+                                            HP.savePage "../documents/test.hs"
+                                            HP.loadModule' "../documents/test.hs"
+                        hpsr <- HPS.runIn hps $ do
+                                                    HP.setText "test"
+                                                    HP.eval
+                        return $ hpsr == show txt
 
-prop_async_one_at_a_time :: HPS.ServerHandle -> String -> Bool
-prop_async_one_at_a_time hps txt =
-    unsafePerformIO $ do
-                        let expr = "foldl (*) 1 [1.. ((length \"" ++ txt ++ "\") + 1)*10000]"
-                        x <- try $ HPS.runIn hps $ HP.setText expr >> HP.eval' >> HP.eval'
-                        case x of
-                            Left _ ->
-                                return True
-                            Right _ ->
-                                return False
-    where try a = (a >>= return . Right) `catchError` (return . Left)
-    
-prop_sync_one_at_a_time :: HPS.ServerHandle -> String -> Bool
-prop_sync_one_at_a_time hps txt =
-    unsafePerformIO $ do
-                        let expr = "length \"" ++ txt ++ "\""
-                        HPS.runIn hps $ HP.setText expr >> HP.eval'
-                        return . isBottom $ HPS.runIn hps $ return ()
-    
 prop_cancel_load :: HPS.ServerHandle -> String -> Bool
 prop_cancel_load hps txt =
     unsafePerformIO $ do

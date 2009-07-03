@@ -31,13 +31,12 @@ newtype Expression = Exp {asString :: String}
 
 instance Show Expression where
     show = asString
- 
+
 data Page = Page { expressions :: [Expression],
                    currentExpr :: Int,
                    filePath :: Maybe FilePath,
                    loadedModules :: Set FilePath,
-                   server :: HS.ServerHandle,
-                   serverRunning :: MVar () }
+                   server :: HS.ServerHandle }
 
 instance Show Page where
     show p = "Text: " ++ (showExpressions p) ++ 
@@ -60,8 +59,7 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
-                    sr <- newEmptyMVar
-                    let emptyPage = Page [] (-1) Nothing empty hs sr
+                    let emptyPage = Page [] (-1) Nothing empty hs
                     (state hpt) `evalStateT` emptyPage 
 
 setText :: String -> HPage ()
@@ -173,15 +171,7 @@ cancel = undefined
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
 runIn :: Hint.InterpreterT IO a -> HPage ()
-runIn action = do
-                    page <- get
-                    let serv = server page
-                    res <- liftIO $ HS.runIn serv action
-                    case res of
-                        Left e ->
-                            fail $ show e
-                        Right _ ->
-                            return ()
+runIn action = get >>= syncRun action >> return ()
     
 runIn' :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a))
 runIn' action = get >>= asyncRun action
@@ -196,13 +186,7 @@ runInNth action i = do
                             _ ->
                                 do
                                     let expr = asString $ exprs !! i
-                                    let serv = server page
-                                    res <- liftIO $ HS.runIn serv $ action expr
-                                    case res of
-                                        Left e ->
-                                            fail $ show e
-                                        Right s ->
-                                            return s
+                                    syncRun (action expr) page
 
 runInNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
 runInNth' action i = do
@@ -216,22 +200,20 @@ runInNth' action i = do
                                     let expr = asString $ exprs !! i
                                     asyncRun (action expr) page
 
+syncRun :: Hint.InterpreterT IO a -> Page -> HPage a
+syncRun action page = do
+                            let serv = server page
+                            res <- liftIO $ HS.runIn serv action
+                            case res of
+                                Left e ->
+                                    fail $ show e
+                                Right s ->
+                                    return s
+
 asyncRun :: Hint.InterpreterT IO a -> Page -> HPage (MVar (Either Hint.InterpreterError a)) 
 asyncRun action page = do
-                            liftIO $ putStrLn "Running async action!"
                             let serv = server page
-                            let flag = serverRunning page
-                            let newAction = do
-                                                liftIO $ putMVar flag ()
-                                                res <- action
-                                                liftIO $ readMVar flag
-                                                return res
-                            isEmpty <- liftIO $ isEmptyMVar flag
-                            case isEmpty of
-                                True ->
-                                    liftIO $ HS.asyncRunIn serv newAction
-                                _ ->
-                                    fail "An operation is already in progress"
+                            liftIO $ HS.asyncRunIn serv action
     
 fromString :: String -> [Expression]
 fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
