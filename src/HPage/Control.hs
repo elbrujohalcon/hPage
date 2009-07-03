@@ -36,7 +36,10 @@ data Page = Page { expressions :: [Expression],
                    currentExpr :: Int,
                    filePath :: Maybe FilePath,
                    loadedModules :: Set FilePath,
-                   server :: HS.ServerHandle }
+                   server :: HS.ServerHandle,
+                   backupServer :: HS.ServerHandle,
+                   actionInFlight :: Hint.InterpreterT IO (),
+                   history :: Hint.InterpreterT IO () }
 
 instance Show Page where
     show p = "Text: " ++ (showExpressions p) ++ 
@@ -59,7 +62,9 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
-                    let emptyPage = Page [] (-1) Nothing empty hs
+                    hsb <- liftIO $ HS.start
+                    let nop = return ()
+                    let emptyPage = Page [] (-1) Nothing empty hs hsb nop nop
                     (state hpt) `evalStateT` emptyPage 
 
 setText :: String -> HPage ()
@@ -167,14 +172,26 @@ reloadModules' = do
                                 Hint.setTopLevelModules newMs
 
 cancel :: HPage ()
-cancel = undefined
+cancel = do
+            page <- get
+            let (bServ, hist) = (backupServer page, history page)
+            hsb <- liftIO $ HS.start
+            liftIO $ HS.flush bServ
+            liftIO $ HS.asyncRunIn hsb hist
+            --TODO: The current discarded server needs to be stopped here
+            let newPage = page{server = bServ,
+                               backupServer = hsb,
+                               actionInFlight = return ()}
+            put newPage
+                                
+            
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
 runIn :: Hint.InterpreterT IO a -> HPage ()
-runIn action = get >>= syncRun action >> return ()
+runIn action = syncRun action >> return ()
     
 runIn' :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a))
-runIn' action = get >>= asyncRun action
+runIn' = asyncRun
 
 runInNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage String
 runInNth action i = do
@@ -186,7 +203,7 @@ runInNth action i = do
                             _ ->
                                 do
                                     let expr = asString $ exprs !! i
-                                    syncRun (action expr) page
+                                    syncRun $ action expr
 
 runInNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
 runInNth' action i = do
@@ -198,23 +215,38 @@ runInNth' action i = do
                             _ ->
                                 do
                                     let expr = asString $ exprs !! i
-                                    asyncRun (action expr) page
+                                    asyncRun $ action expr
 
-syncRun :: Hint.InterpreterT IO a -> Page -> HPage a
-syncRun action page = do
-                            let serv = server page
-                            res <- liftIO $ HS.runIn serv action
-                            case res of
-                                Left e ->
-                                    fail $ show e
-                                Right s ->
-                                    return s
+syncRun :: Hint.InterpreterT IO a -> HPage a
+syncRun action = do
+                    page <- updateBackupServer action
+                    let serv = server page
+                    res <- liftIO $ HS.runIn serv action
+                    case res of
+                        Left e ->
+                            fail $ show e
+                        Right s ->
+                            return s
 
-asyncRun :: Hint.InterpreterT IO a -> Page -> HPage (MVar (Either Hint.InterpreterError a)) 
-asyncRun action page = do
-                            let serv = server page
-                            liftIO $ HS.asyncRunIn serv action
-    
+asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
+asyncRun action = do
+                    page <- updateBackupServer action
+                    let serv = server page
+                    liftIO $ HS.asyncRunIn serv action
+
+updateBackupServer :: Hint.InterpreterT IO a -> HPage Page
+updateBackupServer action = do
+                                page <- get
+                                let (bServ, flyAcc, hist) = (backupServer page,
+                                                             actionInFlight page,
+                                                             history page)
+                                liftIO $ HS.asyncRunIn bServ flyAcc
+                                let newPage = page{actionInFlight = action >> return (),
+                                                   history = hist >> flyAcc} 
+                                put newPage
+                                return newPage
+                                     
+                            
 fromString :: String -> [Expression]
 fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
     where toExp = Exp . joinWith "\n"

@@ -1,6 +1,6 @@
 
 module Language.Haskell.Interpreter.Server (
-    start, runIn, asyncRunIn, ServerHandle
+    start, runIn, asyncRunIn, flush, ServerHandle
     ) where
 
 import Control.Concurrent.MVar
@@ -28,6 +28,9 @@ runIn server action = runHere $ do
                                     me <- self
                                     sendTo (handle server) $ try action >>= sendTo me
                                     recv
+
+flush :: ServerHandle -> IO (Either InterpreterError ())
+flush server = runIn server $ return ()
 
 try :: InterpreterT IO b -> InterpreterT IO (Either InterpreterError b)
 try a = (a >>= return . Right) `catchError` (return . Left)

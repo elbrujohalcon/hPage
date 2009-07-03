@@ -17,5 +17,5 @@ start = (spawn $ makeProcess evalHPage pageRunner) >>= return . SH
 runIn :: ServerHandle -> HPage a -> IO a
 runIn server action = runHere $ do
                                     me <- self
-                                    sendTo (handle server) (action >>= sendTo me)
+                                    sendTo (handle server) $ action >>= sendTo me
                                     recv

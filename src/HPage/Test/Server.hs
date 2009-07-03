@@ -33,6 +33,8 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
+        quickCheck $ prop_cancel_load hps
+{-
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -45,6 +47,7 @@ main =
                  [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
                  ]
+-}
 
 prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_eval hps hs txt =
@@ -123,14 +126,16 @@ prop_cancel_load :: HPS.ServerHandle -> String -> Bool
 prop_cancel_load hps txt =
     unsafePerformIO $ do
                         let expr1 = "fact = (1,2,3)"
-                        oldType <- HPS.runIn hps $ setFact expr1 >> HP.typeOf
                         let expr2 = "fact = foldl (*) 1 [1.." ++ show (length txt) ++ "]"
-                        HPS.runIn hps $ setFact expr2 >> HP.typeOf'
-                        HPS.runIn hps HP.cancel
-                        newType <- HPS.runIn hps $ HP.setText "fact" >> HP.typeOf
-                        return $ newType == oldType
-    where setFact expr = do
-                            HP.setText expr
-                            HP.savePage "../documents/test.hs"
-                            HP.loadModule "../documents/test.hs"
-                            HP.setText "fact"
+                        HPS.runIn hps $ do
+                                            HP.setText expr2
+                                            HP.savePage "../documents/test2.hs"
+                                            HP.setText expr1
+                                            HP.savePage "../documents/test.hs"
+                                            HP.setText "fact"
+                                            HP.loadModule "../documents/test.hs"
+                                            oldRes <- HP.eval
+                                            HP.loadModule' "../documents/test2.hs"
+                                            HP.cancel
+                                            newRes <- HP.eval
+                                            return $ newRes == oldRes
