@@ -1,6 +1,3 @@
-
-module HPage.Test.Server where
-
 import Data.Char
 import GHC.IOBase
 import Control.Monad.Error
@@ -10,12 +7,25 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
+import Utils.Log
 
 instance Arbitrary Char where
-    arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'] ++ " ~!@#$%^&*()")
+    arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
     coarbitrary c = variant (ord c `rem` 16)
 
-newtype ClassName = CN {asString :: String}
+newtype ModuleName = MN {mnString :: String}
+    deriving (Eq)
+
+instance Show ModuleName where
+    show = mnString
+
+instance Arbitrary ModuleName where
+    arbitrary = do
+                    s <- arbitrary
+                    return . MN $ "Test" ++ map toLower s
+    coarbitrary _ = undefined
+
+newtype ClassName = CN {cnString :: String}
     deriving (Eq, Show)
 
 instance Arbitrary ClassName where
@@ -124,20 +134,22 @@ prop_sequential hps txt =
                                                         HP.eval
                         return $ hpsr == show txt
 
-prop_cancel_load :: HPS.ServerHandle -> String -> Bool
-prop_cancel_load hps txt =
+prop_cancel_load :: HPS.ServerHandle -> ModuleName -> Bool
+prop_cancel_load hps mn =
     unsafePerformIO $ do
-                        let expr1 = "module Test where fact = (1,2,3)"
-                        let expr2 = "module Test2 where fact = foldl (*) 1 [1.." ++ show (length txt) ++ "]"
+                        let expr1 = "module " ++ show mn ++ " where fact = (1,2,3)"
+                        let expr2 = "module " ++ show mn ++ "2 where fact = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
                         HPS.runIn hps $ do
+                                            HP.reset
                                             HP.setText expr2
-                                            HP.savePage "../documents/Test2.hs"
+                                            HP.savePage $ "../documents/" ++ show mn ++ "2.hs"
                                             HP.setText expr1
-                                            HP.savePage "../documents/Test.hs"
+                                            HP.savePage $ "../documents/" ++ show mn ++ ".hs"
                                             HP.setText "fact"
-                                            HP.loadModule "../documents/Test.hs"
+                                            HP.loadModule $ "../documents/" ++ show mn ++ ".hs"
                                             oldRes <- HP.eval
-                                            HP.loadModule' "../documents/Test2.hs"
+                                            HP.loadModule' $ "../documents/" ++ show mn ++ "2.hs"
                                             HP.cancel
                                             newRes <- HP.eval
+                                            liftDebugIO $ [oldRes, newRes]
                                             return $ newRes == oldRes

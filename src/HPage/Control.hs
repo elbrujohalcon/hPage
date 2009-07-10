@@ -14,17 +14,19 @@ module HPage.Control (
     loadModule, reloadModules,
     eval', evalNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModule', reloadModules',
+    reset, reset',
     cancel
  ) where
 
 import System.IO
-import Data.Set (Set, empty, insert, toList, member)
+import Data.Set (Set, empty, insert, toList)
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.State.Class
 import Control.Concurrent.MVar
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
+import Utils.Log
 
 newtype Expression = Exp {asString :: String}
     deriving (Eq)
@@ -63,7 +65,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     hsb <- liftIO $ HS.start
-                    let nop = liftIO $ putStrLn "Acata!"
+                    let nop = liftTraceIO "Primera" >> return ()
                     let emptyPage = Page [] (-1) Nothing empty hs hsb nop nop
                     (state hpt) `evalStateT` emptyPage 
 
@@ -81,7 +83,7 @@ clearPage = modify (\page -> page{expressions = fromString "",
 
 openPage :: FilePath -> HPage ()
 openPage file = do
-                    liftIO $ putStrLn $ "opening: " ++ file
+                    liftTraceIO $ "opening: " ++ file
                     s <- liftIO $ readFile file
                     modify (\page -> page{expressions = fromString s,
                                               filePath = Just file})
@@ -89,7 +91,7 @@ openPage file = do
 savePage :: FilePath -> HPage ()
 savePage file = do
                     p <- get
-                    liftIO $ putStrLn $ "writing: " ++ file
+                    liftTraceIO $ "writing: " ++ file
                     liftIO $ writeFile file $ toString p  
                     modify (\page -> page{filePath = Just file})
 
@@ -120,33 +122,44 @@ evalNth = runInNth Hint.eval
 kindOfNth = runInNth Hint.kindOf
 typeOfNth = runInNth Hint.typeOf
 
-loadModule :: FilePath -> HPage ()
+loadModule :: FilePath -> HPage (Either Hint.InterpreterError ())
 loadModule f = do
-                    page <- get
-                    let mods = loadedModules page
-                    case member f mods of
-                        False ->
-                            do
-                                res <- runIn $ do
-                                                    liftIO $ putStrLn $ "loading: " ++ f
-                                                    Hint.loadModules [f]
-                                                    ms <- Hint.getLoadedModules
-                                                    Hint.setTopLevelModules ms
-                                put $ page{loadedModules = insert f mods}
-                                return res
-                        True ->
-                            return ()
-                            
+                    res <- syncRun $ do
+                                        liftTraceIO $ "loading: " ++ f
+                                        Hint.loadModules [f]
+                                        ms <- Hint.getLoadedModules
+                                        Hint.setTopLevelModules ms
+                    case res of
+                        Right _ ->
+                            modify (\p -> p{loadedModules = insert f (loadedModules p)})
+                        Left e ->
+                            liftErrorIO $ ("Error loading module", f, e)
+                    return res
 
-reloadModules :: HPage ()
+reloadModules :: HPage (Either Hint.InterpreterError ())
 reloadModules = do
                     page <- get
                     let ms = toList $ loadedModules page
-                    runIn $ do
-                                liftIO $ putStrLn $ "reloading: " ++ (show ms)
+                    syncRun $ do
+                                liftTraceIO $ "reloading: " ++ (show ms)
                                 Hint.loadModules ms
                                 newMs <- Hint.getLoadedModules
                                 Hint.setTopLevelModules newMs
+
+reset :: HPage (Either Hint.InterpreterError ())
+reset = do
+            res <- syncRun $ do
+                                liftTraceIO $ "resetting"
+                                Hint.reset
+                                Hint.setImports ["Prelude"]
+                                ms <- Hint.getLoadedModules
+                                liftTraceIO $ "remaining modules: " ++ show ms
+            case res of
+                Right _ ->
+                    modify (\p -> p{loadedModules = empty})
+                Left e ->
+                    liftErrorIO $ ("Error resetting", e)
+            return res
 
 eval', kindOf', typeOf' :: HPage (MVar (Either Hint.InterpreterError String))
 eval' = get >>= evalNth' . currentExpr
@@ -160,35 +173,39 @@ typeOfNth' = runInNth' Hint.typeOf
 
 loadModule' :: FilePath -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModule' f = do
-                    page <- get
-                    let mods = loadedModules page
-                    case member f mods of
-                        False ->
-                            do
-                                res <- runIn' $ do
-                                                    liftIO $ putStrLn $ "loading': " ++ f
-                                                    Hint.loadModules [f]
-                                                    ms <- Hint.getLoadedModules
-                                                    Hint.setTopLevelModules ms
-                                put $ page{loadedModules = insert f mods}
-                                return res
-                        True ->
-                            liftIO $ newMVar $ Right ()
+                    res <- asyncRun $ do
+                                        liftTraceIO $ "loading': " ++ f
+                                        Hint.loadModules [f]
+                                        ms <- Hint.getLoadedModules
+                                        Hint.setTopLevelModules ms
+                    modify (\p -> p{loadedModules = insert f (loadedModules p)})
+                    return res
                             
 
 reloadModules' :: HPage (MVar (Either Hint.InterpreterError ()))
 reloadModules' = do
                     page <- get
                     let ms = toList $ loadedModules page
-                    runIn' $ do
-                                liftIO $ putStrLn $ "reloading': " ++ (show ms)
-                                Hint.loadModules ms
-                                newMs <- Hint.getLoadedModules
-                                Hint.setTopLevelModules newMs
+                    asyncRun $ do
+                                    liftTraceIO $ "reloading': " ++ (show ms)
+                                    Hint.loadModules ms
+                                    newMs <- Hint.getLoadedModules
+                                    Hint.setTopLevelModules newMs
+
+reset' :: HPage (MVar (Either Hint.InterpreterError ()))
+reset' = do
+            res <- asyncRun $ do
+                                liftTraceIO $ "resetting'"
+                                Hint.reset
+                                Hint.setImports ["Prelude"]
+                                ms <- Hint.getLoadedModules
+                                liftTraceIO $ "remaining modules: " ++ show ms
+            modify (\p -> p{loadedModules = empty})
+            return res
 
 cancel :: HPage ()
 cancel = do
-            liftIO $ putStrLn $ "cancelling"
+            liftTraceIO $ "cancelling"
             page <- get
             let (bServ, hist) = (backupServer page, history page)
             hsb <- liftIO $ HS.start
@@ -201,12 +218,6 @@ cancel = do
             
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
-runIn :: Hint.InterpreterT IO a -> HPage ()
-runIn action = syncRun action >> return ()
-    
-runIn' :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a))
-runIn' = asyncRun
-
 runInNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInNth action i = do
                         page <- get
@@ -233,29 +244,34 @@ runInNth' action i = do
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do
+                    liftTraceIO "sync - running"
                     updres <- updateBackupServer
                     case updres of
                         Right _ ->
-                            do                                     
-                                modify (\p -> p{actionInFlight = (action >> (liftIO $ putStrLn "jjj")),
-                                                history = (history p >> actionInFlight p)})
+                            do
+                                updateHistory action                                     
                                 page <- get
                                 let serv = server page
                                 liftIO $ HS.runIn serv $ do
                                                             ms <- Hint.getLoadedModules
-                                                            liftIO $ putStrLn $ "S:" ++ show ms
+                                                            liftTraceIO $ "running in S:" ++ show ms
                                                             action
                         Left err ->
                             return $ Left err
 
 asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
 asyncRun action = do
-                    updateBackupServer
-                    modify (\p -> p{actionInFlight = (action >> (liftIO $ putStrLn "jjj")),
-                                    history = (history p >> actionInFlight p)})
-                    page <- get
-                    let serv = server page
-                    liftIO $ HS.asyncRunIn serv action
+                    liftTraceIO "async - running"
+                    updres <- updateBackupServer
+                    case updres of
+                        Right _ ->
+                            do
+                                updateHistory action
+                                page <- get
+                                let serv = server page
+                                liftIO $ HS.asyncRunIn serv action
+                        Left err ->
+                            liftIO $ newMVar $ Left err
 
 updateBackupServer :: HPage (Either Hint.InterpreterError ())
 updateBackupServer = do
@@ -264,9 +280,14 @@ updateBackupServer = do
                         let flyAcc  = actionInFlight page
                         liftIO $ HS.runIn bServ $ do
                                                     ms <- Hint.getLoadedModules
-                                                    liftIO $ putStrLn $ "BS:" ++ show ms
+                                                    liftTraceIO $ "updating BS:" ++ show ms
                                                     flyAcc
-                        
+
+updateHistory :: Hint.InterpreterT IO a -> HPage ()
+updateHistory action = modify (\p -> p{actionInFlight = liftTraceIO "NO Primera" >> action >> return (),
+                                       history = history p >> actionInFlight p})
+
+
 fromString :: String -> [Expression]
 fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
     where toExp = Exp . joinWith "\n"
