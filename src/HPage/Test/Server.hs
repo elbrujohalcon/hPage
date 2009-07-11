@@ -1,3 +1,5 @@
+module HPage.Test.Server where
+
 import Data.Char
 import GHC.IOBase
 import Control.Monad.Error
@@ -140,16 +142,29 @@ prop_cancel_load hps mn =
                         let expr1 = "module " ++ show mn ++ " where fact = (1,2,3)"
                         let expr2 = "module " ++ show mn ++ "2 where fact = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
                         HPS.runIn hps $ do
+                                            liftDebugIO "-0"
                                             HP.reset
+                                            liftDebugIO "-1"
                                             HP.setText expr2
+                                            liftDebugIO "-2"
                                             HP.savePage $ "../documents/" ++ show mn ++ "2.hs"
+                                            liftDebugIO "-3"
                                             HP.setText expr1
+                                            liftDebugIO "-4"
                                             HP.savePage $ "../documents/" ++ show mn ++ ".hs"
+                                            liftDebugIO "-5"
                                             HP.setText "fact"
+                                            liftDebugIO "-6"
                                             HP.loadModule $ "../documents/" ++ show mn ++ ".hs"
+                                            liftDebugIO "-7"
                                             oldRes <- HP.eval
-                                            HP.loadModule' $ "../documents/" ++ show mn ++ "2.hs"
-                                            HP.cancel
+                                            liftDebugIO "-8"
+                                            HP.loadModule $ "../documents/" ++ show mn ++ "2.hs"
+                                            liftDebugIO "-9"
+                                            HP.reset
+                                            liftDebugIO "-10"
+                                            --HP.cancel
                                             newRes <- HP.eval
+                                            liftDebugIO "-11"
                                             liftDebugIO $ [oldRes, newRes]
                                             return $ newRes == oldRes

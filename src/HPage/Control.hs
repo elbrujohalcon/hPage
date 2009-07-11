@@ -65,7 +65,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     hsb <- liftIO $ HS.start
-                    let nop = liftTraceIO "Primera" >> return ()
+                    let nop = return ()
                     let emptyPage = Page [] (-1) Nothing empty hs hsb nop nop
                     (state hpt) `evalStateT` emptyPage 
 
@@ -257,7 +257,9 @@ syncRun action = do
                                                             liftTraceIO $ "running in S:" ++ show ms
                                                             action
                         Left err ->
-                            return $ Left err
+                            do
+                                liftErrorIO $ ("Error updating backup server", err)
+                                return $ Left err
 
 asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
 asyncRun action = do
@@ -271,7 +273,9 @@ asyncRun action = do
                                 let serv = server page
                                 liftIO $ HS.asyncRunIn serv action
                         Left err ->
-                            liftIO $ newMVar $ Left err
+                            do
+                                liftErrorIO $ ("Error updating backup server", err)
+                                liftIO $ newMVar $ Left err
 
 updateBackupServer :: HPage (Either Hint.InterpreterError ())
 updateBackupServer = do
@@ -284,7 +288,7 @@ updateBackupServer = do
                                                     flyAcc
 
 updateHistory :: Hint.InterpreterT IO a -> HPage ()
-updateHistory action = modify (\p -> p{actionInFlight = liftTraceIO "NO Primera" >> action >> return (),
+updateHistory action = modify (\p -> p{actionInFlight = action >> return (),
                                        history = history p >> actionInFlight p})
 
 
