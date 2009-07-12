@@ -45,8 +45,6 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
-        verboseCheck $ prop_cancel_load hps
-{-
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -59,7 +57,6 @@ main =
                  [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
                  ]
--}
 
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -85,7 +82,7 @@ prop_kindOf :: HPS.ServerHandle -> HS.ServerHandle -> ClassName -> Bool
 prop_kindOf hps hs (CN expr) =
     unsafePerformIO $ do
                         hpsr <- HPS.runIn hps $ HP.setText expr >> HP.kindOf
-                        hsr <- HS.runIn hs $ Hint.eval expr
+                        hsr <- HS.runIn hs $ Hint.kindOf expr
                         return $ hpsr == hsr
 
 prop_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
@@ -94,7 +91,7 @@ prop_fail hps hs txt =
                         let expr = "lenggth \"" ++ txt ++ "\""
                         Left hpsr <- HPS.runIn hps $ HP.setText expr >> HP.eval
                         Left hsr <- HS.runIn hs $ Hint.eval expr
-                        return $ "user error (" ++ show hsr ++ ")" == show hpsr
+                        return $ hsr == hpsr
     
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_load_module hps hs txt =
@@ -106,7 +103,10 @@ prop_load_module hps hs txt =
                                                     HP.setText "test"
                                                     HP.loadModule "../documents/test.hs"
                                                     HP.eval
-                        hsr <- HS.runIn hs $ Hint.eval expr
+                        hsr <- HS.runIn hs $ do
+                                                Hint.loadModules ["../documents/test.hs"]
+                                                Hint.getLoadedModules >>= Hint.setTopLevelModules
+                                                Hint.eval "test"
                         return $ hpsr == hsr
 
 prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
@@ -120,7 +120,10 @@ prop_reload_modules hps hs txt =
                                                     HP.loadModule "../documents/test.hs"
                                                     HP.reloadModules
                                                     HP.eval
-                        hsr <- HS.runIn hs $ Hint.eval expr
+                        hsr <- HS.runIn hs $ do
+                                                Hint.loadModules ["../documents/test.hs"]
+                                                Hint.getLoadedModules >>= Hint.setTopLevelModules
+                                                Hint.eval "test"
                         return $ hpsr == hsr
     
 prop_sequential :: HPS.ServerHandle -> String -> Bool
@@ -159,11 +162,10 @@ prop_cancel_load hps mn =
                                             liftDebugIO "-7"
                                             oldRes <- HP.eval
                                             liftDebugIO "-8"
-                                            HP.loadModule $ "../documents/" ++ show mn ++ "2.hs"
+                                            HP.loadModule' $ "../documents/" ++ show mn ++ "2.hs"
                                             liftDebugIO "-9"
-                                            HP.reset
+                                            HP.cancel
                                             liftDebugIO "-10"
-                                            --HP.cancel
                                             newRes <- HP.eval
                                             liftDebugIO "-11"
                                             liftDebugIO $ [oldRes, newRes]

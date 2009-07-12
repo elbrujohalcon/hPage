@@ -17,13 +17,21 @@ liftTraceIO, liftDebugIO, liftInfoIO, liftWarnIO, liftErrorIO, liftFatalIO :: (M
 
 traceIO = logIO Trace
 debugIO = logIO Debug
+{- without log...
+traceIO _ = return ()
+debugIO _ = return ()
+-}
 infoIO = logIO Info
 warnIO = logIO Warning
 errorIO = logIO Error
 fatalIO = logIO Fatal
 
+{- with log...
 liftTraceIO = liftLogIO Trace
 liftDebugIO = liftLogIO Debug
+-}
+liftTraceIO _ = return ()
+liftDebugIO _ = return ()
 liftInfoIO = liftLogIO Info
 liftWarnIO = liftLogIO Warning
 liftErrorIO = liftLogIO Error
