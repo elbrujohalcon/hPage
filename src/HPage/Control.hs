@@ -5,11 +5,16 @@
              UndecidableInstances #-} 
 
 module HPage.Control (
+    -- MONAD CONTROLS --
     HPage, evalHPage,
-    setText, getText,
+    -- PAGE CONTROLS -- 
     clearPage, openPage, savePage, currentPage,
-    undo, redo, cut, copy, paste,
-    find, findNext, replace,
+    -- EDITING CONTROLS --
+    setText, getText,
+    getExprIndex, setExprIndex, getExpr, setExpr,
+    addExpr, removeExpr, removeNth, getNth, setNth,
+    undo, redo, find, findNext,
+    -- HINT CONTROLS --
     eval, evalNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModule, reloadModules,
     eval', evalNth', kindOf', kindOfNth', typeOf', typeOfNth',
@@ -72,24 +77,17 @@ evalHPage hpt = do
                     let emptyPage = Page [] (-1) Nothing empty hs Nothing nop
                     (state hpt) `evalStateT` emptyPage
 
-setText :: String -> HPage ()
-setText s = let exprs = fromString s in
-                modify (\page -> page{expressions = exprs,
-                                      currentExpr = (length exprs - 1)})
-
-getText :: HPage String
-getText = get >>= return . toString
-
 clearPage :: HPage ()
 clearPage = modify (\page -> page{expressions = fromString "",
+                                  currentExpr = -1,
                                   filePath = Nothing})
 
 openPage :: FilePath -> HPage ()
 openPage file = do
                     liftTraceIO $ "opening: " ++ file
                     s <- liftIO $ readFile file
-                    modify (\page -> page{expressions = fromString s,
-                                              filePath = Just file})
+                    modify (\page -> page{filePath = Just file})
+                    setText s
 
 savePage :: FilePath -> HPage ()
 savePage file = do
@@ -101,19 +99,69 @@ savePage file = do
 currentPage :: HPage (Maybe FilePath)
 currentPage = get >>= return . filePath 
 
+
+
+setText :: String -> HPage ()
+setText s = let exprs = fromString s in
+                modify (\page -> page{expressions = exprs,
+                                      currentExpr = (length exprs - 1)})
+
+getText :: HPage String
+getText = get >>= return . toString
+
+getExprIndex :: HPage Int
+getExprIndex = get >>= return . currentExpr
+
+setExprIndex :: Int -> HPage ()
+setExprIndex nth = do
+                        page <- get
+                        if (length (expressions page) >= nth && nth >= 0) then 
+                            modify (\p -> p{currentExpr = nth}) else
+                            fail "Invalid index" 
+
+getExpr :: HPage String
+getExpr = get >>= getNth . currentExpr
+
+setExpr :: String -> HPage ()
+setExpr expr = do
+                    page <- get
+                    setNth (currentExpr page) expr
+
+getNth :: Int -> HPage String
+getNth nth = do
+                page <- get
+                if (length (expressions page) >= nth && nth >= 0) then
+                    return . show . (!! nth) . expressions $ page else
+                    fail "Invalid index" 
+
+setNth :: Int -> String -> HPage ()
+setNth nth expr = do
+                    page <- get
+                    if (length (expressions page) >= nth && nth >= 0) then
+                        modify (\p -> p{expressions = replaceExpression nth expr $ expressions p}) else
+                        fail "Invalid index"
+                        
+addExpr :: String -> HPage ()
+addExpr expr = modify (\page ->
+                            let exprs = expressions page
+                            in  page{expressions = replaceExpression (length exprs) expr exprs})
+
+removeExpr :: HPage ()
+removeExpr = get >>= removeNth . currentExpr
+
+removeNth :: Int -> HPage ()
+removeNth = flip setNth $ "" 
+
 undo, redo :: HPage ()
 undo = undefined
 redo = undefined
 
-cut, copy, paste :: HPage ()
-cut = undefined
-copy = undefined
-paste = undefined
-
-find, findNext, replace :: HPage ()
+find, findNext :: HPage ()
 find = undefined
 findNext = undefined
-replace = undefined
+
+
+
 
 eval, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
 eval = get >>= evalNth . currentExpr
@@ -283,6 +331,13 @@ joinWith :: [a] -> [[a]] -> [a]
 joinWith _ [] = []
 joinWith sep (x:xs) = x ++ (concat . map (sep ++) $ xs)
 
+replaceExpression :: Int -> String -> [Expression] -> [Expression]
+replaceExpression i expr exprs =
+    let (before, (_:after)) = splitAt i exprs
+        newExprs = fromString expr
+    in before ++ newExprs ++ after
+        
+        
 showExpressions :: Page -> String
 showExpressions p = drop 2 . concat $ map (showNth allExps current) [0..expNum - 1]
     where allExps = expressions p

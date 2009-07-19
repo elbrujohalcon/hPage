@@ -45,6 +45,7 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
+{-
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -56,6 +57,22 @@ main =
         runTests "Cancelation" options
                  [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
+                 ]
+-}
+        runTests "Editing" options
+                 [  run $ prop_setget_text hps
+                 ,  run $ prop_setget_expr hps
+                 ,  run $ prop_setget_expr_fail hps
+{-
+                 ,  run $ prop_addrem_expr hps
+                 ,  run $ prop_addrem_expr_fail hps
+                 ,  run $ prop_setget_nth hps
+                 ,  run $ prop_setget_nth_fail hps
+                 ,  run $ prop_remove_nth hps
+                 ,  run $ prop_remove_nth_fail hps
+                 ,  run $ prop_undoredo hps
+                 ,  run $ prop_find hps
+-}
                  ]
 
 instance Eq (Hint.InterpreterError) where
@@ -145,28 +162,58 @@ prop_cancel_load hps mn =
                         let expr1 = "module " ++ show mn ++ " where fact = (1,2,3)"
                         let expr2 = "module " ++ show mn ++ "2 where fact = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
                         HPS.runIn hps $ do
-                                            liftDebugIO "-0"
                                             HP.reset
-                                            liftDebugIO "-1"
                                             HP.setText expr2
-                                            liftDebugIO "-2"
                                             HP.savePage $ "../documents/" ++ show mn ++ "2.hs"
-                                            liftDebugIO "-3"
                                             HP.setText expr1
-                                            liftDebugIO "-4"
                                             HP.savePage $ "../documents/" ++ show mn ++ ".hs"
-                                            liftDebugIO "-5"
                                             HP.setText "fact"
-                                            liftDebugIO "-6"
                                             HP.loadModule $ "../documents/" ++ show mn ++ ".hs"
-                                            liftDebugIO "-7"
                                             oldRes <- HP.eval
-                                            liftDebugIO "-8"
                                             HP.loadModule' $ "../documents/" ++ show mn ++ "2.hs"
-                                            liftDebugIO "-9"
                                             HP.cancel
-                                            liftDebugIO "-10"
                                             newRes <- HP.eval
-                                            liftDebugIO "-11"
-                                            liftDebugIO $ [oldRes, newRes]
                                             return $ newRes == oldRes
+
+{-
+                 [  run $ prop_addrem_expr hps
+                 ,  run $ prop_addrem_expr_fail hps
+                 ,  run $ prop_setget_nth hps
+                 ,  run $ prop_setget_nth_fail hps
+                 ,  run $ prop_remove_nth hps
+                 ,  run $ prop_remove_nth_fail hps
+                 ,  run $ prop_undoredo hps
+                 ,  run $ prop_find hps
+-}
+prop_setget_text :: HPS.ServerHandle -> String -> Bool
+prop_setget_text hps txt =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.setText txt
+                                        HP.getText >>= return . (txt ==)
+
+prop_setget_expr :: HPS.ServerHandle -> String -> Property
+prop_setget_expr hps txt =
+    txt /= "" ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.setText $ txt ++ "\n\nxx"
+                                        exi1 <- HP.getExprIndex
+                                        exp1 <- HP.getExpr
+                                        HP.setExprIndex 0
+                                        exi0 <- HP.getExprIndex
+                                        exp0 <- HP.getExpr
+                                        HP.setExpr "yy"
+                                        exi2 <- HP.getExprIndex
+                                        exp2 <- HP.getExpr
+                                        HP.setExprIndex 1
+                                        exi3 <- HP.getExprIndex
+                                        exp3 <- HP.getExpr
+                                        -- liftDebugIO [(exi1, exp1), (exi0, exp0), (exi2, exp2), (exi3, exp3)]
+                                        return $ (exi1 == 1) && (exp1 == "xx") &&
+                                                 (exi0 == 0) && (exp0 == txt) &&
+                                                 (exi2 == 0) && (exp2 == "yy") &&
+                                                 (exi3 == 1) && (exp3 == "xx")
+
+prop_setget_expr_fail :: HPS.ServerHandle -> String -> Bool
+prop_setget_expr_fail hps _ =
+    unsafePerformIO $ catch (HPS.runIn hps $ HP.clearPage >> HP.getExpr >> return False)
+                            (\_ -> return True)
