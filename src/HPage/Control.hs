@@ -138,19 +138,32 @@ setNth :: Int -> String -> HPage ()
 setNth nth expr = do
                     page <- get
                     if (length (expressions page) >= nth && nth >= 0) then
-                        modify (\p -> p{expressions = replaceExpression nth expr $ expressions p}) else
+                        do
+                            liftTraceIO ("setNth",nth,expr,expressions page, currentExpr page)
+                            modify (\p ->
+                                    let newExprs = replaceExpression nth expr $ expressions p
+                                        curExpr  = currentExpr p
+                                     in p{expressions = newExprs,
+                                          currentExpr = if curExpr < length newExprs then
+                                                            curExpr else
+                                                            length newExprs -1}) else
                         fail "Invalid index"
                         
 addExpr :: String -> HPage ()
-addExpr expr = modify (\page ->
+addExpr expr = do
+                    p <- get
+                    liftTraceIO ("addExpr",expr,expressions p, currentExpr p)
+                    modify (\page ->
                             let exprs = expressions page
-                            in  page{expressions = replaceExpression (length exprs) expr exprs})
+                                newExprs = replaceExpression (length exprs) expr exprs
+                            in  page{expressions = newExprs,
+                                     currentExpr = length newExprs - 1})
 
 removeExpr :: HPage ()
 removeExpr = get >>= removeNth . currentExpr
 
 removeNth :: Int -> HPage ()
-removeNth = flip setNth $ "" 
+removeNth i = setNth i ""
 
 undo, redo :: HPage ()
 undo = undefined
@@ -332,10 +345,13 @@ joinWith _ [] = []
 joinWith sep (x:xs) = x ++ (concat . map (sep ++) $ xs)
 
 replaceExpression :: Int -> String -> [Expression] -> [Expression]
-replaceExpression i expr exprs =
-    let (before, (_:after)) = splitAt i exprs
-        newExprs = fromString expr
-    in before ++ newExprs ++ after
+replaceExpression 0 expr [] = fromString expr
+replaceExpression i expr exprs
+    | i == length exprs = let newExprs = fromString expr
+                           in exprs ++ newExprs
+    | otherwise = let (before, (_:after)) = splitAt i exprs
+                      newExprs = fromString expr
+                   in before ++ newExprs ++ after
         
         
 showExpressions :: Page -> String

@@ -63,11 +63,11 @@ main =
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
                  ,  run $ prop_setget_expr_fail hps
-{-
                  ,  run $ prop_addrem_expr hps
                  ,  run $ prop_addrem_expr_fail hps
                  ,  run $ prop_setget_nth hps
                  ,  run $ prop_setget_nth_fail hps
+{-
                  ,  run $ prop_remove_nth hps
                  ,  run $ prop_remove_nth_fail hps
                  ,  run $ prop_undoredo hps
@@ -215,5 +215,64 @@ prop_setget_expr hps txt =
 
 prop_setget_expr_fail :: HPS.ServerHandle -> String -> Bool
 prop_setget_expr_fail hps _ =
-    unsafePerformIO $ catch (HPS.runIn hps $ HP.clearPage >> HP.getExpr >> return False)
-                            (\_ -> return True)
+    unsafePerformIO $ HPS.runIn hps $ try $ HP.clearPage >> HP.getExpr
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+
+prop_addrem_expr :: HPS.ServerHandle -> String -> Property
+prop_addrem_expr hps txt =
+    txt /= "" ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        HP.addExpr txt
+                                        exi1 <- HP.getExprIndex
+                                        exp1 <- HP.getExpr
+                                        HP.removeExpr
+                                        exi0 <- HP.getExprIndex
+                                        exp0 <- HP.getText
+                                        HP.addExpr txt
+                                        HP.addExpr txt
+                                        exi2 <- HP.getExprIndex
+                                        exp2 <- HP.getExpr
+                                        HP.removeExpr
+                                        exi3 <- HP.getExprIndex
+                                        exp3 <- HP.getText
+                                        -- liftDebugIO [(exi1, exp1), (exi0, exp0), (exi2, exp2), (exi3, exp3)]
+                                        return $ (exi1 == 0) && (exp1 == txt) &&
+                                                 (exi0 == -1) && (exp0 == "") &&
+                                                 (exi2 == 1) && (exp2 == txt) &&
+                                                 (exi3 == 0) && (exp3 == txt)
+
+prop_addrem_expr_fail :: HPS.ServerHandle -> String -> Bool
+prop_addrem_expr_fail hps _ =
+    unsafePerformIO $ HPS.runIn hps $ try $ HP.clearPage >> HP.removeExpr
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+
+prop_setget_nth :: HPS.ServerHandle -> Int -> Property
+prop_setget_nth hps i =
+    i >= 0 ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        replicateM (i+1) $ HP.addExpr "ww"
+                                        exp0 <- HP.getNth 0
+                                        exp1 <- HP.getNth i
+                                        HP.setNth i "xxx"
+                                        exp2 <- HP.getNth i
+                                        HP.setNth i "x\n\ny"
+                                        exp3 <- HP.getNth $ i+1
+                                        -- liftDebugIO [exp0, exp1, exp2, exp3]
+                                        return $ (exp1 == "ww") &&
+                                                 (exp0 == "ww") &&
+                                                 (exp2 == "xxx") &&
+                                                 (exp3 == "y")
+
+prop_setget_nth_fail :: HPS.ServerHandle -> Int -> String -> Property
+prop_setget_nth_fail hps i txt =
+    i > 0 ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        set <- try $ HP.setNth i txt
+                                        get <- try $ HP.getNth i
+                                        -- liftDebugIO (get, set)
+                                        return (set && get)
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+    
