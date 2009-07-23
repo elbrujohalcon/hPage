@@ -67,10 +67,10 @@ main =
                  ,  run $ prop_addrem_expr_fail hps
                  ,  run $ prop_setget_nth hps
                  ,  run $ prop_setget_nth_fail hps
-{-
                  ,  run $ prop_remove_nth hps
                  ,  run $ prop_remove_nth_fail hps
                  ,  run $ prop_undoredo hps
+{-
                  ,  run $ prop_find hps
 -}
                  ]
@@ -175,16 +175,6 @@ prop_cancel_load hps mn =
                                             newRes <- HP.eval
                                             return $ newRes == oldRes
 
-{-
-                 [  run $ prop_addrem_expr hps
-                 ,  run $ prop_addrem_expr_fail hps
-                 ,  run $ prop_setget_nth hps
-                 ,  run $ prop_setget_nth_fail hps
-                 ,  run $ prop_remove_nth hps
-                 ,  run $ prop_remove_nth_fail hps
-                 ,  run $ prop_undoredo hps
-                 ,  run $ prop_find hps
--}
 prop_setget_text :: HPS.ServerHandle -> String -> Bool
 prop_setget_text hps txt =
     unsafePerformIO $ HPS.runIn hps $ do
@@ -275,4 +265,57 @@ prop_setget_nth_fail hps i txt =
                                         -- liftDebugIO (get, set)
                                         return (set && get)
     where try a = (a >> return False) `catchError` (\_ -> return True)
-    
+
+prop_remove_nth :: HPS.ServerHandle -> Int -> Property
+prop_remove_nth hps i =
+    i > 0 ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        forM [0..i] $ HP.addExpr . show
+                                        HP.removeNth 0
+                                        exp0 <- HP.getNth 0
+                                        forM [i-2,i-3..0] $ HP.removeNth
+                                        exp1 <- HP.getText
+                                        -- liftDebugIO [exp0, exp1]
+                                        return $ (exp0 == "1") &&
+                                                 (exp1 == show i)
+
+prop_remove_nth_fail :: HPS.ServerHandle -> Int -> Property
+prop_remove_nth_fail hps i =
+    i >= 0 ==>
+    unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> try (HP.removeNth $ i+1)
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+
+
+prop_undoredo :: HPS.ServerHandle -> String -> Property
+prop_undoredo hps txt =
+    txt /= "" ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        b0 <- HP.getText
+                                        HP.setText txt
+                                        b1 <- HP.getText
+                                        HP.addExpr "xx"
+                                        b2 <- HP.getText
+                                        HP.addExpr "yy"
+                                        b3 <- HP.getText
+                                        HP.setExprIndex 1
+                                        b4 <- HP.getText
+                                        HP.setExpr $ txt ++ "|" ++ txt
+                                        b5 <- HP.getText
+                                        HP.removeExpr
+                                        b6 <- HP.getText
+                                        HP.removeNth 0
+                                        b7 <- HP.getText
+                                        HP.setNth 0 txt
+                                        b8 <- HP.getText
+                                        HP.addExpr "zz"
+                                        let to10 = [0..10] :: [Int]
+                                        after <- mapM (\_ -> HP.undo >> HP.getText) to10
+                                        redo <- mapM (\_ -> HP.redo >> HP.getText) to10
+                                        -- liftDebugIO [b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""]
+                                        -- liftDebugIO after
+                                        -- liftDebugIO [b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8]
+                                        -- liftDebugIO redo
+                                        return $ ([b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""] == after) &&
+                                                 ([b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8] == redo)

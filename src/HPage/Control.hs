@@ -45,6 +45,8 @@ data InFlightData = LoadModule { loadingModule :: FilePath,
 
 data Page = Page { expressions :: [Expression],
                    currentExpr :: Int,
+                   undoActions :: [HPage ()],
+                   redoActions :: [HPage ()],
                    filePath :: Maybe FilePath,
                    loadedModules :: Set FilePath,
                    server :: HS.ServerHandle,
@@ -74,13 +76,15 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyPage = Page [] (-1) Nothing empty hs Nothing nop
+                    let emptyPage = Page [] (-1) [] [] Nothing empty hs Nothing nop
                     (state hpt) `evalStateT` emptyPage
 
 clearPage :: HPage ()
 clearPage = modify (\page -> page{expressions = fromString "",
                                   currentExpr = -1,
-                                  filePath = Nothing})
+                                  filePath = Nothing,
+                                  undoActions = [],
+                                  redoActions = []})
 
 openPage :: FilePath -> HPage ()
 openPage file = do
@@ -103,8 +107,8 @@ currentPage = get >>= return . filePath
 
 setText :: String -> HPage ()
 setText s = let exprs = fromString s in
-                modify (\page -> page{expressions = exprs,
-                                      currentExpr = (length exprs - 1)})
+                modifyWithUndo (\page -> page{expressions = exprs,
+                                              currentExpr = (length exprs - 1)})
 
 getText :: HPage String
 getText = get >>= return . toString
@@ -113,10 +117,11 @@ getExprIndex :: HPage Int
 getExprIndex = get >>= return . currentExpr
 
 setExprIndex :: Int -> HPage ()
+setExprIndex (-1) = modifyWithUndo (\p -> p{currentExpr = -1})
 setExprIndex nth = do
                         page <- get
                         if (length (expressions page) >= nth && nth >= 0) then 
-                            modify (\p -> p{currentExpr = nth}) else
+                            modifyWithUndo (\p -> p{currentExpr = nth}) else
                             fail "Invalid index" 
 
 getExpr :: HPage String
@@ -140,24 +145,24 @@ setNth nth expr = do
                     if (length (expressions page) >= nth && nth >= 0) then
                         do
                             liftTraceIO ("setNth",nth,expr,expressions page, currentExpr page)
-                            modify (\p ->
-                                    let newExprs = replaceExpression nth expr $ expressions p
-                                        curExpr  = currentExpr p
-                                     in p{expressions = newExprs,
-                                          currentExpr = if curExpr < length newExprs then
-                                                            curExpr else
-                                                            length newExprs -1}) else
+                            modifyWithUndo (\p ->
+                                                let newExprs = replaceExpression nth expr $ expressions p
+                                                    curExpr  = currentExpr p
+                                                 in p{expressions = newExprs,
+                                                      currentExpr = if curExpr < length newExprs then
+                                                                        curExpr else
+                                                                        length newExprs -1}) else
                         fail "Invalid index"
                         
 addExpr :: String -> HPage ()
 addExpr expr = do
                     p <- get
                     liftTraceIO ("addExpr",expr,expressions p, currentExpr p)
-                    modify (\page ->
-                            let exprs = expressions page
-                                newExprs = replaceExpression (length exprs) expr exprs
-                            in  page{expressions = newExprs,
-                                     currentExpr = length newExprs - 1})
+                    modifyWithUndo (\page ->
+                                        let exprs = expressions page
+                                            newExprs = replaceExpression (length exprs) expr exprs
+                                        in  page{expressions = newExprs,
+                                                 currentExpr = length newExprs - 1})
 
 removeExpr :: HPage ()
 removeExpr = get >>= removeNth . currentExpr
@@ -166,8 +171,29 @@ removeNth :: Int -> HPage ()
 removeNth i = setNth i ""
 
 undo, redo :: HPage ()
-undo = undefined
-redo = undefined
+undo = do
+            p <- get
+            case undoActions p of
+                [] ->
+                    return ()
+                (acc:accs) ->
+                    do
+                        acc
+                        modify (\page ->
+                                    let redoAct = do
+                                                    setText $ toString page
+                                                    setExprIndex $ currentExpr page
+                                     in page{redoActions = redoAct : redoActions page,
+                                             undoActions = accs})
+redo = do
+            p <- get
+            case redoActions p of
+                [] ->
+                    return ()
+                (acc:accs) ->
+                    do
+                        acc
+                        modifyWithUndo (\page -> page{redoActions = accs})
 
 find, findNext :: HPage ()
 find = undefined
@@ -363,3 +389,12 @@ showExpressions p = drop 2 . concat $ map (showNth allExps current) [0..expNum -
                                                 "[" ++ show (list !! cur) ++ "]"
                                            else
                                                 show $ list !! cur
+
+modifyWithUndo :: (Page -> Page) -> HPageT IO ()
+modifyWithUndo f = modify (\page ->
+                                let newPage = f page
+                                    undoAct = do
+                                                setText $ toString page
+                                                setExprIndex $ currentExpr page
+                                 in newPage{undoActions = undoAct : undoActions page}) 
+                                  
