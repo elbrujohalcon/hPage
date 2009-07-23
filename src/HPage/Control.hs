@@ -32,6 +32,8 @@ import Control.Concurrent.MVar
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
+import List ((\\))
+import qualified List as List
 
 newtype Expression = Exp {asString :: String}
     deriving (Eq)
@@ -43,11 +45,15 @@ data InFlightData = LoadModule { loadingModule :: FilePath,
                                  runningAction :: Hint.InterpreterT IO ()
                                } | Reset
 
-data Page = Page { expressions :: [Expression],
+data Page = Page { -- Display --
+                   expressions :: [Expression],
                    currentExpr :: Int,
                    undoActions :: [HPage ()],
                    redoActions :: [HPage ()],
+                   lastSearch :: Maybe String,
+                   -- File System --
                    filePath :: Maybe FilePath,
+                   -- Hint --
                    loadedModules :: Set FilePath,
                    server :: HS.ServerHandle,
                    running :: Maybe InFlightData,
@@ -76,7 +82,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyPage = Page [] (-1) [] [] Nothing empty hs Nothing nop
+                    let emptyPage = Page [] (-1) [] [] Nothing Nothing empty hs Nothing nop
                     (state hpt) `evalStateT` emptyPage
 
 clearPage :: HPage ()
@@ -195,12 +201,24 @@ redo = do
                         acc
                         modifyWithUndo (\page -> page{redoActions = accs})
 
-find, findNext :: HPage ()
-find = undefined
-findNext = undefined
+find :: String -> HPage ()
+find text = do
+                page <- get
+                modify (\p -> p{lastSearch = Just text})
+                case nextMatching text page of
+                    Nothing ->
+                        return ()
+                    Just i ->
+                        setExprIndex i
 
-
-
+findNext :: HPage ()
+findNext = do
+                page <- get
+                case lastSearch page of
+                    Nothing ->
+                        return ()
+                    Just text ->
+                        find text
 
 eval, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
 eval = get >>= evalNth . currentExpr
@@ -397,4 +415,15 @@ modifyWithUndo f = modify (\page ->
                                                 setText $ toString page
                                                 setExprIndex $ currentExpr page
                                  in newPage{undoActions = undoAct : undoActions page}) 
-                                  
+
+nextMatching :: String -> Page -> Maybe Int
+nextMatching t p = let c = currentExpr p
+                       es = expressions p
+                       oes = rotate (c+1) $ zip [0..length es] es
+                    in case List.find (include t) oes of
+                            Nothing ->
+                                Nothing;
+                            Just (i, _) ->
+                                Just i
+    where rotate n xs = drop n xs ++ take n xs
+          include x (_, Exp xs) = (xs \\ x) /= xs

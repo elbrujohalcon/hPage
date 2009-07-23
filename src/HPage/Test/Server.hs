@@ -59,6 +59,8 @@ main =
                  ,  run $ prop_cancel_load hps
                  ]
 -}
+        verboseCheck $ prop_find hps
+{-
         runTests "Editing" options
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
@@ -70,10 +72,9 @@ main =
                  ,  run $ prop_remove_nth hps
                  ,  run $ prop_remove_nth_fail hps
                  ,  run $ prop_undoredo hps
-{-
                  ,  run $ prop_find hps
--}
                  ]
+-}
 
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -319,3 +320,37 @@ prop_undoredo hps txt =
                                         -- liftDebugIO redo
                                         return $ ([b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""] == after) &&
                                                  ([b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8] == redo)
+
+prop_find :: HPS.ServerHandle -> Int -> Property
+prop_find hps j =
+    j > 0 ==>
+    let i = (j+1) * 4 in
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.clearPage
+                                        forM [1..i] $ HP.addExpr . (flip replicate) 'x'
+                                        HP.setExprIndex (-1)
+                                        HP.find "x"
+                                        x0 <- HP.getExprIndex
+                                        xexps <- mapM (\_ -> HP.findNext >> HP.getExprIndex) [1..i-1]
+                                        HP.findNext
+                                        x1 <- HP.getExprIndex
+                                        
+                                        forM [0,2..i-1] $ (\n -> HP.setNth n $ replicate (n+1) 'y')
+                                        HP.getText >>= liftDebugIO
+                                        HP.setExprIndex (-1)
+                                        HP.find "y"
+                                        y0 <- HP.getExprIndex
+                                        yexps <- mapM (\_ -> HP.findNext >> HP.getExprIndex) [1..i-1]
+                                        HP.findNext
+                                        y1 <- HP.getExprIndex
+
+                                        HP.setExprIndex (-1)
+                                        HP.find "z"
+                                        z0 <- HP.getExprIndex
+                                        
+                                        liftDebugIO $ (x0, xexps, x1)
+                                        liftDebugIO $ (y0, yexps, y1)
+                                        liftDebugIO $ z0
+                                        return $ x0 == 0 && xexps == [1..i-1] && x1 == 0 &&
+                                                 y0 == 0 && yexps == ([2,4..i-1] ++ [0,2..i-1]) && y1 == 0 &&
+                                                 z0 == (-1)
