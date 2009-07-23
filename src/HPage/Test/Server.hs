@@ -9,7 +9,7 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
-import Utils.Log
+-- import Utils.Log
 
 instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
@@ -45,7 +45,6 @@ main =
     do
         hps <- HPS.start
         hs <- HS.start
-{-
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -58,9 +57,6 @@ main =
                  [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
                  ]
--}
-        verboseCheck $ prop_find hps
-{-
         runTests "Editing" options
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
@@ -74,7 +70,6 @@ main =
                  ,  run $ prop_undoredo hps
                  ,  run $ prop_find hps
                  ]
--}
 
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -334,23 +329,20 @@ prop_find hps j =
                                         xexps <- mapM (\_ -> HP.findNext >> HP.getExprIndex) [1..i-1]
                                         HP.findNext
                                         x1 <- HP.getExprIndex
-                                        
                                         forM [0,2..i-1] $ (\n -> HP.setNth n $ replicate (n+1) 'y')
-                                        HP.getText >>= liftDebugIO
                                         HP.setExprIndex (-1)
                                         HP.find "y"
                                         y0 <- HP.getExprIndex
                                         yexps <- mapM (\_ -> HP.findNext >> HP.getExprIndex) [1..i-1]
                                         HP.findNext
                                         y1 <- HP.getExprIndex
-
                                         HP.setExprIndex (-1)
                                         HP.find "z"
                                         z0 <- HP.getExprIndex
                                         
-                                        liftDebugIO $ (x0, xexps, x1)
-                                        liftDebugIO $ (y0, yexps, y1)
-                                        liftDebugIO $ z0
+                                        -- liftDebugIO $ (x0, xexps, x1)
+                                        -- liftDebugIO $ (y0, yexps, y1)
+                                        -- liftDebugIO $ z0
                                         return $ x0 == 0 && xexps == [1..i-1] && x1 == 0 &&
                                                  y0 == 0 && yexps == ([2,4..i-1] ++ [0,2..i-1]) && y1 == 0 &&
                                                  z0 == (-1)

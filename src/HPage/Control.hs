@@ -20,7 +20,8 @@ module HPage.Control (
     eval', evalNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModule', reloadModules',
     reset, reset',
-    cancel
+    cancel,
+    Hint.InterpreterError
  ) where
 
 import System.IO

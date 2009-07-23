@@ -60,7 +60,7 @@ drawWindow server =
                                       on command := run paste]
     	menuLine mnuEdit
     	menuItem mnuEdit [text := "&Find...\tCtrl-f",
-                          on command := run find]
+                          on command := run $ find frMain]
     	menuItem mnuEdit [text := "&Find Next\tCtrl-g",
                           on command := run findNext]
     	menuItem mnuEdit [text := "&Replace...\tCtrl-h",
@@ -132,11 +132,11 @@ runPage srv win textBox status action =
 
 
 clearPage :: HPage ()
-openPage, savePage, savePageAs :: Frame a -> HPage ()
-undo, redo, cut, copy, paste, find, findNext, replace :: HPage ()
-loadModule :: Frame a -> HPage ()
-reloadModules :: HPage ()
-eval, typeOf, kindOf :: HPage String
+openPage, savePage, savePageAs, find :: Frame a -> HPage ()
+undo, redo, cut, copy, paste, findNext, replace :: HPage ()
+loadModule :: Frame a -> HPage (Either HP.InterpreterError ())
+reloadModules :: HPage (Either HP.InterpreterError ())
+eval, typeOf, kindOf :: HPage (Either HP.InterpreterError String)
 
 clearPage = HP.clearPage
 
@@ -171,12 +171,22 @@ savePageAs win =
 
 undo = HP.undo
 redo = HP.redo
-cut = HP.cut
-copy = HP.copy
-paste = HP.paste
-find = HP.find
+cut = undefined
+copy = undefined
+paste = undefined
+find win = 
+    do
+        --TODO: Set defaultText equal to the last search
+        let defaultText = ""
+        toFind <- liftIO $ textDialog win "What do you want to find?" "Find..." defaultText
+        case toFind of
+            "" ->
+                return ()
+            aText ->
+                HP.find aText
+
 findNext = HP.findNext
-replace = HP.replace
+replace = undefined
 eval = HP.eval
 kindOf = HP.kindOf
 typeOf = HP.typeOf
@@ -186,7 +196,7 @@ loadModule win =
         fileName <- liftIO $ fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"])] "" ""
         case fileName of
             Nothing ->
-                return ()
+                return $ Right ()
             Just f ->
                 HP.loadModule f
 
