@@ -18,7 +18,9 @@ mainWindow = do
 drawWindow :: HPS.ServerHandle -> IO ()
 drawWindow server =
     do
-    	frMain <- frame [text := "h page"]
+    	frMain <- frame [text := "h page",
+                         --HACK: closing with an exception avoids wxWidgets ugly warnings on OSX
+                         on closing := undefined]
     	
     	-- Text page...
     --	txtCode <- styledTextCtrl frMain []
