@@ -2,7 +2,7 @@
 module Main where
 
 import Graphics.UI.WX
-import HPage.GUI.DummyFreeTextWindow
+import HPage.GUI.FreeTextWindow
 
 main :: IO ()
-main = start mainWindow
+main = start gui

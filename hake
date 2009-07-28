@@ -1,7 +1,7 @@
 #!/bin/sh
 cd src
-ghc Main.hs --make -package wx -o ../bin/theResult -odir ../out -hidir ../out
+ghc Main.hs --make -package wx -o ../bin/hPage -odir ../out -hidir ../out $1 $2 $3
 cd ../bin
-/usr/local/wxhaskell/bin/macosx-app theResult
-open theResult.app/
+/usr/local/wxhaskell/bin/macosx-app hPage
+open hPage.app/
 cd ..
