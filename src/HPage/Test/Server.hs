@@ -70,6 +70,26 @@ main =
                  ,  run $ prop_undoredo hps
                  ,  run $ prop_find hps
                  ]
+        runTests "Many Pages" options
+                 [  run $ prop_new_page hps
+                 ,  run $ prop_open_page hps
+                 ,  run $ prop_open_page_fail hps
+                 ,  run $ prop_setget_page hps
+                 ,  run $ prop_setget_page_fail hps
+                 ,  run $ prop_save_page hps
+                 ,  run $ prop_save_page_as hps
+                 ,  run $ prop_close_page hps
+                 ,  run $ prop_is_modified_page hps
+                 ,  run $ prop_is_modified_page_fail hps
+                 ,  run $ prop_save_nth_page hps
+                 ,  run $ prop_save_nth_page_fail hps
+                 ,  run $ prop_save_nth_page_as hps
+                 ,  run $ prop_save_nth_page_as_fail hps
+                 ,  run $ prop_is_modified_nth_page hps
+                 ,  run $ prop_is_modified_nth_page_fail hps
+                 ,  run $ prop_close_nth_page hps
+                 ,  run $ prop_close_nth_page_fail hps ]
+                    
 
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -346,3 +366,38 @@ prop_find hps j =
                                         return $ x0 == 0 && xexps == [1..i-1] && x1 == 0 &&
                                                  y0 == 0 && yexps == ([2,4..i-1] ++ [0,2..i-1]) && y1 == 0 &&
                                                  z0 == (-1)
+
+prop_new_page :: HPS.ServerHandle -> Int -> Property
+prop_new_page _hps i = i > 0 ==> False
+
+prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Property
+prop_open_page _hps file = file /= "" ==> False
+prop_open_page_fail _hps file = file /= "" ==> False
+
+prop_setget_page, prop_setget_page_fail :: HPS.ServerHandle -> Int -> Property
+prop_setget_page _hps i = i > 0 ==> False
+prop_setget_page_fail _hps i = i > 0 ==> False
+
+prop_save_page, prop_save_page_as :: HPS.ServerHandle -> String -> Property
+prop_save_page _hps file = file /= "" ==> False
+prop_save_page_as _hps file = file /= "" ==> False
+
+prop_is_modified_nth_page, prop_is_modified_nth_page_fail,
+    prop_is_modified_page, prop_is_modified_page_fail,
+    prop_save_nth_page, prop_save_nth_page_fail,
+    prop_close_nth_page, prop_close_nth_page_fail,
+    prop_close_page :: HPS.ServerHandle -> Int -> Property
+prop_close_page _hps i = i > 0 ==> False
+prop_is_modified_page _hps i = i > 0 ==> False
+prop_is_modified_page_fail _hps i = i > 0 ==> False
+prop_save_nth_page _hps i = i > 0 ==> False
+prop_save_nth_page_fail _hps i = i > 0 ==> False
+prop_is_modified_nth_page _hps i = i > 0 ==> False
+prop_is_modified_nth_page_fail _hps i = i > 0 ==> False
+prop_close_nth_page _hps i = i > 0 ==> False
+prop_close_nth_page_fail _hps i = i > 0 ==> False
+
+prop_save_nth_page_as, prop_save_nth_page_as_fail :: HPS.ServerHandle -> ModuleName -> Int -> Property
+prop_save_nth_page_as _hps _file i = i > 0 ==> False
+prop_save_nth_page_as_fail _hps _file i = i > 0 ==> False
+
