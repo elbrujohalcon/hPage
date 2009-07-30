@@ -17,7 +17,6 @@ import Control.Monad.Writer.Class
 import Control.Monad.Error.Class
 import Control.Monad.CatchIO
 import Data.Monoid
-import Language.Haskell.Interpreter hiding (get)
 import Control.Concurrent
 import Control.Concurrent.Chan
 
@@ -71,10 +70,5 @@ instance MonadError e m => MonadError e (ReceiverT r m) where
     throwError = lift . throwError
     catchError (RT a) h = RT $ a `catchError` (\e -> internalReader $ h e)
 
-instance MonadInterpreter m => MonadInterpreter (ReceiverT r m) where
-    fromSession = lift . fromSession
-    modifySessionRef a = lift . (modifySessionRef a)
-    runGhc = lift . runGhc 
-    
 onInner :: (m a -> m b) -> ReceiverT r m a -> ReceiverT r m b
 onInner f (RT m) = RT $ mapReaderT f m

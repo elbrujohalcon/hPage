@@ -10,6 +10,11 @@ import Language.Haskell.Interpreter
 
 newtype ServerHandle = SH {handle :: Handle (InterpreterT IO ())}
 
+instance MonadInterpreter m => MonadInterpreter (ReceiverT r m) where
+    fromSession = lift . fromSession
+    modifySessionRef a = lift . (modifySessionRef a)
+    runGhc = lift . runGhc 
+
 start :: IO ServerHandle
 start = (spawn $ makeProcess runInterpreter interpreter) >>= return . SH
     where interpreter =

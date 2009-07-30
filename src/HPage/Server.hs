@@ -1,21 +1,33 @@
 
 module HPage.Server (
-    start, runIn, ServerHandle
+    start, stop, runIn, ServerHandle
     ) where
 
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Loops
 import Control.Concurrent.Process
 import HPage.Control
 
-newtype ServerHandle = SH {handle :: Handle (HPage ())}
+newtype ServerHandle = SH {handle :: Handle (Either Stop (HPage ()))}
+
+data Stop = Stop
 
 start :: IO ServerHandle
 start = (spawn $ makeProcess evalHPage pageRunner) >>= return . SH
-    where pageRunner = forever $ recv >>= lift
+    where pageRunner = iterateWhile id $ do
+                                            v <- recv
+                                            case v of
+                                                Left Stop ->
+                                                    return False
+                                                Right acc ->
+                                                    lift acc >> return True
 
 runIn :: ServerHandle -> HPage a -> IO a
 runIn server action = runHere $ do
                                     me <- self
-                                    sendTo (handle server) $ action >>= sendTo me
+                                    sendTo (handle server) $ Right $ action >>= sendTo me
                                     recv
+
+stop :: ServerHandle -> IO ()
+stop server = sendTo (handle server) $ Left Stop
