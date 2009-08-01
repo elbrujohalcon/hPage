@@ -83,9 +83,10 @@ main =
                  ,  run $ prop_open_page_fail hps
                  ,  run $ prop_setget_page hps
                  ,  run $ prop_set_page_index_fail hps
-{-
                  ,  run $ prop_save_page hps
+                 ,  run $ prop_save_page_fail hps
                  ,  run $ prop_save_page_as hps
+{-
                  ,  run $ prop_close_page hps
                  ,  run $ prop_is_modified_page hps
                  ,  run $ prop_is_modified_page_fail hps
@@ -464,9 +465,45 @@ prop_set_page_index_fail hps i =
                                             try $ HP.setPageIndex i
     where try a = (a >> return False) `catchError` (\_ -> return True)
 
-prop_save_page, prop_save_page_as :: HPS.ServerHandle -> String -> Property
-prop_save_page _hps file = file /= "" ==> False
-prop_save_page_as _hps file = file /= "" ==> False
+prop_save_page, prop_save_page_fail, prop_save_page_as :: HPS.ServerHandle -> String -> Property
+prop_save_page hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            let path = testDir ++ "Test" ++ file
+                                            Hint.liftIO $ writeFile path file
+                                            HP.closeAllPages
+                                            HP.openPage path
+                                            HP.savePage
+                                            p1 <- HP.getPageText
+                                            HP.openPage path
+                                            p2 <- HP.getPageText
+                                            HP.addExpr file
+                                            HP.savePage
+                                            p3 <- HP.getPageText
+                                            return $ p1 == file &&
+                                                     p2 == file &&
+                                                     p3 == (file ++ "\n\n" ++ file)
+prop_save_page_fail hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            try $ HP.savePage
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+prop_save_page_as hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            let path = testDir ++ "Test" ++ file
+                                            HP.closeAllPages
+                                            HP.setPageText file
+                                            HP.savePageAs path
+                                            HP.openPage path
+                                            p0 <- HP.getPageText
+                                            HP.savePage
+                                            HP.openPage path
+                                            p1 <- HP.getPageText
+                                            return $ p0 == file &&
+                                                     p1 == file
+
 
 prop_is_modified_nth_page, prop_is_modified_nth_page_fail,
     prop_is_modified_page, prop_is_modified_page_fail,

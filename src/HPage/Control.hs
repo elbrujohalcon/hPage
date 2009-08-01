@@ -45,7 +45,7 @@ import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
 import List ((\\))
 import qualified List as List
-
+import qualified Data.ByteString.Char8 as Str
 newtype Expression = Exp {asString :: String}
     deriving (Eq)
 
@@ -115,14 +115,8 @@ ctxString = get >>= return . show
 closePage :: HPage ()
 closePage = return ()
 
-savePage :: HPage ()
-savePage = return ()
-
 closePageNth :: Int -> HPage ()
 closePageNth _ = return ()
-
-savePageNth :: Int -> HPage ()
-savePageNth _ = return ()
 
 clearPage :: HPage ()
 clearPage = setPageText ""
@@ -137,13 +131,25 @@ addPage = modify (\ctx -> ctx{pages = emptyPage:(pages ctx),
 openPage :: FilePath -> HPage ()
 openPage file = do
                     liftTraceIO $ "opening: " ++ file
-                    s <- liftIO $ readFile file
-                    let newExprs = fromString s
+                    s <- liftIO $ Str.readFile file
+                    let newExprs = fromString $ Str.unpack s
                         newPage = emptyPage{expressions = newExprs, 
                                             currentExpr = if (length newExprs) == 0 then (-1) else 0,
                                             filePath    = Just file}
                     modify (\ctx -> ctx{pages = newPage:(pages ctx),
                                         currentPage = 0})
+
+savePage :: HPage ()
+savePage = get >>= savePageNth . currentPage
+
+savePageNth :: Int -> HPage ()
+savePageNth i = do
+                    page <- getPageNth i
+                    case filePath page of
+                        Nothing ->
+                            fail "No place to save"
+                        Just file ->
+                            savePageNthAs i file    
 
 savePageAs :: FilePath -> HPage ()
 savePageAs file = get >>=  (flip savePageNthAs) file . currentPage
@@ -152,7 +158,7 @@ savePageNthAs :: Int -> FilePath -> HPage ()
 savePageNthAs i file = do
                             p <- getPageNth i
                             liftTraceIO $ "writing: " ++ file
-                            liftIO $ writeFile file $ toString p  
+                            liftIO $ Str.writeFile file $ Str.pack $ toString p  
                             modifyPageNth i (\page -> page{filePath = Just file})
 
 
