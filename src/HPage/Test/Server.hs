@@ -49,7 +49,6 @@ main =
     do
         createDirectoryIfMissing True testDir
         hps <- HPS.start
-{-
         hs <- HS.start
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
@@ -76,7 +75,6 @@ main =
                  ,  run $ prop_undoredo hps
                  ,  run $ prop_find hps
                  ]
--}
         runTests "Many Pages" options
                  [  run $ prop_new_page hps
                  ,  run $ prop_open_page hps
@@ -87,9 +85,8 @@ main =
                  ,  run $ prop_save_page_fail hps
                  ,  run $ prop_save_page_as hps
                  ,  run $ prop_close_page hps
-{-
                  ,  run $ prop_is_modified_page hps
-                 ,  run $ prop_is_modified_page_fail hps
+{-
                  ,  run $ prop_save_nth_page hps
                  ,  run $ prop_save_nth_page_fail hps
                  ,  run $ prop_save_nth_page_as hps
@@ -542,14 +539,40 @@ prop_close_page hps i =
                                                         kai == k-1 &&
                                                         kat == show (k-1) ) $ pss
 
-
+prop_is_modified_page :: HPS.ServerHandle -> FilePath -> Property
+prop_is_modified_page hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            let path = testDir ++ "Test" ++ file
+                                            HP.addPage
+                                            f0 <- HP.isModifiedPage
+                                            HP.setPageText file
+                                            HP.setPageText file
+                                            t0 <- HP.isModifiedPage
+                                            HP.undo
+                                            t1 <- HP.isModifiedPage
+                                            HP.undo
+                                            f1 <- HP.isModifiedPage
+                                            HP.redo
+                                            t2 <- HP.isModifiedPage
+                                            HP.redo
+                                            t3 <- HP.isModifiedPage
+                                            HP.savePageAs path
+                                            f2 <- HP.isModifiedPage
+                                            HP.undo
+                                            t4 <- HP.isModifiedPage
+                                            HP.openPage path
+                                            f3 <- HP.isModifiedPage
+                                            HP.redo
+                                            f4 <- HP.isModifiedPage
+                                            -- liftDebugIO $ (('F', f0, f1, f2, f3, f4),
+                                               --            ('T', t0, t1, t2, t3, t4))
+                                            return $ not (f0 || f1 || f2 || f3 || f4) &&
+                                                     t0 && t1 && t2 && t3 && t4
 
 prop_is_modified_nth_page, prop_is_modified_nth_page_fail,
-    prop_is_modified_page, prop_is_modified_page_fail,
     prop_save_nth_page, prop_save_nth_page_fail,
     prop_close_nth_page, prop_close_nth_page_fail :: HPS.ServerHandle -> Int -> Property
-prop_is_modified_page _hps i = i > 0 ==> False
-prop_is_modified_page_fail _hps i = i > 0 ==> False
 prop_save_nth_page _hps i = i > 0 ==> False
 prop_save_nth_page_fail _hps i = i > 0 ==> False
 prop_is_modified_nth_page _hps i = i > 0 ==> False

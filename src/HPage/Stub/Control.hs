@@ -13,6 +13,7 @@ module HPage.Stub.Control (
     getPageIndex, setPageIndex, getPageCount,
     addPage, openPage, closePage, getPagePath,
     savePage, savePageAs,
+    isModifiedPage, isModifiedPageNth,
     closePageNth, getPageNthPath,
     savePageNth, savePageNthAs,
     -- EXPRESSION CONTROLS --
@@ -78,6 +79,12 @@ closePage = return ()
 
 savePage :: HPage ()
 savePage = return ()
+
+isModifiedPage :: HPage Bool
+isModifiedPage = return False
+
+isModifiedPageNth :: Int -> HPage Bool
+isModifiedPageNth _ = return False
 
 closePageNth :: Int -> HPage ()
 closePageNth _ = return ()

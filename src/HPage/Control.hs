@@ -11,6 +11,7 @@ module HPage.Control (
     getPageIndex, setPageIndex, getPageCount,
     addPage, openPage, closePage, closeAllPages, getPagePath,
     savePage, savePageAs,
+    isModifiedPage, isModifiedPageNth,
     closePageNth, getPageNthPath,
     savePageNth, savePageNthAs,
     -- EXPRESSION CONTROLS --
@@ -62,6 +63,7 @@ data Page = Page { -- Display --
                    undoActions :: [HPage ()],
                    redoActions :: [HPage ()],
                    lastSearch  :: Maybe String,
+                   modifCounter :: Int,
                    -- File System --
                    filePath    :: Maybe FilePath
                   }
@@ -112,12 +114,6 @@ evalHPage hpt = do
 ctxString :: HPage String
 ctxString = get >>= return . show
 
-clearPage :: HPage ()
-clearPage = setPageText ""
-
-
-
-
 addPage :: HPage ()
 addPage = modify (\ctx -> ctx{pages = emptyPage:(pages ctx),
                               currentPage = 0})
@@ -153,8 +149,14 @@ savePageNthAs i file = do
                             p <- getPageNth i
                             liftTraceIO $ "writing: " ++ file
                             liftIO $ Str.writeFile file $ Str.pack $ toString p  
-                            modifyPageNth i (\page -> page{filePath = Just file})
+                            modifyPageNth i (\page -> page{filePath = Just file,
+                                                           modifCounter = 0})
 
+isModifiedPage :: HPage Bool
+isModifiedPage = get >>= isModifiedPageNth . currentPage
+
+isModifiedPageNth :: Int -> HPage Bool
+isModifiedPageNth i = withPageIndex i $ liftM ((0 /=) . modifCounter) $ getPageNth i 
 
 getPagePath :: HPage (Maybe FilePath)
 getPagePath = get >>= getPageNthPath . currentPage
@@ -190,6 +192,9 @@ closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],
                                     currentPage = 0})
 
+
+clearPage :: HPage ()
+clearPage = setPageText ""
 
 setPageText :: String -> HPage ()
 setPageText s = let exprs = fromString s
@@ -259,9 +264,8 @@ undo = do
                     do
                         acc
                         modifyPage (\page ->
-                                        let redoAct = do
-                                                        setPageText $ toString page
-                                                        setExprIndex $ currentExpr page
+                                        let redoAct = modifyPage (\pp -> pp{expressions = expressions page,
+                                                                            currentExpr = currentExpr page})
                                          in page{redoActions = redoAct : redoActions page,
                                                  undoActions = accs})
 redo = do
@@ -508,10 +512,11 @@ showWithCurrent allItems curItem sep mark =
 modifyWithUndo :: (Page -> Page) -> HPage ()
 modifyWithUndo f = modifyPage (\page ->
                                 let newPage = f page
-                                    undoAct = do
-                                                setPageText $ toString page
-                                                setExprIndex $ currentExpr page
-                                 in newPage{undoActions = undoAct : undoActions page}) 
+                                    undoAct = modifyPage (\pp -> pp{expressions = expressions page,
+                                                                    currentExpr = currentExpr page,
+                                                                    modifCounter = (modifCounter pp) - 1})
+                                 in newPage{undoActions = undoAct : undoActions page,
+                                            modifCounter = (modifCounter page) + 1}) 
 
 nextMatching :: String -> Page -> Maybe Int
 nextMatching t p = let c = currentExpr p
@@ -526,4 +531,4 @@ nextMatching t p = let c = currentExpr p
           include x (_, Exp xs) = (xs \\ x) /= xs
 
 emptyPage :: Page
-emptyPage = Page [] (-1) [] [] Nothing Nothing
+emptyPage = Page [] (-1) [] [] Nothing 0 Nothing
