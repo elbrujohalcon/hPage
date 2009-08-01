@@ -29,7 +29,9 @@ module HPage.Control (
     loadModule', reloadModules',
     reset, reset',
     cancel,
-    Hint.InterpreterError
+    Hint.InterpreterError,
+    -- DEBUG --
+    ctxString
  ) where
 
 import System.IO
@@ -82,8 +84,8 @@ data Context = Context { -- Pages --
 instance Show Context where
     show c = showWithCurrent (pages c) (currentPage c) sep $ (top++) . (++bottom)
         where sep = "\n" ++ replicate 80 '-' ++ "\n"
-              top = sep ++ "\n"
-              bottom = "\n" ++ sep 
+              top = replicate 80 'v' ++ "\n"
+              bottom = "\n" ++ replicate 80 '^'
 
 newtype HPageT m a = HPT { state :: StateT Context m a }
     deriving (Monad, MonadIO, MonadTrans)
@@ -107,8 +109,8 @@ evalHPage hpt = do
                     (state hpt) `evalStateT` emptyContext
 
 
-setPageIndex :: Int -> HPage ()
-setPageIndex _ = return ()
+ctxString :: HPage String
+ctxString = get >>= return . show
 
 closePage :: HPage ()
 closePage = return ()
@@ -166,6 +168,9 @@ getPageCount = get >>= return . length . pages
 getPageIndex :: HPage Int
 getPageIndex = get >>= return . currentPage
 
+setPageIndex :: Int -> HPage ()
+setPageIndex i = withPageIndex i $ modify (\ctx -> ctx{currentPage = i})
+
 closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],
                                     currentPage = 0})
@@ -184,11 +189,7 @@ getExprIndex = getPage >>= return . currentExpr
 
 setExprIndex :: Int -> HPage ()
 setExprIndex (-1) = modifyWithUndo (\p -> p{currentExpr = -1})
-setExprIndex nth = do
-                        page <- getPage
-                        if (length (expressions page) >= nth && nth >= 0) then 
-                            modifyWithUndo (\p -> p{currentExpr = nth}) else
-                            fail "Invalid index" 
+setExprIndex nth = withExprIndex nth $ modifyWithUndo (\p -> p{currentExpr = nth})
 
 getExprCount :: HPage Int
 getExprCount = getPage >>= return . length . expressions 
@@ -202,17 +203,12 @@ setExprText expr = do
                      setExprNthText (currentExpr page) expr
 
 getExprNthText :: Int -> HPage String
-getExprNthText nth = do
-                        page <- getPage
-                        if (length (expressions page) >= nth && nth >= 0) then
-                            return . show . (!! nth) . expressions $ page else
-                            fail "Invalid index" 
+getExprNthText nth = withExprIndex nth $ getPage >>= return . show . (!! nth) . expressions
 
 setExprNthText :: Int -> String -> HPage ()
-setExprNthText nth expr = do
-                            page <- getPage
-                            if (length (expressions page) >= nth && nth >= 0) then
+setExprNthText nth expr = withExprIndex nth $
                                 do
+                                    page <- getPage
                                     liftTraceIO ("setExprNthText",nth,expr,expressions page, currentExpr page)
                                     modifyWithUndo (\p ->
                                                         let newExprs = insertAt nth (fromString expr) $ expressions p
@@ -220,8 +216,7 @@ setExprNthText nth expr = do
                                                          in p{expressions = newExprs,
                                                               currentExpr = if curExpr < length newExprs then
                                                                                 curExpr else
-                                                                                length newExprs -1}) else
-                                fail "Invalid index"
+                                                                                length newExprs -1})
                         
 addExpr :: String -> HPage ()
 addExpr expr = do
@@ -390,35 +385,31 @@ modifyPage :: (Page -> Page) -> HPage ()
 modifyPage f = get >>= (flip modifyPageNth) f . currentPage
 
 modifyPageNth :: Int -> (Page -> Page) -> HPage ()
-modifyPageNth i f = do
-                        ctx <- get
-                        let ps = pages ctx
-                        case i of
-                            -1 ->
-                                fail "No page selected"
-                            x | x >= length ps ->
-                                fail "Invalid index"
-                            _ ->
-                                modify (\c ->
-                                            let pgs = pages c
-                                                newPage = f $ pgs !! i
-                                             in c{pages = insertAt i [newPage] pgs})
+modifyPageNth i f = withPageIndex i $ modify (\c ->
+                                                let pgs = pages c
+                                                    newPage = f $ pgs !! i
+                                                 in c{pages = insertAt i [newPage] pgs})
 
 getPage :: HPage Page
 getPage = get >>= getPageNth . currentPage
 
 getPageNth :: Int -> HPage Page
-getPageNth i = do
-                    ctx <- get
-                    let ps = pages ctx
-                    case i of
+getPageNth i = withPageIndex i $ get >>= return . (!! i) . pages
+
+withPageIndex :: Int -> HPage a -> HPage a
+withPageIndex i acc = get >>= withIndex i acc . pages
+
+withExprIndex :: Int -> HPage a -> HPage a
+withExprIndex i acc = getPage >>= withIndex i acc . expressions
+
+withIndex :: Int -> HPage a -> [b] -> HPage a
+withIndex i acc is = case i of
                         -1 ->
-                            fail "No page selected"
-                        x | x >= length ps ->
+                            fail "Nothing selected"
+                        x | x >= length is ->
                             fail "Invalid index"
                         _ ->
-                            return $ ps !! i
-
+                            acc 
 
 runInExprNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNth action i = do

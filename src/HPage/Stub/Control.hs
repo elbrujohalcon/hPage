@@ -31,7 +31,9 @@ module HPage.Stub.Control (
     loadModule', reloadModules',
     reset, reset',
     cancel,
-    InterpreterError
+    InterpreterError,
+    -- DEBUG --
+    ctxString
  ) where
 
 import System.IO
@@ -55,6 +57,9 @@ type HPage = HPageT IO
 
 evalHPage :: HPage a -> IO a
 evalHPage hpt = (state hpt) `evalStateT` ""
+
+ctxString :: HPage String
+ctxString = get >>= return . show
 
 getPageIndex :: HPage Int
 getPageIndex = return (-1)

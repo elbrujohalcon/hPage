@@ -80,10 +80,10 @@ main =
         runTests "Many Pages" options
                  [  run $ prop_new_page hps
                  ,  run $ prop_open_page hps
-{-
                  ,  run $ prop_open_page_fail hps
                  ,  run $ prop_setget_page hps
-                 ,  run $ prop_setget_page_fail hps
+                 ,  run $ prop_set_page_index_fail hps
+{-
                  ,  run $ prop_save_page hps
                  ,  run $ prop_save_page_as hps
                  ,  run $ prop_close_page hps
@@ -405,25 +405,64 @@ prop_new_page hps i =
                                                                                 HP.addPage
                                                                                 psc <- HP.getPageCount
                                                                                 psi <- HP.getPageIndex
-                                                                                HP.setPageIndex $ psc - 1
                                                                                 pst <- HP.getPageText
+                                                                                HP.setPageIndex $ psc - 1
                                                                                 HP.setPageText $ "old "++ show x
                                                                                 return (x, psc, psi, pst)
                                             let results = (0,pc0,pi0,pt0):pss
-                                            --liftDebugIO results
+                                            -- liftDebugIO results
                                             return $ all (\(k, kc, ki, kt) ->
                                                             kc == k+1 &&
                                                             ki == 0 &&
                                                             kt == "") $ results
 
 prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Property
-prop_open_page _hps file = file /= "" ==> False
-prop_open_page_fail _hps file = file /= "" ==> False
+prop_open_page hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            let path = testDir ++ "Test" ++ file
+                                            Hint.liftIO $ writeFile path file
+                                            HP.closeAllPages
+                                            HP.openPage path
+                                            liftM (file ==) HP.getPageText
 
---TESTEAR clearPage ac‡ tambiŽn--
-prop_setget_page, prop_setget_page_fail :: HPS.ServerHandle -> Int -> Property
-prop_setget_page _hps i = i > 0 ==> False
-prop_setget_page_fail _hps i = i > 0 ==> False
+prop_open_page_fail hps file =
+    file /= "" ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            let path = testDir ++ "NO-Test" ++ file
+                                            HP.closeAllPages
+                                            try $ HP.openPage path
+    where try a = (a >> return False) `catchError` (\_ -> return True)
+
+prop_setget_page, prop_set_page_index_fail :: HPS.ServerHandle -> Int -> Property
+prop_setget_page hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.clearPage
+                                            HP.closeAllPages
+                                            HP.setPageText "0"
+                                            forM [1..i] $ \x ->
+                                                            do
+                                                                HP.addPage
+                                                                HP.setPageText $ show x 
+                                            pc <- HP.getPageCount
+                                            pss <- (flip mapM) [0..i] $ \x -> do
+                                                                                HP.setPageIndex (i-x)
+                                                                                psi <- HP.getPageIndex
+                                                                                pst <- HP.getPageText
+                                                                                HP.setPageText $ "old "++ show x
+                                                                                return (x, psi, pst)
+                                            -- liftDebugIO pss
+                                            return . ((pc == i+1) &&) $ all (\(k, ki, kt) ->
+                                                                                ki == (i-k) &&
+                                                                                kt == show k) $ pss
+prop_set_page_index_fail hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            replicateM (i-1) HP.addPage
+                                            try $ HP.setPageIndex i
+    where try a = (a >> return False) `catchError` (\_ -> return True)
 
 prop_save_page, prop_save_page_as :: HPS.ServerHandle -> String -> Property
 prop_save_page _hps file = file /= "" ==> False
