@@ -112,7 +112,7 @@ runPage srv win textBox status action =
         title <- get win text
         set status [text := "Processing..."]
         t <- get textBox text
-        HPS.runIn srv $ HP.setText t 
+        HPS.runIn srv $ HP.setPageText t 
         res <- HPS.runIn srv $ try action
         case res of
             Left err ->
@@ -122,12 +122,12 @@ runPage srv win textBox status action =
                 case show s of
                     "()" ->
                         do
-                            newText <- HPS.runIn srv HP.getText
+                            newText <- HPS.runIn srv HP.getPageText
                             set textBox [text := newText]
                     _ ->                            
                         do
                             infoDialog win title $ show s
-                            newText <- HPS.runIn srv HP.getText
+                            newText <- HPS.runIn srv HP.getPageText
                             set textBox [text := newText]
         set status [text := "Ready"]
     where try a = (a >>= return . Right) `catchError` (return . Left)

@@ -9,12 +9,20 @@
 module HPage.Stub.Control (
     -- MONAD CONTROLS --
     HPage, evalHPage,
-    -- PAGE CONTROLS -- 
-    clearPage, openPage, savePage, currentPage,
-    -- EDITING CONTROLS --
-    setText, getText,
-    getExprIndex, setExprIndex, getExpr, setExpr,
-    addExpr, removeExpr, removeNth, getNth, setNth,
+    -- PAGE CONTROLS --
+    getPageIndex, setPageIndex, getPageCount,
+    addPage, openPage, closePage, getPagePath,
+    savePage, savePageAs,
+    closePageNth, getPageNthPath,
+    savePageNth, savePageNthAs,
+    -- EXPRESSION CONTROLS --
+    setPageText, getPageText, clearPage, 
+    getExprIndex, setExprIndex, getExprCount,
+    addExpr, removeExpr,
+    setExprText, getExprText,
+    removeNth,
+    setExprNthText, getExprNthText,
+    -- EDITION CONTROLS --
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     eval, evalNth, kindOf, kindOfNth, typeOf, typeOfNth,
@@ -48,23 +56,53 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = (state hpt) `evalStateT` ""
 
+getPageIndex :: HPage Int
+getPageIndex = return (-1)
+
+setPageIndex :: Int -> HPage ()
+setPageIndex _ = return ()
+
+getPageCount :: HPage Int
+getPageCount = return (-1)
+
+addPage :: HPage ()
+addPage = return ()
+
+closePage :: HPage ()
+closePage = return ()
+
+savePage :: HPage ()
+savePage = return ()
+
+closePageNth :: Int -> HPage ()
+closePageNth _ = return ()
+
+getPageNthPath :: Int -> HPage (Maybe FilePath)
+getPageNthPath _ = return Nothing
+
+savePageNth :: Int -> HPage ()
+savePageNth _ = return ()
+
+savePageNthAs :: Int -> FilePath -> HPage ()
+savePageNthAs _ _ = return ()
+
 clearPage :: HPage ()
 clearPage = return ()
 
 openPage :: FilePath -> HPage ()
 openPage _ = return ()
 
-savePage :: FilePath -> HPage ()
-savePage _ = return ()
+savePageAs :: FilePath -> HPage ()
+savePageAs _ = return ()
 
-currentPage :: HPage (Maybe FilePath)
-currentPage = return Nothing 
+getPagePath :: HPage (Maybe FilePath)
+getPagePath = return Nothing 
 
-setText :: String -> HPage ()
-setText s = put s
+setPageText :: String -> HPage ()
+setPageText s = put s
 
-getText :: HPage String
-getText = get
+getPageText :: HPage String
+getPageText = get
 
 getExprIndex :: HPage Int
 getExprIndex = return 0
@@ -72,26 +110,29 @@ getExprIndex = return 0
 setExprIndex :: Int -> HPage ()
 setExprIndex _ = return () 
 
-getExpr :: HPage String
-getExpr = getText
+getExprCount :: HPage Int
+getExprCount = return (-1)
 
-setExpr :: String -> HPage ()
-setExpr = setText
+getExprText :: HPage String
+getExprText = getPageText
 
-getNth :: Int -> HPage String
-getNth _ = getText 
+setExprText :: String -> HPage ()
+setExprText = setPageText
 
-setNth :: Int -> String -> HPage ()
-setNth _ = setText
+getExprNthText :: Int -> HPage String
+getExprNthText _ = getPageText 
+
+setExprNthText :: Int -> String -> HPage ()
+setExprNthText _ = setPageText
                         
 addExpr :: String -> HPage ()
 addExpr _ = return ()
 
 removeExpr :: HPage ()
-removeExpr = setText ""
+removeExpr = setPageText ""
 
 removeNth :: Int -> HPage ()
-removeNth i = setNth i ""
+removeNth i = setExprNthText i ""
 
 undo, redo :: HPage ()
 undo = return ()

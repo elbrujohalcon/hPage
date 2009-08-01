@@ -9,7 +9,8 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
--- import Utils.Log
+import System.Directory
+import Utils.Log
 
 instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
@@ -40,10 +41,15 @@ options = TestOptions
       , length_of_tests     = 1
       , debug_tests         = False }
 
+testDir :: FilePath
+testDir = "../testfiles/"
+
 main :: IO ()
 main =
     do
+        createDirectoryIfMissing True testDir
         hps <- HPS.start
+{-
         hs <- HS.start
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
@@ -70,9 +76,11 @@ main =
                  ,  run $ prop_undoredo hps
                  ,  run $ prop_find hps
                  ]
+-}
         runTests "Many Pages" options
                  [  run $ prop_new_page hps
                  ,  run $ prop_open_page hps
+{-
                  ,  run $ prop_open_page_fail hps
                  ,  run $ prop_setget_page hps
                  ,  run $ prop_setget_page_fail hps
@@ -88,7 +96,24 @@ main =
                  ,  run $ prop_is_modified_nth_page hps
                  ,  run $ prop_is_modified_nth_page_fail hps
                  ,  run $ prop_close_nth_page hps
-                 ,  run $ prop_close_nth_page_fail hps ]
+                 ,  run $ prop_close_nth_page_fail hps
+                 ,  run $ prop_close_all_pages hps
+                 ,  run $ prop_close_all_pages_fail hps
+-}
+                 ]
+{-
+        runTests "Many Pages (Safe)" options
+                 [  run $ prop_safe_save_page_as hps
+                 ,  run $ prop_safe_close_page hps
+                 ,  run $ prop_safe_save_nth_page_as hps
+                 ,  run $ prop_safe_save_nth_page_as_fail hps
+                 ,  run $ prop_safe_close_nth_page hps
+                 ,  run $ prop_safe_close_nth_page_fail hps
+                 ,  run $ prop_safe_close_all_pages hps
+                 ,  run $ prop_safe_close_all_pages_fail hps
+                 ]
+-}
+        removeDirectoryRecursive testDir
                     
 
 instance Eq (Hint.InterpreterError) where
@@ -98,7 +123,7 @@ prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_eval hps hs txt =
     unsafePerformIO $ do
                         let expr = "length \"" ++ txt ++ "\"" 
-                        hpsr <- HPS.runIn hps $ HP.setText expr >> HP.eval
+                        hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.eval
                         hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hpsr == hsr
 
@@ -107,14 +132,14 @@ prop_typeOf hps hs txt = txt /= "" ==>
     unsafePerformIO $ do
                         let h = head txt
                         let expr = if isNumber h then [h, h] else "\"" ++ txt ++ "\""
-                        hpsr <- HPS.runIn hps $ HP.setText expr >> HP.typeOf
+                        hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.typeOf
                         hsr <- HS.runIn hs $ Hint.typeOf expr
                         return $ hpsr == hsr
 
 prop_kindOf :: HPS.ServerHandle -> HS.ServerHandle -> ClassName -> Bool
 prop_kindOf hps hs (CN expr) =
     unsafePerformIO $ do
-                        hpsr <- HPS.runIn hps $ HP.setText expr >> HP.kindOf
+                        hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.kindOf
                         hsr <- HS.runIn hs $ Hint.kindOf expr
                         return $ hpsr == hsr
 
@@ -122,7 +147,7 @@ prop_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_fail hps hs txt =
     unsafePerformIO $ do
                         let expr = "lenggth \"" ++ txt ++ "\""
-                        Left hpsr <- HPS.runIn hps $ HP.setText expr >> HP.eval
+                        Left hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.eval
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
@@ -131,13 +156,13 @@ prop_load_module hps hs txt =
     unsafePerformIO $ do
                         let expr = "test = length \"" ++ txt ++ "\"" 
                         hpsr <- HPS.runIn hps $ do
-                                                    HP.setText expr
-                                                    HP.savePage "../documents/test.hs"
-                                                    HP.setText "test"
-                                                    HP.loadModule "../documents/test.hs"
+                                                    HP.setPageText expr
+                                                    HP.savePageAs $ testDir ++ "test.hs"
+                                                    HP.setPageText "test"
+                                                    HP.loadModule $ testDir ++ "test.hs"
                                                     HP.eval
                         hsr <- HS.runIn hs $ do
-                                                Hint.loadModules ["../documents/test.hs"]
+                                                Hint.loadModules [testDir ++ "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                 Hint.eval "test"
                         return $ hpsr == hsr
@@ -147,14 +172,14 @@ prop_reload_modules hps hs txt =
     unsafePerformIO $ do
                         let expr = "test = show \"" ++ txt ++ "\"" 
                         hpsr <- HPS.runIn hps $ do
-                                                    HP.setText expr
-                                                    HP.savePage "../documents/test.hs"
-                                                    HP.setText "test"
-                                                    HP.loadModule "../documents/test.hs"
+                                                    HP.setPageText expr
+                                                    HP.savePageAs $ testDir ++ "test.hs"
+                                                    HP.setPageText "test"
+                                                    HP.loadModule $ testDir ++ "test.hs"
                                                     HP.reloadModules
                                                     HP.eval
                         hsr <- HS.runIn hs $ do
-                                                Hint.loadModules ["../documents/test.hs"]
+                                                Hint.loadModules [testDir ++ "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                 Hint.eval "test"
                         return $ hpsr == hsr
@@ -164,11 +189,11 @@ prop_sequential hps txt =
     unsafePerformIO $ do
                         let expr = "test = \"" ++ txt ++ "\""
                         HPS.runIn hps $ do
-                                            HP.setText expr
-                                            HP.savePage "../documents/test.hs"
-                                            HP.loadModule' "../documents/test.hs"
+                                            HP.setPageText expr
+                                            HP.savePageAs $ testDir ++ "test.hs"
+                                            HP.loadModule' $ testDir ++ "test.hs"
                         Right hpsr <- HPS.runIn hps $ do
-                                                        HP.setText "test"
+                                                        HP.setPageText "test"
                                                         HP.eval
                         return $ hpsr == show txt
 
@@ -179,14 +204,14 @@ prop_cancel_load hps mn =
                         let expr2 = "module " ++ show mn ++ "2 where fact = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
                         HPS.runIn hps $ do
                                             HP.reset
-                                            HP.setText expr2
-                                            HP.savePage $ "../documents/" ++ show mn ++ "2.hs"
-                                            HP.setText expr1
-                                            HP.savePage $ "../documents/" ++ show mn ++ ".hs"
-                                            HP.setText "fact"
-                                            HP.loadModule $ "../documents/" ++ show mn ++ ".hs"
+                                            HP.setPageText expr2
+                                            HP.savePageAs $ testDir ++ show mn ++ "2.hs"
+                                            HP.setPageText expr1
+                                            HP.savePageAs $ testDir ++ show mn ++ ".hs"
+                                            HP.setPageText "fact"
+                                            HP.loadModule $ testDir ++ show mn ++ ".hs"
                                             oldRes <- HP.eval
-                                            HP.loadModule' $ "../documents/" ++ show mn ++ "2.hs"
+                                            HP.loadModule' $ testDir ++ show mn ++ "2.hs"
                                             HP.cancel
                                             newRes <- HP.eval
                                             return $ newRes == oldRes
@@ -194,25 +219,25 @@ prop_cancel_load hps mn =
 prop_setget_text :: HPS.ServerHandle -> String -> Bool
 prop_setget_text hps txt =
     unsafePerformIO $ HPS.runIn hps $ do
-                                        HP.setText txt
-                                        HP.getText >>= return . (txt ==)
+                                        HP.setPageText txt
+                                        HP.getPageText >>= return . (txt ==)
 
 prop_setget_expr :: HPS.ServerHandle -> String -> Property
 prop_setget_expr hps txt =
     txt /= "" ==>
     unsafePerformIO $ HPS.runIn hps $ do
-                                        HP.setText $ txt ++ "\n\nxx"
+                                        HP.setPageText $ txt ++ "\n\nxx"
                                         exi1 <- HP.getExprIndex
-                                        exp1 <- HP.getExpr
+                                        exp1 <- HP.getExprText
                                         HP.setExprIndex 0
                                         exi0 <- HP.getExprIndex
-                                        exp0 <- HP.getExpr
-                                        HP.setExpr "yy"
+                                        exp0 <- HP.getExprText
+                                        HP.setExprText "yy"
                                         exi2 <- HP.getExprIndex
-                                        exp2 <- HP.getExpr
+                                        exp2 <- HP.getExprText
                                         HP.setExprIndex 1
                                         exi3 <- HP.getExprIndex
-                                        exp3 <- HP.getExpr
+                                        exp3 <- HP.getExprText
                                         -- liftDebugIO [(exi1, exp1), (exi0, exp0), (exi2, exp2), (exi3, exp3)]
                                         return $ (exi1 == 1) && (exp1 == "xx") &&
                                                  (exi0 == 0) && (exp0 == txt) &&
@@ -221,7 +246,7 @@ prop_setget_expr hps txt =
 
 prop_setget_expr_fail :: HPS.ServerHandle -> String -> Bool
 prop_setget_expr_fail hps _ =
-    unsafePerformIO $ HPS.runIn hps $ try $ HP.clearPage >> HP.getExpr
+    unsafePerformIO $ HPS.runIn hps $ try $ HP.clearPage >> HP.getExprText
     where try a = (a >> return False) `catchError` (\_ -> return True)
 
 prop_addrem_expr :: HPS.ServerHandle -> String -> Property
@@ -231,17 +256,17 @@ prop_addrem_expr hps txt =
                                         HP.clearPage
                                         HP.addExpr txt
                                         exi1 <- HP.getExprIndex
-                                        exp1 <- HP.getExpr
+                                        exp1 <- HP.getExprText
                                         HP.removeExpr
                                         exi0 <- HP.getExprIndex
-                                        exp0 <- HP.getText
+                                        exp0 <- HP.getPageText
                                         HP.addExpr txt
                                         HP.addExpr txt
                                         exi2 <- HP.getExprIndex
-                                        exp2 <- HP.getExpr
+                                        exp2 <- HP.getExprText
                                         HP.removeExpr
                                         exi3 <- HP.getExprIndex
-                                        exp3 <- HP.getText
+                                        exp3 <- HP.getPageText
                                         -- liftDebugIO [(exi1, exp1), (exi0, exp0), (exi2, exp2), (exi3, exp3)]
                                         return $ (exi1 == 0) && (exp1 == txt) &&
                                                  (exi0 == -1) && (exp0 == "") &&
@@ -259,12 +284,12 @@ prop_setget_nth hps i =
     unsafePerformIO $ HPS.runIn hps $ do
                                         HP.clearPage
                                         replicateM (i+1) $ HP.addExpr "ww"
-                                        exp0 <- HP.getNth 0
-                                        exp1 <- HP.getNth i
-                                        HP.setNth i "xxx"
-                                        exp2 <- HP.getNth i
-                                        HP.setNth i "x\n\ny"
-                                        exp3 <- HP.getNth $ i+1
+                                        exp0 <- HP.getExprNthText 0
+                                        exp1 <- HP.getExprNthText i
+                                        HP.setExprNthText i "xxx"
+                                        exp2 <- HP.getExprNthText i
+                                        HP.setExprNthText i "x\n\ny"
+                                        exp3 <- HP.getExprNthText $ i+1
                                         -- liftDebugIO [exp0, exp1, exp2, exp3]
                                         return $ (exp1 == "ww") &&
                                                  (exp0 == "ww") &&
@@ -276,8 +301,8 @@ prop_setget_nth_fail hps i txt =
     i > 0 ==>
     unsafePerformIO $ HPS.runIn hps $ do
                                         HP.clearPage
-                                        set <- try $ HP.setNth i txt
-                                        get <- try $ HP.getNth i
+                                        set <- try $ HP.setExprNthText i txt
+                                        get <- try $ HP.getExprNthText i
                                         -- liftDebugIO (get, set)
                                         return (set && get)
     where try a = (a >> return False) `catchError` (\_ -> return True)
@@ -289,9 +314,9 @@ prop_remove_nth hps i =
                                         HP.clearPage
                                         forM [0..i] $ HP.addExpr . show
                                         HP.removeNth 0
-                                        exp0 <- HP.getNth 0
+                                        exp0 <- HP.getExprNthText 0
                                         forM [i-2,i-3..0] $ HP.removeNth
-                                        exp1 <- HP.getText
+                                        exp1 <- HP.getPageText
                                         -- liftDebugIO [exp0, exp1]
                                         return $ (exp0 == "1") &&
                                                  (exp1 == show i)
@@ -307,32 +332,32 @@ prop_undoredo :: HPS.ServerHandle -> String -> Property
 prop_undoredo hps txt =
     txt /= "" ==>
     unsafePerformIO $ HPS.runIn hps $ do
-                                        HP.clearPage
-                                        b0 <- HP.getText
-                                        HP.setText txt
-                                        b1 <- HP.getText
+                                        HP.addPage
+                                        b0 <- HP.getPageText
+                                        HP.setPageText txt
+                                        b1 <- HP.getPageText
                                         HP.addExpr "xx"
-                                        b2 <- HP.getText
+                                        b2 <- HP.getPageText
                                         HP.addExpr "yy"
-                                        b3 <- HP.getText
+                                        b3 <- HP.getPageText
                                         HP.setExprIndex 1
-                                        b4 <- HP.getText
-                                        HP.setExpr $ txt ++ "|" ++ txt
-                                        b5 <- HP.getText
+                                        b4 <- HP.getPageText
+                                        HP.setExprText $ txt ++ "|" ++ txt
+                                        b5 <- HP.getPageText
                                         HP.removeExpr
-                                        b6 <- HP.getText
+                                        b6 <- HP.getPageText
                                         HP.removeNth 0
-                                        b7 <- HP.getText
-                                        HP.setNth 0 txt
-                                        b8 <- HP.getText
+                                        b7 <- HP.getPageText
+                                        HP.setExprNthText 0 txt
+                                        b8 <- HP.getPageText
                                         HP.addExpr "zz"
                                         let to10 = [0..10] :: [Int]
-                                        after <- mapM (\_ -> HP.undo >> HP.getText) to10
-                                        redo <- mapM (\_ -> HP.redo >> HP.getText) to10
-                                        -- liftDebugIO [b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""]
-                                        -- liftDebugIO after
-                                        -- liftDebugIO [b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8]
-                                        -- liftDebugIO redo
+                                        after <- mapM (\_ -> HP.undo >> HP.getPageText) to10
+                                        redo <- mapM (\_ -> HP.redo >> HP.getPageText) to10
+                                        --liftDebugIO [b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""]
+                                        --liftDebugIO after
+                                        --liftDebugIO [b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8]
+                                        --liftDebugIO redo
                                         return $ ([b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""] == after) &&
                                                  ([b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8] == redo)
 
@@ -349,7 +374,7 @@ prop_find hps j =
                                         xexps <- mapM (\_ -> HP.findNext >> HP.getExprIndex) [1..i-1]
                                         HP.findNext
                                         x1 <- HP.getExprIndex
-                                        forM [0,2..i-1] $ (\n -> HP.setNth n $ replicate (n+1) 'y')
+                                        forM [0,2..i-1] $ (\n -> HP.setExprNthText n $ replicate (n+1) 'y')
                                         HP.setExprIndex (-1)
                                         HP.find "y"
                                         y0 <- HP.getExprIndex
@@ -368,12 +393,34 @@ prop_find hps j =
                                                  z0 == (-1)
 
 prop_new_page :: HPS.ServerHandle -> Int -> Property
-prop_new_page _hps i = i > 0 ==> False
+prop_new_page hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.clearPage
+                                            HP.closeAllPages
+                                            pc0 <- HP.getPageCount
+                                            pi0 <- HP.getPageIndex
+                                            pt0 <- HP.getPageText
+                                            pss <- (flip mapM) [1..i] $ \x -> do
+                                                                                HP.addPage
+                                                                                psc <- HP.getPageCount
+                                                                                psi <- HP.getPageIndex
+                                                                                HP.setPageIndex $ psc - 1
+                                                                                pst <- HP.getPageText
+                                                                                HP.setPageText $ "old "++ show x
+                                                                                return (x, psc, psi, pst)
+                                            let results = (0,pc0,pi0,pt0):pss
+                                            --liftDebugIO results
+                                            return $ all (\(k, kc, ki, kt) ->
+                                                            kc == k+1 &&
+                                                            ki == 0 &&
+                                                            kt == "") $ results
 
 prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Property
 prop_open_page _hps file = file /= "" ==> False
 prop_open_page_fail _hps file = file /= "" ==> False
 
+--TESTEAR clearPage ac‡ tambiŽn--
 prop_setget_page, prop_setget_page_fail :: HPS.ServerHandle -> Int -> Property
 prop_setget_page _hps i = i > 0 ==> False
 prop_setget_page_fail _hps i = i > 0 ==> False

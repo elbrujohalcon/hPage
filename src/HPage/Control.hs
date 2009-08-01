@@ -7,12 +7,20 @@
 module HPage.Control (
     -- MONAD CONTROLS --
     HPage, evalHPage,
-    -- PAGE CONTROLS -- 
-    clearPage, openPage, savePage, currentPage,
-    -- EDITING CONTROLS --
-    setText, getText,
-    getExprIndex, setExprIndex, getExpr, setExpr,
-    addExpr, removeExpr, removeNth, getNth, setNth,
+    -- PAGE CONTROLS --
+    getPageIndex, setPageIndex, getPageCount,
+    addPage, openPage, closePage, closeAllPages, getPagePath,
+    savePage, savePageAs,
+    closePageNth, getPageNthPath,
+    savePageNth, savePageNthAs,
+    -- EXPRESSION CONTROLS --
+    setPageText, getPageText, clearPage, 
+    getExprIndex, setExprIndex, getExprCount,
+    addExpr, removeExpr,
+    setExprText, getExprText,
+    removeNth,
+    setExprNthText, getExprNthText,
+    -- EDITION CONTROLS --
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     eval, evalNth, kindOf, kindOfNth, typeOf, typeOfNth,
@@ -51,24 +59,36 @@ data Page = Page { -- Display --
                    currentExpr :: Int,
                    undoActions :: [HPage ()],
                    redoActions :: [HPage ()],
-                   lastSearch :: Maybe String,
+                   lastSearch  :: Maybe String,
                    -- File System --
-                   filePath :: Maybe FilePath,
-                   -- Hint --
-                   loadedModules :: Set FilePath,
-                   server :: HS.ServerHandle,
-                   running :: Maybe InFlightData,
-                   recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
-                 }
+                   filePath    :: Maybe FilePath
+                  }
 
 instance Show Page where
     show p = "Text: " ++ (showExpressions p) ++ 
            "\nFile: " ++ show (filePath p)
+        where showExpressions pg = showWithCurrent (expressions pg) (currentExpr pg) "\n\n" $ ("["++) . (++"]")
 
-newtype HPageT m a = HPT { state :: StateT Page m a }
+data Context = Context { -- Pages --
+                         pages :: [Page],
+                         currentPage :: Int,
+                         -- Hint --
+                         loadedModules :: Set FilePath,
+                         server :: HS.ServerHandle,
+                         running :: Maybe InFlightData,
+                         recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
+                       }
+ 
+instance Show Context where
+    show c = showWithCurrent (pages c) (currentPage c) sep $ (top++) . (++bottom)
+        where sep = "\n" ++ replicate 80 '-' ++ "\n"
+              top = sep ++ "\n"
+              bottom = "\n" ++ sep 
+
+newtype HPageT m a = HPT { state :: StateT Context m a }
     deriving (Monad, MonadIO, MonadTrans)
 
-instance Monad m => MonadState Page (HPageT m) where
+instance Monad m => MonadState Context (HPageT m) where
     get = HPT $ get
     put = HPT . put
 
@@ -83,117 +103,159 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyPage = Page [] (-1) [] [] Nothing Nothing empty hs Nothing nop
-                    (state hpt) `evalStateT` emptyPage
+                    let emptyContext = Context [emptyPage] 0 empty hs Nothing nop
+                    (state hpt) `evalStateT` emptyContext
+
+
+setPageIndex :: Int -> HPage ()
+setPageIndex _ = return ()
+
+closePage :: HPage ()
+closePage = return ()
+
+savePage :: HPage ()
+savePage = return ()
+
+closePageNth :: Int -> HPage ()
+closePageNth _ = return ()
+
+savePageNth :: Int -> HPage ()
+savePageNth _ = return ()
 
 clearPage :: HPage ()
-clearPage = modify (\page -> page{expressions = fromString "",
-                                  currentExpr = -1,
-                                  filePath = Nothing,
-                                  undoActions = [],
-                                  redoActions = []})
+clearPage = setPageText ""
+
+
+
+
+addPage :: HPage ()
+addPage = modify (\ctx -> ctx{pages = emptyPage:(pages ctx),
+                              currentPage = 0})
 
 openPage :: FilePath -> HPage ()
 openPage file = do
                     liftTraceIO $ "opening: " ++ file
                     s <- liftIO $ readFile file
-                    modify (\page -> page{filePath = Just file})
-                    setText s
+                    let newExprs = fromString s
+                        newPage = emptyPage{expressions = newExprs, 
+                                            currentExpr = if (length newExprs) == 0 then (-1) else 0,
+                                            filePath    = Just file}
+                    modify (\ctx -> ctx{pages = newPage:(pages ctx),
+                                        currentPage = 0})
 
-savePage :: FilePath -> HPage ()
-savePage file = do
-                    p <- get
-                    liftTraceIO $ "writing: " ++ file
-                    liftIO $ writeFile file $ toString p  
-                    modify (\page -> page{filePath = Just file})
+savePageAs :: FilePath -> HPage ()
+savePageAs file = get >>=  (flip savePageNthAs) file . currentPage
+ 
+savePageNthAs :: Int -> FilePath -> HPage ()
+savePageNthAs i file = do
+                            p <- getPageNth i
+                            liftTraceIO $ "writing: " ++ file
+                            liftIO $ writeFile file $ toString p  
+                            modifyPageNth i (\page -> page{filePath = Just file})
 
-currentPage :: HPage (Maybe FilePath)
-currentPage = get >>= return . filePath 
+
+getPagePath :: HPage (Maybe FilePath)
+getPagePath = get >>= getPageNthPath . currentPage
+
+getPageNthPath :: Int -> HPage (Maybe FilePath)
+getPageNthPath i = getPageNth i >>= return . filePath
+
+getPageCount :: HPage Int
+getPageCount = get >>= return . length . pages
+
+getPageIndex :: HPage Int
+getPageIndex = get >>= return . currentPage
+
+closeAllPages :: HPage ()
+closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],
+                                    currentPage = 0})
 
 
+setPageText :: String -> HPage ()
+setPageText s = let exprs = fromString s
+                 in modifyWithUndo (\page -> page{expressions = exprs,
+                                                  currentExpr = (length exprs - 1)})
 
-setText :: String -> HPage ()
-setText s = let exprs = fromString s in
-                modifyWithUndo (\page -> page{expressions = exprs,
-                                              currentExpr = (length exprs - 1)})
-
-getText :: HPage String
-getText = get >>= return . toString
+getPageText :: HPage String
+getPageText = getPage >>= return . toString
 
 getExprIndex :: HPage Int
-getExprIndex = get >>= return . currentExpr
+getExprIndex = getPage >>= return . currentExpr
 
 setExprIndex :: Int -> HPage ()
 setExprIndex (-1) = modifyWithUndo (\p -> p{currentExpr = -1})
 setExprIndex nth = do
-                        page <- get
+                        page <- getPage
                         if (length (expressions page) >= nth && nth >= 0) then 
                             modifyWithUndo (\p -> p{currentExpr = nth}) else
                             fail "Invalid index" 
 
-getExpr :: HPage String
-getExpr = get >>= getNth . currentExpr
+getExprCount :: HPage Int
+getExprCount = getPage >>= return . length . expressions 
 
-setExpr :: String -> HPage ()
-setExpr expr = do
-                    page <- get
-                    setNth (currentExpr page) expr
+getExprText :: HPage String
+getExprText = getPage >>= getExprNthText . currentExpr
 
-getNth :: Int -> HPage String
-getNth nth = do
-                page <- get
-                if (length (expressions page) >= nth && nth >= 0) then
-                    return . show . (!! nth) . expressions $ page else
-                    fail "Invalid index" 
+setExprText :: String -> HPage ()
+setExprText expr = do
+                     page <- getPage
+                     setExprNthText (currentExpr page) expr
 
-setNth :: Int -> String -> HPage ()
-setNth nth expr = do
-                    page <- get
-                    if (length (expressions page) >= nth && nth >= 0) then
-                        do
-                            liftTraceIO ("setNth",nth,expr,expressions page, currentExpr page)
-                            modifyWithUndo (\p ->
-                                                let newExprs = replaceExpression nth expr $ expressions p
-                                                    curExpr  = currentExpr p
-                                                 in p{expressions = newExprs,
-                                                      currentExpr = if curExpr < length newExprs then
-                                                                        curExpr else
-                                                                        length newExprs -1}) else
-                        fail "Invalid index"
+getExprNthText :: Int -> HPage String
+getExprNthText nth = do
+                        page <- getPage
+                        if (length (expressions page) >= nth && nth >= 0) then
+                            return . show . (!! nth) . expressions $ page else
+                            fail "Invalid index" 
+
+setExprNthText :: Int -> String -> HPage ()
+setExprNthText nth expr = do
+                            page <- getPage
+                            if (length (expressions page) >= nth && nth >= 0) then
+                                do
+                                    liftTraceIO ("setExprNthText",nth,expr,expressions page, currentExpr page)
+                                    modifyWithUndo (\p ->
+                                                        let newExprs = insertAt nth (fromString expr) $ expressions p
+                                                            curExpr  = currentExpr p
+                                                         in p{expressions = newExprs,
+                                                              currentExpr = if curExpr < length newExprs then
+                                                                                curExpr else
+                                                                                length newExprs -1}) else
+                                fail "Invalid index"
                         
 addExpr :: String -> HPage ()
 addExpr expr = do
-                    p <- get
+                    p <- getPage
                     liftTraceIO ("addExpr",expr,expressions p, currentExpr p)
                     modifyWithUndo (\page ->
                                         let exprs = expressions page
-                                            newExprs = replaceExpression (length exprs) expr exprs
+                                            newExprs = insertAt (length exprs) (fromString expr) exprs
                                         in  page{expressions = newExprs,
                                                  currentExpr = length newExprs - 1})
 
 removeExpr :: HPage ()
-removeExpr = get >>= removeNth . currentExpr
+removeExpr = getPage >>= removeNth . currentExpr
 
 removeNth :: Int -> HPage ()
-removeNth i = setNth i ""
+removeNth i = setExprNthText i ""
 
 undo, redo :: HPage ()
 undo = do
-            p <- get
+            p <- getPage
             case undoActions p of
                 [] ->
                     return ()
                 (acc:accs) ->
                     do
                         acc
-                        modify (\page ->
-                                    let redoAct = do
-                                                    setText $ toString page
-                                                    setExprIndex $ currentExpr page
-                                     in page{redoActions = redoAct : redoActions page,
-                                             undoActions = accs})
+                        modifyPage (\page ->
+                                        let redoAct = do
+                                                        setPageText $ toString page
+                                                        setExprIndex $ currentExpr page
+                                         in page{redoActions = redoAct : redoActions page,
+                                                 undoActions = accs})
 redo = do
-            p <- get
+            p <- getPage
             case redoActions p of
                 [] ->
                     return ()
@@ -204,8 +266,8 @@ redo = do
 
 find :: String -> HPage ()
 find text = do
-                page <- get
-                modify (\p -> p{lastSearch = Just text})
+                page <- getPage
+                modifyPage (\p -> p{lastSearch = Just text})
                 case nextMatching text page of
                     Nothing ->
                         return ()
@@ -214,7 +276,7 @@ find text = do
 
 findNext :: HPage ()
 findNext = do
-                page <- get
+                page <- getPage
                 case lastSearch page of
                     Nothing ->
                         return ()
@@ -222,14 +284,14 @@ findNext = do
                         find text
 
 eval, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
-eval = get >>= evalNth . currentExpr
-kindOf = get >>= kindOfNth . currentExpr
-typeOf = get >>= typeOfNth . currentExpr
+eval = getPage >>= evalNth . currentExpr
+kindOf = getPage >>= kindOfNth . currentExpr
+typeOf = getPage >>= typeOfNth . currentExpr
 
 evalNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-evalNth = runInNth Hint.eval
-kindOfNth = runInNth Hint.kindOf
-typeOfNth = runInNth Hint.typeOf
+evalNth = runInExprNth Hint.eval
+kindOfNth = runInExprNth Hint.kindOf
+typeOfNth = runInExprNth Hint.typeOf
 
 loadModule :: FilePath -> HPage (Either Hint.InterpreterError ())
 loadModule f = do
@@ -240,16 +302,16 @@ loadModule f = do
                     res <- syncRun action
                     case res of
                         Right _ ->
-                            modify (\p -> p{loadedModules = insert f (loadedModules p),
-                                            recoveryLog = recoveryLog p >> action >> return ()})
+                            modify (\ctx -> ctx{loadedModules = insert f (loadedModules ctx),
+                                                recoveryLog = recoveryLog ctx >> action >> return ()})
                         Left e ->
                             liftErrorIO $ ("Error loading module", f, e)
                     return res
 
 reloadModules :: HPage (Either Hint.InterpreterError ())
 reloadModules = do
-                    page <- confirmRunning
-                    let ms = toList $ loadedModules page
+                    ctx <- confirmRunning
+                    let ms = toList $ loadedModules ctx
                     syncRun $ do
                                 liftTraceIO $ "reloading: " ++ (show ms)
                                 Hint.loadModules ms
@@ -265,21 +327,21 @@ reset = do
                                 liftTraceIO $ "remaining modules: " ++ show ms
             case res of
                 Right _ ->
-                    modify (\p -> p{loadedModules = empty,
-                                    recoveryLog = return ()})
+                    modify (\ctx -> ctx{loadedModules = empty,
+                                        recoveryLog = return ()})
                 Left e ->
                     liftErrorIO $ ("Error resetting", e)
             return res
 
 eval', kindOf', typeOf' :: HPage (MVar (Either Hint.InterpreterError String))
-eval' = get >>= evalNth' . currentExpr
-kindOf' = get >>= kindOfNth' . currentExpr
-typeOf' = get >>= typeOfNth' . currentExpr
+eval' = getPage >>= evalNth' . currentExpr
+kindOf' = getPage >>= kindOfNth' . currentExpr
+typeOf' = getPage >>= typeOfNth' . currentExpr
 
 evalNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either Hint.InterpreterError String))
-evalNth' = runInNth' Hint.eval
-kindOfNth' = runInNth' Hint.kindOf
-typeOfNth' = runInNth' Hint.typeOf
+evalNth' = runInExprNth' Hint.eval
+kindOfNth' = runInExprNth' Hint.kindOf
+typeOfNth' = runInExprNth' Hint.typeOf
 
 loadModule' :: FilePath -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModule' f = do
@@ -288,7 +350,7 @@ loadModule' f = do
                                     Hint.loadModules [f]
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                     res <- asyncRun action
-                    modify (\p -> p{running = Just $ LoadModule f action})
+                    modify (\ctx -> ctx{running = Just $ LoadModule f action})
                     return res
                             
 
@@ -309,36 +371,72 @@ reset' = do
                                 Hint.setImports ["Prelude"]
                                 ms <- Hint.getLoadedModules
                                 liftTraceIO $ "remaining modules: " ++ show ms
-            modify (\p -> p{running = Just Reset})
+            modify (\ctx -> ctx{running = Just Reset})
             return res
 
 cancel :: HPage ()
 cancel = do
             liftTraceIO $ "canceling"
-            page <- get
+            ctx <- get
             hs <- liftIO $ HS.start
-            liftIO $ HS.runIn hs $ recoveryLog page
+            liftIO $ HS.runIn hs $ recoveryLog ctx
             --TODO: The current discarded server needs to be stopped here
-            modify (\p -> p{server = hs,
+            modify (\c -> c{server = hs,
                             running = Nothing})
             
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
-runInNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
-runInNth action i = do
-                        page <- get
+modifyPage :: (Page -> Page) -> HPage ()
+modifyPage f = get >>= (flip modifyPageNth) f . currentPage
+
+modifyPageNth :: Int -> (Page -> Page) -> HPage ()
+modifyPageNth i f = do
+                        ctx <- get
+                        let ps = pages ctx
+                        case i of
+                            -1 ->
+                                fail "No page selected"
+                            x | x >= length ps ->
+                                fail "Invalid index"
+                            _ ->
+                                modify (\c ->
+                                            let pgs = pages c
+                                                newPage = f $ pgs !! i
+                                             in c{pages = insertAt i [newPage] pgs})
+
+getPage :: HPage Page
+getPage = get >>= getPageNth . currentPage
+
+getPageNth :: Int -> HPage Page
+getPageNth i = do
+                    ctx <- get
+                    let ps = pages ctx
+                    case i of
+                        -1 ->
+                            fail "No page selected"
+                        x | x >= length ps ->
+                            fail "Invalid index"
+                        _ ->
+                            return $ ps !! i
+
+
+runInExprNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
+runInExprNth action i = do
+                        page <- getPage
                         let exprs = expressions page
                         case i of
                             -1 ->
                                 fail "Nothing selected"
+                            x | x >= length exprs ->
+                                fail "Invalid index"
                             _ ->
                                 do
                                     let expr = asString $ exprs !! i
                                     syncRun $ action expr
 
-runInNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
-runInNth' action i = do
-                        page <- get
+runInExprNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
+runInExprNth' action i = do
+                        page <- getPage
                         let exprs = expressions page
                         case i of
                             -1 ->
@@ -360,16 +458,16 @@ asyncRun action = do
                     page <- confirmRunning
                     liftIO $ HS.asyncRunIn (server page) action
 
-confirmRunning :: HPage Page
-confirmRunning = modify (\p -> apply (running p) p) >> get
+confirmRunning :: HPage Context
+confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
 
-apply :: Maybe InFlightData -> Page -> Page
-apply Nothing      p = p
-apply (Just Reset) p = p{loadedModules = empty,
+apply :: Maybe InFlightData -> Context -> Context
+apply Nothing      c = c
+apply (Just Reset) c = c{loadedModules = empty,
                          recoveryLog = return (),
                          running = Nothing}
-apply (Just lm)    p = p{loadedModules = insert (loadingModule lm) (loadedModules p),
-                         recoveryLog   = (recoveryLog p) >> (runningAction lm)}
+apply (Just lm)    c = c{loadedModules = insert (loadingModule lm) (loadedModules c),
+                         recoveryLog   = (recoveryLog c) >> (runningAction lm)}
 
 fromString :: String -> [Expression]
 fromString = filter (/= Exp "") . map toExp . splitOn "" . lines
@@ -389,31 +487,23 @@ joinWith :: [a] -> [[a]] -> [a]
 joinWith _ [] = []
 joinWith sep (x:xs) = x ++ (concat . map (sep ++) $ xs)
 
-replaceExpression :: Int -> String -> [Expression] -> [Expression]
-replaceExpression 0 expr [] = fromString expr
-replaceExpression i expr exprs
-    | i == length exprs = let newExprs = fromString expr
-                           in exprs ++ newExprs
-    | otherwise = let (before, (_:after)) = splitAt i exprs
-                      newExprs = fromString expr
-                   in before ++ newExprs ++ after
-        
-        
-showExpressions :: Page -> String
-showExpressions p = drop 2 . concat $ map (showNth allExps current) [0..expNum - 1]
-    where allExps = expressions p
-          current = currentExpr p
-          expNum  = length allExps
-          showNth list sel cur = "\n\n" ++ if sel == cur then
-                                                "[" ++ show (list !! cur) ++ "]"
-                                           else
-                                                show $ list !! cur
+insertAt :: Int -> [a] -> [a] -> [a]
+insertAt 0 new [] = new
+insertAt i new old | i == length old = old ++ new
+                   | otherwise = let (before, (_:after)) = splitAt i old
+                                  in before ++ new ++ after
 
-modifyWithUndo :: (Page -> Page) -> HPageT IO ()
-modifyWithUndo f = modify (\page ->
+showWithCurrent :: Show a => [a] -> Int -> String -> (String -> String) -> String
+showWithCurrent allItems curItem sep mark = 
+        drop (length sep) . concat $ map (showNth allItems curItem) [0..itemCount - 1]
+    where itemCount  = length allItems
+          showNth list sel cur = sep ++ ((if sel == cur then mark else id) $ show $ list !! cur)
+
+modifyWithUndo :: (Page -> Page) -> HPage ()
+modifyWithUndo f = modifyPage (\page ->
                                 let newPage = f page
                                     undoAct = do
-                                                setText $ toString page
+                                                setPageText $ toString page
                                                 setExprIndex $ currentExpr page
                                  in newPage{undoActions = undoAct : undoActions page}) 
 
@@ -428,3 +518,6 @@ nextMatching t p = let c = currentExpr p
                                 Just i
     where rotate n xs = drop n xs ++ take n xs
           include x (_, Exp xs) = (xs \\ x) /= xs
+
+emptyPage :: Page
+emptyPage = Page [] (-1) [] [] Nothing Nothing

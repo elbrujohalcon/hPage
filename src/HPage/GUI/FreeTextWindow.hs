@@ -2,6 +2,7 @@
 module HPage.GUI.FreeTextWindow ( gui ) where
 
 import Data.List
+import Control.Monad
 import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Dialogs
@@ -55,6 +56,7 @@ gui =
         mnuPage <- menuPane [text := "Page"]
         mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",     on command := onCmd $ addPage]
         menuItem mnuPage [text := "&Close\tCtrl-w",   on command := onCmd $ closePage]
+        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd $ closeAllPages]
         menuLine mnuPage
         mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd $ say "open"]
         mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd $ say "save"]
@@ -121,7 +123,7 @@ gui =
                 do
                     set lstPages [selection := i]
                     page <- varGet pages >>= return . (!! i)
-                    newText <- HPS.runIn page HP.getText
+                    newText <- HPS.runIn page HP.getPageText
                     set txtCode [text := newText]
         
         addPage pages win lstPages txtCode lstResults status =
@@ -135,8 +137,8 @@ gui =
             do
                 i <- get lstPages selection
                 page <- varGet pages >>= return . (!! i)
-                txt <- HPS.runIn page HP.getText
-                HPS.runIn page $ HP.setText $ (show i) ++ txt
+                txt <- HPS.runIn page HP.getPageText
+                HPS.runIn page $ HP.setPageText $ (show i) ++ txt
                 setPage i pages win lstPages txtCode lstResults status
         
         closePage pages win lstPages txtCode lstResults status =
@@ -164,6 +166,11 @@ gui =
                             varUpdate pages $ deleteAt i
                             itemDelete lstPages i
                             setPage (i-1) pages win lstPages txtCode lstResults status
+
+        closeAllPages pages win lstPages txtCode lstResults status =
+            do
+                pageCount <- varGet pages >>= return . length
+                forM_ [0..pageCount] $ \_ -> closePage pages win lstPages txtCode lstResults status
 
 deleteAt :: Int -> [a] -> [a]
 deleteAt i xs = take i xs ++ drop (i+1) xs
