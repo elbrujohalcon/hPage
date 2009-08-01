@@ -112,12 +112,6 @@ evalHPage hpt = do
 ctxString :: HPage String
 ctxString = get >>= return . show
 
-closePage :: HPage ()
-closePage = return ()
-
-closePageNth :: Int -> HPage ()
-closePageNth _ = return ()
-
 clearPage :: HPage ()
 clearPage = setPageText ""
 
@@ -176,6 +170,21 @@ getPageIndex = get >>= return . currentPage
 
 setPageIndex :: Int -> HPage ()
 setPageIndex i = withPageIndex i $ modify (\ctx -> ctx{currentPage = i})
+
+closePage :: HPage ()
+closePage = get >>= closePageNth . currentPage
+
+closePageNth :: Int -> HPage ()
+closePageNth i = withPageIndex i $ do
+                                        count <- getPageCount
+                                        case count of
+                                            1 ->
+                                                closeAllPages
+                                            _ ->
+                                                modify (\c -> c{pages = insertAt i [] $ pages c,
+                                                                currentPage = case i of
+                                                                                0 -> 0
+                                                                                _ -> i - 1})
 
 closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],

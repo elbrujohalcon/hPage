@@ -86,8 +86,8 @@ main =
                  ,  run $ prop_save_page hps
                  ,  run $ prop_save_page_fail hps
                  ,  run $ prop_save_page_as hps
-{-
                  ,  run $ prop_close_page hps
+{-
                  ,  run $ prop_is_modified_page hps
                  ,  run $ prop_is_modified_page_fail hps
                  ,  run $ prop_save_nth_page hps
@@ -504,13 +504,50 @@ prop_save_page_as hps file =
                                             return $ p0 == file &&
                                                      p1 == file
 
+prop_close_page :: HPS.ServerHandle -> Int -> Property
+prop_close_page hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            HP.setPageText $ show i
+                                            forM [1..i] $ \x ->
+                                                            do
+                                                                HP.addPage
+                                                                HP.setPageText $ show (i-x) 
+                                            pcb <- HP.getPageCount
+                                            pss <- (flip mapM) [i,i-1..1] $ \x -> do
+                                                                                    HP.setPageIndex x
+                                                                                    pbi <- HP.getPageIndex
+                                                                                    pbt <- HP.getPageText
+                                                                                    HP.closePage
+                                                                                    pai <- HP.getPageIndex
+                                                                                    pat <- HP.getPageText
+                                                                                    return (x, pbi, pbt, pai, pat)
+                                            pca <- HP.getPageCount
+                                            pia <- HP.getPageIndex
+                                            pta <- HP.getPageText
+                                            HP.closePage
+                                            pcf <- HP.getPageCount
+                                            pif <- HP.getPageIndex
+                                            ptf <- HP.getPageText
+                                            --liftDebugIO (pcb, (pca, pia, pta), (pcf, pif, ptf), pss)
+                                            --let ff = \(k, _, _, _, _) -> (k, k, show k, k-1, show (k-1))
+                                            --liftDebugIO (i+1, (1, 0, "0"), (1, 0, ""), map ff pss)
+                                            return . ((pcb == i+1 &&
+                                                       pca == 1 && pia == 0 && pta == "0" &&
+                                                       pcf == 1 && pif == 0 && ptf == "") &&) $
+                                                all (\(k, kbi, kbt, kai, kat) ->
+                                                        kbi == k &&
+                                                        kbt == show k &&
+                                                        kai == k-1 &&
+                                                        kat == show (k-1) ) $ pss
+
+
 
 prop_is_modified_nth_page, prop_is_modified_nth_page_fail,
     prop_is_modified_page, prop_is_modified_page_fail,
     prop_save_nth_page, prop_save_nth_page_fail,
-    prop_close_nth_page, prop_close_nth_page_fail,
-    prop_close_page :: HPS.ServerHandle -> Int -> Property
-prop_close_page _hps i = i > 0 ==> False
+    prop_close_nth_page, prop_close_nth_page_fail :: HPS.ServerHandle -> Int -> Property
 prop_is_modified_page _hps i = i > 0 ==> False
 prop_is_modified_page_fail _hps i = i > 0 ==> False
 prop_save_nth_page _hps i = i > 0 ==> False
