@@ -187,9 +187,11 @@ closePageNth i = withPageIndex i $ do
                                                 closeAllPages
                                             _ ->
                                                 modify (\c -> c{pages = insertAt i [] $ pages c,
-                                                                currentPage = case i of
-                                                                                0 -> 0
-                                                                                _ -> i - 1})
+                                                                currentPage = if i == currentPage c
+                                                                                then case i of
+                                                                                        0 -> 0
+                                                                                        _ -> i - 1
+                                                                                else currentPage c})
 
 closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],

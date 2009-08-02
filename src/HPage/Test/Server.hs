@@ -54,7 +54,6 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-{-
         runTests "HPage Server vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -80,7 +79,6 @@ main =
                  ,  run $ prop_undoredo hps
                  ,  run $ prop_find hps
                  ]
--}
         runTests "Many Pages" options
                  [  run $ prop_new_page hps
                  ,  run $ prop_open_page hps
@@ -98,12 +96,9 @@ main =
                  ,  run $ prop_save_nth_page_as_fail hps
                  ,  run $ prop_is_modified_nth_page hps
                  ,  run $ prop_is_modified_nth_page_fail hps
-{-
                  ,  run $ prop_close_nth_page hps
                  ,  run $ prop_close_nth_page_fail hps
                  ,  run $ prop_close_all_pages hps
-                 ,  run $ prop_close_all_pages_fail hps
--}
                  ]
 {-
         runTests "Many Pages (Safe)" options
@@ -678,5 +673,78 @@ prop_is_modified_nth_page_fail hps i =
                                             return $ a && b
 
 prop_close_nth_page, prop_close_nth_page_fail :: HPS.ServerHandle -> Int -> Property
-prop_close_nth_page _hps i = i > 0 ==> False
-prop_close_nth_page_fail _hps i = i > 0 ==> False
+prop_close_nth_page  hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            forM [1..i] $ \_ -> HP.addPage
+                                            t0 <- (flip allM) [1..i] $ \x ->
+                                                                        do
+                                                                            let y = i - x
+                                                                            HP.closePageNth y
+                                                                            pgc <- liftM (y+1==) $ HP.getPageCount
+                                                                            pgi <- liftM (0 ==) $ HP.getPageIndex
+                                                                            let result = pgc && pgi
+                                                                            if not result
+                                                                                then
+                                                                                    do
+                                                                                        liftDebugIO [pgc, pgi]
+                                                                                        return False
+                                                                                else
+                                                                                    return True
+                                            HP.closeAllPages
+                                            HP.setPageText "two"
+                                            HP.addPage
+                                            HP.setPageText "one"
+                                            HP.addPage
+                                            HP.setPageText "zero"
+                                            HP.setPageIndex 1
+                                            HP.closePageNth 1
+                                            t1 <- liftM ("zero" ==) $ HP.getPageText
+                                            t2 <- liftM (0 ==) $ HP.getPageIndex
+                                            HP.setPageIndex 1
+                                            t3 <- liftM ("two" ==) $ HP.getPageText
+                                            HP.closePageNth 1
+                                            HP.closePageNth 0
+                                            t4 <- liftM ("" ==) $ HP.getPageText
+                                            t5 <- liftM (0 ==) $ HP.getPageIndex
+                                            t6 <- liftM (1 ==) $ HP.getPageCount
+                                            let result = t0 && t1 && t2 && t3 && t4 && t5 && t6
+                                            if not result
+                                                then
+                                                    do
+                                                        liftDebugIO [t0, t1, t2, t3, t4, t5, t6]
+                                                        return False
+                                                else
+                                                    return True
+prop_close_nth_page_fail hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            forM [1..i] $ \_ -> HP.addPage
+                                            a <- mustFail $ HP.closePageNth $ i + 1
+                                            b <- mustFail $ HP.closePageNth $ -1
+                                            return $ a && b
+
+prop_close_all_pages :: HPS.ServerHandle -> Int -> Property
+prop_close_all_pages hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            c0 <- HP.getPageCount
+                                            HP.setPageText "not empty"
+                                            forM [1..i-1] $ \_ -> HP.addPage
+                                            c1 <- HP.getPageCount
+                                            HP.setPageIndex $ c1 - 1
+                                            HP.closeAllPages
+                                            c2 <- HP.getPageCount
+                                            i2 <- HP.getPageIndex
+                                            t2 <- HP.getPageText
+                                            let result = (c0, c1, c2, i2, t2) == (1, i, 1, 0, "") 
+                                            if not result
+                                                then
+                                                    do
+                                                        liftDebugIO (c0, c1, c2, i2, t2)
+                                                        return False
+                                                else
+                                                    return True
