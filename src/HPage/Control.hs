@@ -14,6 +14,10 @@ module HPage.Control (
     isModifiedPage, isModifiedPageNth,
     closePageNth, getPageNthPath,
     savePageNth, savePageNthAs,
+    -- SAFE PAGE CONTROLS --
+    safeClosePage, safeCloseAllPages,
+    safeSavePageAs, safeClosePageNth,
+    safeSavePageNthAs,
     -- EXPRESSION CONTROLS --
     setPageText, getPageText, clearPage, 
     getExprIndex, setExprIndex, getExprCount,
@@ -36,7 +40,9 @@ module HPage.Control (
  ) where
 
 import System.IO
+import System.Directory
 import Data.Set (Set, empty, insert, toList)
+import Control.Monad.Loops
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.State.Class
@@ -197,6 +203,30 @@ closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],
                                     currentPage = 0})
 
+safeClosePage :: HPage ()
+safeClosePage = get >>= safeClosePageNth . currentPage 
+
+safeCloseAllPages :: HPage ()
+safeCloseAllPages = do
+                        ps <- liftM (length . pages) $ get
+                        ms <- anyM isModifiedPageNth [0..ps-1]
+                        if ms then fail "There are modified pages"
+                            else closeAllPages
+
+safeClosePageNth :: Int -> HPage ()
+safeClosePageNth i = do
+                        m <- isModifiedPageNth i
+                        if m then fail "The page is modified"
+                            else closePageNth i 
+                
+safeSavePageAs :: FilePath -> HPage ()
+safeSavePageAs file = get >>=  (flip safeSavePageNthAs) file . currentPage
+
+safeSavePageNthAs :: Int -> FilePath -> HPage ()
+safeSavePageNthAs i file = do
+                                m <- liftIO $ doesFileExist file
+                                if m then fail "The page is modified"
+                                    else savePageNthAs i file
 
 clearPage :: HPage ()
 clearPage = setPageText ""

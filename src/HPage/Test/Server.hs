@@ -11,6 +11,7 @@ import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import System.Directory
 import Control.Monad.Loops
+import qualified Data.ByteString.Char8 as Str
 import Utils.Log
 
 instance Arbitrary Char where
@@ -36,8 +37,8 @@ instance Arbitrary ClassName where
     arbitrary = elements $ map CN [ "HPage", "IO", "IO a", "Int", "String"]
     coarbitrary _ = undefined
 
-mustFail :: (MonadError e m) => m a -> m Bool
-mustFail a = (a >> return False) `catchError` (\_ -> return True)
+shouldFail :: (MonadError e m) => m a -> m Bool
+shouldFail a = (a >> return False) `catchError` (\_ -> return True)
 
 options :: TestOptions
 options = TestOptions
@@ -54,7 +55,7 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-        runTests "HPage Server vs. Hint Server" options
+        runTests "vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
                  ,  run $ prop_typeOf hps hs
@@ -100,18 +101,13 @@ main =
                  ,  run $ prop_close_nth_page_fail hps
                  ,  run $ prop_close_all_pages hps
                  ]
-{-
         runTests "Many Pages (Safe)" options
                  [  run $ prop_safe_save_page_as hps
                  ,  run $ prop_safe_close_page hps
                  ,  run $ prop_safe_save_nth_page_as hps
-                 ,  run $ prop_safe_save_nth_page_as_fail hps
                  ,  run $ prop_safe_close_nth_page hps
-                 ,  run $ prop_safe_close_nth_page_fail hps
                  ,  run $ prop_safe_close_all_pages hps
-                 ,  run $ prop_safe_close_all_pages_fail hps
                  ]
--}
         removeDirectoryRecursive testDir
                     
 
@@ -245,7 +241,7 @@ prop_setget_expr hps txt =
 
 prop_setget_expr_fail :: HPS.ServerHandle -> String -> Bool
 prop_setget_expr_fail hps _ =
-    unsafePerformIO $ HPS.runIn hps $ mustFail $ HP.clearPage >> HP.getExprText
+    unsafePerformIO $ HPS.runIn hps $ shouldFail $ HP.clearPage >> HP.getExprText
 
 prop_addrem_expr :: HPS.ServerHandle -> String -> Property
 prop_addrem_expr hps txt =
@@ -273,7 +269,7 @@ prop_addrem_expr hps txt =
 
 prop_addrem_expr_fail :: HPS.ServerHandle -> String -> Bool
 prop_addrem_expr_fail hps _ =
-    unsafePerformIO $ HPS.runIn hps $ mustFail $ HP.clearPage >> HP.removeExpr
+    unsafePerformIO $ HPS.runIn hps $ shouldFail $ HP.clearPage >> HP.removeExpr
 
 prop_setget_nth :: HPS.ServerHandle -> Int -> Property
 prop_setget_nth hps i =
@@ -298,8 +294,8 @@ prop_setget_nth_fail hps i txt =
     i > 0 ==>
     unsafePerformIO $ HPS.runIn hps $ do
                                         HP.clearPage
-                                        set <- mustFail $ HP.setExprNthText i txt
-                                        get <- mustFail $ HP.getExprNthText i
+                                        set <- shouldFail $ HP.setExprNthText i txt
+                                        get <- shouldFail $ HP.getExprNthText i
                                         -- liftDebugIO (get, set)
                                         return (set && get)
 
@@ -320,7 +316,7 @@ prop_remove_nth hps i =
 prop_remove_nth_fail :: HPS.ServerHandle -> Int -> Property
 prop_remove_nth_fail hps i =
     i >= 0 ==>
-    unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> mustFail (HP.removeNth $ i+1)
+    unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> shouldFail (HP.removeNth $ i+1)
 
 
 prop_undoredo :: HPS.ServerHandle -> String -> Property
@@ -442,7 +438,7 @@ prop_open_page_fail hps file =
         unsafePerformIO $ HPS.runIn hps $ do
                                             let path = testDir ++ "NO-Test" ++ file
                                             HP.closeAllPages
-                                            mustFail $ HP.openPage path
+                                            shouldFail $ HP.openPage path
 
 prop_setget_page, prop_set_page_index_fail :: HPS.ServerHandle -> Int -> Property
 prop_setget_page hps i =
@@ -471,7 +467,7 @@ prop_set_page_index_fail hps i =
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             replicateM (i-1) HP.addPage
-                                            mustFail $ HP.setPageIndex i
+                                            shouldFail $ HP.setPageIndex i
 
 prop_save_page, prop_save_page_fail, prop_save_page_as :: HPS.ServerHandle -> String -> Property
 prop_save_page hps file =
@@ -495,7 +491,7 @@ prop_save_page_fail hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
-                                            mustFail $ HP.savePage
+                                            shouldFail $ HP.savePage
 prop_save_page_as hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
@@ -612,10 +608,10 @@ prop_save_nth_page_fail hps i =
     i > 0 ==>
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
-                                            a <- mustFail $ HP.savePageNth 0
+                                            a <- shouldFail $ HP.savePageNth 0
                                             forM [1..i] $ \_ -> HP.addPage
-                                            b <- (flip allM) [1..i] $ mustFail . HP.savePageNth
-                                            c <- mustFail $ HP.savePageNth $ i + 1
+                                            b <- (flip allM) [1..i] $ shouldFail . HP.savePageNth
+                                            c <- shouldFail $ HP.savePageNth $ i + 1
                                             return $ a && b && c
 
 prop_save_nth_page_as, prop_save_nth_page_as_fail :: HPS.ServerHandle -> Int -> Property
@@ -643,8 +639,8 @@ prop_save_nth_page_as_fail hps i =
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             forM [1..i] $ \_ -> HP.addPage
-                                            a <- mustFail $ HP.savePageNth $ i + 1
-                                            b <- mustFail $ HP.savePageNth $ -1
+                                            a <- shouldFail $ HP.savePageNth $ i + 1
+                                            b <- shouldFail $ HP.savePageNth $ -1
                                             return $ a && b
 
 prop_is_modified_nth_page, prop_is_modified_nth_page_fail :: HPS.ServerHandle -> Int -> Property
@@ -668,8 +664,8 @@ prop_is_modified_nth_page_fail hps i =
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             forM [1..i] $ \_ -> HP.addPage
-                                            a <- mustFail $ HP.isModifiedPageNth $ i + 1
-                                            b <- mustFail $ HP.isModifiedPageNth $ -1
+                                            a <- shouldFail $ HP.isModifiedPageNth $ i + 1
+                                            b <- shouldFail $ HP.isModifiedPageNth $ -1
                                             return $ a && b
 
 prop_close_nth_page, prop_close_nth_page_fail :: HPS.ServerHandle -> Int -> Property
@@ -722,8 +718,8 @@ prop_close_nth_page_fail hps i =
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             forM [1..i] $ \_ -> HP.addPage
-                                            a <- mustFail $ HP.closePageNth $ i + 1
-                                            b <- mustFail $ HP.closePageNth $ -1
+                                            a <- shouldFail $ HP.closePageNth $ i + 1
+                                            b <- shouldFail $ HP.closePageNth $ -1
                                             return $ a && b
 
 prop_close_all_pages :: HPS.ServerHandle -> Int -> Property
@@ -748,3 +744,84 @@ prop_close_all_pages hps i =
                                                         return False
                                                 else
                                                     return True
+
+prop_safe_save_page_as :: HPS.ServerHandle -> ModuleName -> Bool
+prop_safe_save_page_as hps (MN file) =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        let path = testDir ++ file
+                                        Hint.liftIO $ removeFileMayNotExist path
+                                        HP.closeAllPages
+                                        HP.setPageText file
+                                        HP.safeSavePageAs path
+                                        HP.openPage path
+                                        p0 <- HP.getPageText
+                                        p1 <- shouldFail $ HP.safeSavePageAs path
+                                        HP.openPage path
+                                        p2 <- HP.getPageText
+                                        return $ p0 == file && p1 && p2 == file
+    where removeFileMayNotExist f = do
+                                        e <- doesFileExist f
+                                        if e then removeFile f else return ()
+
+prop_safe_close_page :: HPS.ServerHandle -> Int -> Property
+prop_safe_close_page hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ (flip allM) [1..i] $ \_ ->
+                                                                do
+                                                                    HP.addPage -- To avoid page 0
+                                                                    HP.addPage
+                                                                    HP.setPageText $ show i
+                                                                    c0 <- HP.getPageCount
+                                                                    t1 <- shouldFail $ HP.safeClosePage
+                                                                    c1 <- HP.getPageCount
+                                                                    HP.undo
+                                                                    HP.safeClosePage
+                                                                    c2 <- HP.getPageCount
+                                                                    return $ c0 == c1 &&
+                                                                             c0 == (c2 + 1) &&
+                                                                             t1
+
+prop_safe_save_nth_page_as :: HPS.ServerHandle -> Int -> Property
+prop_safe_save_nth_page_as hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            forM [1..i] $ \x ->
+                                                            do
+                                                                let y = show $ i - x
+                                                                HP.addPage
+                                                                HP.setPageText y
+                                            let path = testDir ++ "Test"
+                                            Hint.liftIO $ Str.writeFile path $ Str.pack $ show i
+                                            t0 <- (flip allM) [0..i-1] $ shouldFail . ((flip HP.safeSavePageNthAs) path)
+                                            Hint.liftIO $ removeFile path
+                                            HP.safeSavePageNthAs 0 path
+                                            return t0
+
+prop_safe_close_nth_page :: HPS.ServerHandle -> Int -> Property
+prop_safe_close_nth_page hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            forM [1..i] $ \x ->
+                                                            do
+                                                                let y = show $ i - x
+                                                                HP.addPage
+                                                                HP.setPageText y
+                                            t0 <- allM (shouldFail . HP.safeClosePageNth) [0..i-2]
+                                            HP.addPage
+                                            HP.safeClosePageNth 0
+                                            t1 <- allM HP.isModifiedPageNth [1..i-1]
+                                            return $ t0 && t1
+
+prop_safe_close_all_pages :: HPS.ServerHandle -> Int -> Property
+prop_safe_close_all_pages hps i =
+    i > 0 ==>
+        unsafePerformIO $ HPS.runIn hps $ do
+                                            HP.closeAllPages
+                                            forM [1..i] $ \x ->
+                                                            do
+                                                                let y = show $ i - x
+                                                                HP.addPage
+                                                                HP.setPageText y
+                                            shouldFail HP.safeCloseAllPages

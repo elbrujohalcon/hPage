@@ -16,6 +16,10 @@ module HPage.Stub.Control (
     isModifiedPage, isModifiedPageNth,
     closePageNth, getPageNthPath,
     savePageNth, savePageNthAs,
+    -- SAFE PAGE CONTROLS --
+    safeClosePage, safeCloseAllPages,
+    safeSavePageAs, safeClosePageNth,
+    safeSavePageNthAs,
     -- EXPRESSION CONTROLS --
     setPageText, getPageText, clearPage, 
     getExprIndex, setExprIndex, getExprCount,
@@ -109,6 +113,25 @@ savePageAs _ = return ()
 
 getPagePath :: HPage (Maybe FilePath)
 getPagePath = return Nothing 
+
+
+
+safeClosePage :: HPage ()
+safeClosePage = return ()
+
+safeCloseAllPages :: HPage ()
+safeCloseAllPages = return ()
+
+safeSavePageAs :: FilePath -> HPage ()
+safeSavePageAs _ = return ()
+
+safeClosePageNth :: Int -> HPage ()
+safeClosePageNth _ = return ()
+
+safeSavePageNthAs :: Int -> FilePath -> HPage ()
+safeSavePageNthAs _ _ = return ()
+
+
 
 setPageText :: String -> HPage ()
 setPageText s = put s
