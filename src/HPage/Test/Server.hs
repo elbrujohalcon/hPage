@@ -349,15 +349,31 @@ prop_undoredo hps txt =
                                         HP.setExprNthText 0 txt
                                         b8 <- HP.getPageText
                                         HP.addExpr "zz"
+                                        b9 <- HP.getPageText
                                         let to10 = [0..10] :: [Int]
                                         after <- mapM (\_ -> HP.undo >> HP.getPageText) to10
                                         redo <- mapM (\_ -> HP.redo >> HP.getPageText) to10
-                                        --liftDebugIO [b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""]
-                                        --liftDebugIO after
-                                        --liftDebugIO [b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8]
-                                        --liftDebugIO redo
-                                        return $ ([b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""] == after) &&
-                                                 ([b0, b1, b2, b3, b4, b5, b6, b7, b8, b8, b8] == redo)
+                                        HP.clearPage >> HP.addExpr "cc" >> HP.clearPage
+                                        c0 <- HP.addExpr "zz" >> HP.getPageText
+                                        c1 <- HP.undo >> HP.getPageText
+                                        c2 <- HP.undo >> HP.getPageText
+                                        c3 <- HP.setPageText "ww" >> HP.getPageText
+                                        c4 <- HP.redo >> HP.getPageText
+                                        let result = ([b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""] == after) &&
+                                                     ([b1, b2, b3, b4, b5, b6, b7, b8, b9, b9, b9] == redo) &&
+                                                     ([c0, c1, c2, c3, c4] == ["zz", "", "cc", "ww", "ww"])
+                                        if not result
+                                            then
+                                                do
+                                                    liftDebugIO [b8, b7, b6, b5, b4, b3, b2, b1, b0, "", ""]
+                                                    liftDebugIO after
+                                                    liftDebugIO [b1, b2, b3, b4, b5, b6, b7, b8, b8, b8, b8]
+                                                    liftDebugIO redo
+                                                    liftDebugIO ["zz", "", "cc", "ww", "ww"]
+                                                    liftDebugIO [c0, c1, c2, c3, c4]
+                                                    return False
+                                            else
+                                                return True 
 
 prop_find :: HPS.ServerHandle -> Int -> Property
 prop_find hps j =
@@ -547,7 +563,7 @@ prop_is_modified_page hps file =
                                             HP.addPage
                                             f0 <- HP.isModifiedPage
                                             HP.setPageText file
-                                            HP.setPageText file
+                                            HP.addExpr file
                                             t0 <- HP.isModifiedPage
                                             HP.undo
                                             t1 <- HP.isModifiedPage
@@ -561,14 +577,21 @@ prop_is_modified_page hps file =
                                             f2 <- HP.isModifiedPage
                                             HP.undo
                                             t4 <- HP.isModifiedPage
+                                            HP.addExpr $ file ++ "$$$"
+                                            t5 <- HP.isModifiedPage
                                             HP.openPage path
                                             f3 <- HP.isModifiedPage
                                             HP.redo
                                             f4 <- HP.isModifiedPage
-                                            -- liftDebugIO $ (('F', f0, f1, f2, f3, f4),
-                                               --            ('T', t0, t1, t2, t3, t4))
-                                            return $ not (f0 || f1 || f2 || f3 || f4) &&
-                                                     t0 && t1 && t2 && t3 && t4
+                                            let result = not (f0 || f1 || f2 || f3 || f4) &&
+                                                         t0 && t1 && t2 && t3 && t4 && t5
+                                            if not result
+                                                then do
+                                                        liftDebugIO $ (('F', f0, f1, f2, f3, f4),
+                                                                       ('T', t0, t1, t2, t3, t4, t5))
+                                                        return False
+                                                else
+                                                    return True 
 
 prop_is_modified_nth_page, prop_is_modified_nth_page_fail,
     prop_save_nth_page, prop_save_nth_page_fail,

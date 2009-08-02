@@ -63,7 +63,7 @@ data Page = Page { -- Display --
                    undoActions :: [HPage ()],
                    redoActions :: [HPage ()],
                    lastSearch  :: Maybe String,
-                   modifCounter :: Int,
+                   original :: [Expression],
                    -- File System --
                    filePath    :: Maybe FilePath
                   }
@@ -125,8 +125,9 @@ openPage file = do
                     let newExprs = fromString $ Str.unpack s
                         newPage = emptyPage{expressions = newExprs, 
                                             currentExpr = if (length newExprs) == 0 then (-1) else 0,
-                                            filePath    = Just file}
-                    modify (\ctx -> ctx{pages = newPage:(pages ctx),
+                                            filePath    = Just file,
+                                            original    = newExprs}
+                    modify (\ctx -> ctx{pages = newPage : pages ctx,
                                         currentPage = 0})
 
 savePage :: HPage ()
@@ -150,13 +151,15 @@ savePageNthAs i file = do
                             liftTraceIO $ "writing: " ++ file
                             liftIO $ Str.writeFile file $ Str.pack $ toString p  
                             modifyPageNth i (\page -> page{filePath = Just file,
-                                                           modifCounter = 0})
+                                                           original = (expressions page)})
 
 isModifiedPage :: HPage Bool
 isModifiedPage = get >>= isModifiedPageNth . currentPage
 
 isModifiedPageNth :: Int -> HPage Bool
-isModifiedPageNth i = withPageIndex i $ liftM ((0 /=) . modifCounter) $ getPageNth i 
+isModifiedPageNth i = withPageIndex i $ do
+                                            page <- getPageNth i
+                                            return $ expressions page /= original page 
 
 getPagePath :: HPage (Maybe FilePath)
 getPagePath = get >>= getPageNthPath . currentPage
@@ -259,25 +262,33 @@ undo = do
             p <- getPage
             case undoActions p of
                 [] ->
-                    return ()
+                    liftTraceIO ("not undo", expressions p)
+                    -- return ()
                 (acc:accs) ->
                     do
                         acc
+                        getPage >>= (\px -> liftTraceIO ("redo added", expressions p, expressions px))
                         modifyPage (\page ->
-                                        let redoAct = modifyPage (\pp -> pp{expressions = expressions page,
-                                                                            currentExpr = currentExpr page})
+                                        let redoAct = modifyPage (\pp -> pp{expressions = expressions p,
+                                                                            currentExpr = currentExpr p})
                                          in page{redoActions = redoAct : redoActions page,
                                                  undoActions = accs})
 redo = do
             p <- getPage
             case redoActions p of
                 [] ->
-                    return ()
+                    liftTraceIO ("not redo", expressions p)
+                    -- return ()
                 (acc:accs) ->
                     do
                         acc
-                        modifyWithUndo (\page -> page{redoActions = accs})
-
+                        getPage >>= (\px -> liftTraceIO ("undo added", expressions px, expressions p))
+                        modifyPage (\page ->
+                                        let undoAct = modifyPage (\pp -> pp{expressions = expressions p,
+                                                                            currentExpr = currentExpr p})
+                                         in page{undoActions = undoAct : undoActions page,
+                                                 redoActions = accs})
+ 
 find :: String -> HPage ()
 find text = do
                 page <- getPage
@@ -513,10 +524,9 @@ modifyWithUndo :: (Page -> Page) -> HPage ()
 modifyWithUndo f = modifyPage (\page ->
                                 let newPage = f page
                                     undoAct = modifyPage (\pp -> pp{expressions = expressions page,
-                                                                    currentExpr = currentExpr page,
-                                                                    modifCounter = (modifCounter pp) - 1})
+                                                                    currentExpr = currentExpr page})
                                  in newPage{undoActions = undoAct : undoActions page,
-                                            modifCounter = (modifCounter page) + 1}) 
+                                            redoActions = []}) 
 
 nextMatching :: String -> Page -> Maybe Int
 nextMatching t p = let c = currentExpr p
@@ -531,4 +541,4 @@ nextMatching t p = let c = currentExpr p
           include x (_, Exp xs) = (xs \\ x) /= xs
 
 emptyPage :: Page
-emptyPage = Page [] (-1) [] [] Nothing 0 Nothing
+emptyPage = Page [] (-1) [] [] Nothing [] Nothing
