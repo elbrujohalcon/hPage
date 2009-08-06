@@ -1,4 +1,10 @@
-
+{-# LANGUAGE GeneralizedNewtypeDeriving,
+             MultiParamTypeClasses,
+             FlexibleInstances,
+             FlexibleContexts,
+             FunctionalDependencies,
+             UndecidableInstances #-}
+             
 module HPage.GUI.FreeTextWindow ( gui ) where
 
 import Data.List
@@ -14,7 +20,7 @@ gui :: IO ()
 gui =
     do
         -- Server context
-        pages <- varCreate ([] :: [HPS.ServerHandle])
+        model <- HPS.start 
         
         win <- frame [text := "hPage"]
         topLevelWindowSetIconFromFile win "../res/images/hpage.png"
@@ -46,7 +52,7 @@ gui =
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
         set win [statusBar := [status]]
         
-        let onCmd acc = acc pages win lstPages txtCode lstResults status
+        let onCmd acc = acc model win lstPages txtCode lstResults status
         
         -- Events
         set lstPages [on select := onCmd $ pageChange]
@@ -112,65 +118,63 @@ gui =
         onCmd $ addPage        
         focusOn txtCode
     where
-        say x _pages _win _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"]
-    
-        setPage i pages _win lstPages  txtCode _lstResults _status
-            | i < 0 =
-                do
-                    set lstPages [selection := -1]
-                    set txtCode [text := "<- Select a page from your left"]
-            | otherwise =
-                do
-                    set lstPages [selection := i]
-                    page <- varGet pages >>= return . (!! i)
-                    newText <- HPS.runIn page HP.getPageText
-                    set txtCode [text := newText]
-        
-        addPage pages win lstPages txtCode lstResults status =
-            do
-                newPage <- HPS.start
-                varUpdate pages (newPage:)
-                itemAppend lstPages "new page"
-                setPage 0 pages win lstPages txtCode lstResults status
-        
-        pageChange pages win lstPages txtCode lstResults status =
-            do
-                i <- get lstPages selection
-                page <- varGet pages >>= return . (!! i)
-                txt <- HPS.runIn page HP.getPageText
-                HPS.runIn page $ HP.setPageText $ (show i) ++ txt
-                setPage i pages win lstPages txtCode lstResults status
-        
-        closePage pages win lstPages txtCode lstResults status =
-            do
-                --TODO: Confirm if we want to close an unsaved page
-                i <- get lstPages selection
-                case i of
-                    (-1) ->
-                        return ()
-                    0 ->
-                        do
-                            allPages <- varGet pages
-                            let page = allPages !! i
-                                pageCount = (length allPages) - 1
-                            HPS.stop page
-                            varUpdate pages $ deleteAt i
-                            itemDelete lstPages i
-                            case pageCount of
-                                0 -> addPage pages win lstPages txtCode lstResults status
-                                _ -> setPage 0 pages win lstPages txtCode lstResults status
-                    _ ->
-                        do
-                            page <- varGet pages >>= return . (!! i)
-                            HPS.stop page
-                            varUpdate pages $ deleteAt i
-                            itemDelete lstPages i
-                            setPage (i-1) pages win lstPages txtCode lstResults status
+        say x _model _win _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"]
 
-        closeAllPages pages win lstPages txtCode lstResults status =
-            do
-                pageCount <- varGet pages >>= return . length
-                forM_ [0..pageCount] $ \_ -> closePage pages win lstPages txtCode lstResults status
+display :: (Textual w1, Selection w, Items w [Char]) =>
+            HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
+display model _win lstPages txtCode _lstResults _status =
+    do
+        (ps, i, t) <- HPS.runIn model $ do
+                                            pc <- HP.getPageCount
+                                            pages <- mapM HP.getPageNthDesc [0..pc-1]
+                                            ind <- HP.getPageIndex
+                                            txt <- HP.getPageText
+                                            return (pages, ind, txt)
+        lic <- get lstPages itemCount
+        if lic == length ps
+            then
+                return ()
+            else
+                do
+                    itemsDelete lstPages
+                    forM_ [0..lic-1] $ \_ -> itemAppend lstPages "-processing-"
+        (flip mapM) ps $ \pd ->
+                            let prefix = if HP.pIsModified pd
+                                            then "*"
+                                            else ""
+                                name   = case HP.pPath pd of
+                                             Nothing -> "new page"
+                                             Just fn -> fn
+                                p = HP.pIndex pd
+                             in set lstPages [ (item p) := prefix ++ name ]
+        set lstPages [selection := i]
+        set txtCode [text := t] 
 
-deleteAt :: Int -> [a] -> [a]
-deleteAt i xs = take i xs ++ drop (i+1) xs
+addPage :: (Textual w1, Selection w, Items w [Char]) =>
+            HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
+addPage model win lstPages txtCode lstResults status =
+    do
+        HPS.runIn model HP.addPage
+        display model win lstPages txtCode lstResults status
+
+pageChange :: (Textual w1, Selection w, Items w [Char]) =>
+              HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
+pageChange model win lstPages txtCode lstResults status =
+    do
+        i <- get lstPages selection
+        HPS.runIn model $ HP.setPageIndex i
+        display model win lstPages txtCode lstResults status
+
+closePage :: (Textual w1, Selection w, Items w [Char]) =>
+              HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
+closePage model win lstPages txtCode lstResults status =
+    do
+        HPS.runIn model HP.closePage
+        display model win lstPages txtCode lstResults status
+
+closeAllPages :: (Textual w1, Selection w, Items w [Char]) =>
+                 HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
+closeAllPages model win lstPages txtCode lstResults status =
+    do
+        HPS.runIn model HP.closeAllPages
+        display model win lstPages txtCode lstResults status

@@ -14,6 +14,7 @@ module HPage.Control (
     isModifiedPage, isModifiedPageNth,
     closePageNth, getPageNthPath,
     savePageNth, savePageNthAs,
+    PageDescription(..), getPageDesc, getPageNthDesc,
     -- SAFE PAGE CONTROLS --
     safeClosePage, safeCloseAllPages,
     safeSavePageAs, safeClosePageNth,
@@ -53,6 +54,12 @@ import Utils.Log
 import List ((\\))
 import qualified List as List
 import qualified Data.ByteString.Char8 as Str
+
+data PageDescription = PageDesc {pIndex :: Int,
+                                 pPath  :: Maybe FilePath,
+                                 pIsModified :: Bool}
+    deriving (Eq, Show)
+
 newtype Expression = Exp {asString :: String}
     deriving (Eq)
 
@@ -181,6 +188,15 @@ getPageIndex = get >>= return . currentPage
 
 setPageIndex :: Int -> HPage ()
 setPageIndex i = withPageIndex i $ modify (\ctx -> ctx{currentPage = i})
+
+getPageDesc :: HPage PageDescription
+getPageDesc = get >>= getPageNthDesc . currentPage
+
+getPageNthDesc :: Int -> HPage PageDescription
+getPageNthDesc i = do
+                        p <- getPageNthPath i
+                        m <- isModifiedPageNth i
+                        return $ PageDesc i p m
 
 closePage :: HPage ()
 closePage = get >>= closePageNth . currentPage
