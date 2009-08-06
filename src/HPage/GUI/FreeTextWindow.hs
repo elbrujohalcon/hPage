@@ -52,7 +52,11 @@ gui =
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
         set win [statusBar := [status]]
         
-        let onCmd acc = acc model win lstPages txtCode lstResults status
+        let onCmd acc = do
+                            mustRefresh <- acc model win lstPages txtCode lstResults status
+                            if mustRefresh
+                                then display model win lstPages txtCode lstResults status
+                                else return ()
         
         -- Events
         set lstPages [on select := onCmd $ pageChange]
@@ -60,13 +64,13 @@ gui =
         -- Menu bar...
         -- menuBar win []
         mnuPage <- menuPane [text := "Page"]
-        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",     on command := onCmd $ addPage]
-        menuItem mnuPage [text := "&Close\tCtrl-w",   on command := onCmd $ closePage]
-        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd $ closeAllPages]
+        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",     on command := onCmd $ runHP HP.addPage]
+        menuItem mnuPage [text := "&Close\tCtrl-w",   on command := onCmd $ runHP HP.closePage]
+        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd $ runHP HP.closeAllPages]
         menuLine mnuPage
-        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd $ say "open"]
-        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd $ say "save"]
-        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd $ say "save as"]
+        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd openPage]
+        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd savePage]
+        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd savePageAs]
         menuLine mnuPage
         menuQuit mnuPage []
         
@@ -115,10 +119,11 @@ gui =
 
 
         -- ...and RUN!
-        onCmd $ addPage        
+        display model win lstPages txtCode lstResults status
         focusOn txtCode
     where
-        say x _model _win _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"]
+        say x _model _win _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
+        runHP hpacc model _ _ _ _ _ = HPS.runIn model hpacc >> return True
 
 display :: (Textual w1, Selection w, Items w [Char]) =>
             HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
@@ -130,14 +135,7 @@ display model _win lstPages txtCode _lstResults _status =
                                             ind <- HP.getPageIndex
                                             txt <- HP.getPageText
                                             return (pages, ind, txt)
-        lic <- get lstPages itemCount
-        if lic == length ps
-            then
-                return ()
-            else
-                do
-                    itemsDelete lstPages
-                    forM_ [0..lic-1] $ \_ -> itemAppend lstPages "-processing-"
+        itemsDelete lstPages
         (flip mapM) ps $ \pd ->
                             let prefix = if HP.pIsModified pd
                                             then "*"
@@ -146,35 +144,49 @@ display model _win lstPages txtCode _lstResults _status =
                                              Nothing -> "new page"
                                              Just fn -> fn
                                 p = HP.pIndex pd
-                             in set lstPages [ (item p) := prefix ++ name ]
+                             in itemAppend lstPages $ prefix ++ name ++ "-" ++ show p
         set lstPages [selection := i]
         set txtCode [text := t] 
 
-addPage :: (Textual w1, Selection w, Items w [Char]) =>
-            HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
-addPage model win lstPages txtCode lstResults status =
-    do
-        HPS.runIn model HP.addPage
-        display model win lstPages txtCode lstResults status
-
-pageChange :: (Textual w1, Selection w, Items w [Char]) =>
-              HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
-pageChange model win lstPages txtCode lstResults status =
+savePageAs, savePage, openPage, pageChange :: (Textual txt, Selection lst, Items lst [Char]) =>
+                                                    HPS.ServerHandle -> Window frame -> lst -> txt -> t1 -> t2 -> IO Bool
+pageChange model _ lstPages _ _ _ =
     do
         i <- get lstPages selection
         HPS.runIn model $ HP.setPageIndex i
-        display model win lstPages txtCode lstResults status
+        return True
 
-closePage :: (Textual w1, Selection w, Items w [Char]) =>
-              HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
-closePage model win lstPages txtCode lstResults status =
+openPage model win _ _ _ _ =
     do
-        HPS.runIn model HP.closePage
-        display model win lstPages txtCode lstResults status
+        fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
+                                                                 ("Any file",["*.*"])] "" ""
+        case fileName of
+            Nothing ->
+                return False
+            Just f ->
+                do
+                    HPS.runIn model $ HP.openPage f
+                    return True
 
-closeAllPages :: (Textual w1, Selection w, Items w [Char]) =>
-                 HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
-closeAllPages model win lstPages txtCode lstResults status =
+savePageAs model win _ _ _ _ =
     do
-        HPS.runIn model HP.closeAllPages
-        display model win lstPages txtCode lstResults status
+        fileName <- fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
+                                                                 ("Any file",["*.*"])] "" ""
+        case fileName of
+            Nothing ->
+                return False
+            Just f ->
+                do
+                    HPS.runIn model $ HP.savePageAs f
+                    return True
+
+savePage model win lstPages txtCode lstResults status =
+    do
+        path <- HPS.runIn model $ HP.getPagePath
+        case path of
+            Nothing ->
+                savePageAs model win lstPages txtCode lstResults status
+            _ ->
+                do
+                    HPS.runIn model HP.savePage
+                    return True
