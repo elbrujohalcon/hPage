@@ -7,12 +7,13 @@
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
+import System.FilePath
 import Data.List
 import Control.Monad
 import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Dialogs
--- import HPage.Stub.Control (HPage)
+import Graphics.UI.WXCore.Events
 import qualified HPage.Stub.Control as HP hiding (HPage)
 import qualified HPage.Stub.Server as HPS
 
@@ -20,7 +21,10 @@ gui :: IO ()
 gui =
     do
         -- Server context
-        model <- HPS.start 
+        model <- HPS.start
+        
+        -- Clipboard
+        clipboard <- clipboardCreate 
         
         win <- frame [text := "hPage"]
         topLevelWindowSetIconFromFile win "../res/images/hpage.png"
@@ -53,13 +57,14 @@ gui =
         set win [statusBar := [status]]
         
         let onCmd acc = do
-                            mustRefresh <- acc model win lstPages txtCode lstResults status
+                            mustRefresh <- acc model win clipboard lstPages txtCode lstResults status
                             if mustRefresh
-                                then display model win lstPages txtCode lstResults status
+                                then display model win clipboard lstPages txtCode lstResults status
                                 else return ()
         
         -- Events
-        set lstPages [on select := onCmd $ pageChange]
+        set lstPages [on select := onCmd pageChange]
+        controlOnText txtCode $ onCmd updatePage
         
         -- Menu bar...
         -- menuBar win []
@@ -75,12 +80,12 @@ gui =
         menuQuit mnuPage []
         
         mnuEdit <- menuPane [text := "Edit"]
-        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd $ say "undo"]
-        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd $ say "redo"]
+        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd $ runHP HP.undo]
+        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd $ runHP HP.redo]
         menuLine mnuEdit
-        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd $ say "cut"]
-        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd $ say "copy"]
-        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd $ say "paste"]
+        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd cut]
+        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd copy]
+        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd paste]
         menuLine mnuEdit
         menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd $ say "find"]
         menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd $ say "findNext"]
@@ -119,15 +124,15 @@ gui =
 
 
         -- ...and RUN!
-        display model win lstPages txtCode lstResults status
+        display model win clipboard lstPages txtCode lstResults status
         focusOn txtCode
     where
-        say x _model _win _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
-        runHP hpacc model _ _ _ _ _ = HPS.runIn model hpacc >> return True
+        say x _model _win _clipboard _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
+        runHP hpacc model _ _ _ _ _ _ = HPS.runIn model hpacc >> return True
 
 display :: (Textual w1, Selection w, Items w [Char]) =>
-            HPS.ServerHandle -> t -> w -> w1 -> t1 -> t2 -> IO ()
-display model _win lstPages txtCode _lstResults _status =
+            HPS.ServerHandle -> t -> Clipboard () -> w -> w1 -> t1 -> t2 -> IO ()
+display model _win _clipboard lstPages txtCode _lstResults _status =
     do
         (ps, i, t) <- HPS.runIn model $ do
                                             pc <- HP.getPageCount
@@ -142,21 +147,22 @@ display model _win lstPages txtCode _lstResults _status =
                                             else ""
                                 name   = case HP.pPath pd of
                                              Nothing -> "new page"
-                                             Just fn -> fn
-                                p = HP.pIndex pd
-                             in itemAppend lstPages $ prefix ++ name ++ "-" ++ show p
+                                             Just fn -> takeFileName $ dropExtension fn
+                             in itemAppend lstPages $ prefix ++ name
         set lstPages [selection := i]
         set txtCode [text := t] 
 
-savePageAs, savePage, openPage, pageChange :: (Textual txt, Selection lst, Items lst [Char]) =>
-                                                    HPS.ServerHandle -> Window frame -> lst -> txt -> t1 -> t2 -> IO Bool
-pageChange model _ lstPages _ _ _ =
+updatePage, savePageAs, savePage, openPage,
+    pageChange, copy, cut, paste :: (Selection lst, Items lst [Char]) =>
+                                                    HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> TextCtrl txt -> t1 -> t2 -> IO Bool
+
+pageChange model _ _ lstPages _ _ _ =
     do
         i <- get lstPages selection
         HPS.runIn model $ HP.setPageIndex i
         return True
 
-openPage model win _ _ _ _ =
+openPage model win _ _ _ _ _ =
     do
         fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -168,7 +174,7 @@ openPage model win _ _ _ _ =
                     HPS.runIn model $ HP.openPage f
                     return True
 
-savePageAs model win _ _ _ _ =
+savePageAs model win _ _ _ _ _ =
     do
         fileName <- fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -180,13 +186,30 @@ savePageAs model win _ _ _ _ =
                     HPS.runIn model $ HP.savePageAs f
                     return True
 
-savePage model win lstPages txtCode lstResults status =
+savePage model win clipboard lstPages txtCode lstResults status =
     do
         path <- HPS.runIn model $ HP.getPagePath
         case path of
             Nothing ->
-                savePageAs model win lstPages txtCode lstResults status
+                savePageAs model win clipboard lstPages txtCode lstResults status
             _ ->
                 do
                     HPS.runIn model HP.savePage
                     return True
+
+updatePage model _ _ _ txtCode _ _ = do
+                                        txt <- get txtCode text
+                                        HPS.runIn model $ HP.setPageText txt
+                                        return False
+                                        
+copy _ _ _ _ txtCode _ _ =
+    textCtrlCopy txtCode >> return False
+cut model win clipboard lstPages txtCode lstResults status =
+    do
+        textCtrlCut txtCode
+        updatePage model win clipboard lstPages txtCode lstResults status
+
+paste model win clipboard lstPages txtCode lstResults status =
+    do
+        textCtrlPaste txtCode
+        updatePage model win clipboard lstPages txtCode lstResults status
