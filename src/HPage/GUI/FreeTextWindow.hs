@@ -14,8 +14,8 @@ import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import qualified HPage.Stub.Control as HP hiding (HPage)
-import qualified HPage.Stub.Server as HPS
+import qualified HPage.Control as HP hiding (HPage)
+import qualified HPage.Server as HPS
 
 gui :: IO ()
 gui =
@@ -91,12 +91,10 @@ gui =
         menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd $ say "findNext"]
 
         mnuHask <- menuPane [text := "Haskell"]
-        menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd $ say "load"]
-        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ say "reload"]
+        menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd loadModule]
+        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
         menuLine mnuHask
-        mitRun <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",    on command := onCmd $ say "eval"]
-        menuItem mnuHask [text := "&Type\tCtrl-t",        on command := onCmd $ say "typeOf"]
-        menuItem mnuHask [text := "&Kind\tCtrl-k",        on command := onCmd $ say "kindOf"]
+        mitEval <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",    on command := onCmd evalExpr]
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
@@ -111,7 +109,7 @@ gui =
         toolMenu tbMain mitCut "Cut"  "../res/images/cut.png" [tooltip := "Cut"]
         toolMenu tbMain mitCopy "Copy" "../res/images/copy.png" [tooltip := "Copy"]
         toolMenu tbMain mitPaste "Paste" "../res/images/paste.png" [tooltip := "Paste"]
-        toolMenu tbMain mitRun "Run" "../res/images/run.png" [tooltip := "Run"]
+        toolMenu tbMain mitEval "Eval" "../res/images/run.png" [tooltip := "Run"]
         toolMenu tbMain mitReload "Reload" "../res/images/reload.png" [tooltip := "Reload"]
         
         -- Layout settings
@@ -130,9 +128,9 @@ gui =
         say x _model _win _clipboard _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
         runHP hpacc model _ _ _ _ _ _ = HPS.runIn model hpacc >> return True
 
-display :: (Textual w1, Selection w, Items w [Char]) =>
-            HPS.ServerHandle -> t -> Clipboard () -> w -> w1 -> t1 -> t2 -> IO ()
-display model _win _clipboard lstPages txtCode _lstResults _status =
+display :: (Textual w1, Selection w, Items w [Char], Textual sb, Items lr [String]) =>
+            HPS.ServerHandle -> t -> Clipboard () -> w -> w1 -> lr -> sb -> IO ()
+display model _win _clipboard lstPages txtCode _lstResults status =
     do
         (ps, i, t) <- HPS.runIn model $ do
                                             pc <- HP.getPageCount
@@ -150,11 +148,14 @@ display model _win _clipboard lstPages txtCode _lstResults _status =
                                              Just fn -> takeFileName $ dropExtension fn
                              in itemAppend lstPages $ prefix ++ name
         set lstPages [selection := i]
-        set txtCode [text := t] 
+        set txtCode [text := t]
+        set status [text := ""]
 
 updatePage, savePageAs, savePage, openPage,
-    pageChange, copy, cut, paste :: (Selection lst, Items lst [Char]) =>
-                                                    HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> TextCtrl txt -> t1 -> t2 -> IO Bool
+    pageChange, copy, cut, paste,
+    loadModule, evalExpr :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
+                            HPS.ServerHandle -> Window frame -> Clipboard a -> lst ->
+                                TextCtrl txt -> lr -> sb -> IO Bool
 
 pageChange model _ _ lstPages _ _ _ =
     do
@@ -162,7 +163,7 @@ pageChange model _ _ lstPages _ _ _ =
         HPS.runIn model $ HP.setPageIndex i
         return True
 
-openPage model win _ _ _ _ _ =
+openPage model win _ _ _ _ status =
     do
         fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -171,10 +172,11 @@ openPage model win _ _ _ _ _ =
                 return False
             Just f ->
                 do
+                    set status [text := "opening..."]
                     HPS.runIn model $ HP.openPage f
                     return True
 
-savePageAs model win _ _ _ _ _ =
+savePageAs model win _ _ _ _ status =
     do
         fileName <- fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -183,6 +185,7 @@ savePageAs model win _ _ _ _ _ =
                 return False
             Just f ->
                 do
+                    set status [text := "saving..."]
                     HPS.runIn model $ HP.savePageAs f
                     return True
 
@@ -194,6 +197,7 @@ savePage model win clipboard lstPages txtCode lstResults status =
                 savePageAs model win clipboard lstPages txtCode lstResults status
             _ ->
                 do
+                    set status [text := "saving..."]
                     HPS.runIn model HP.savePage
                     return True
 
@@ -201,7 +205,7 @@ updatePage model _ _ _ txtCode _ _ = do
                                         txt <- get txtCode text
                                         HPS.runIn model $ HP.setPageText txt
                                         return False
-                                        
+
 copy _ _ _ _ txtCode _ _ =
     textCtrlCopy txtCode >> return False
 cut model win clipboard lstPages txtCode lstResults status =
@@ -213,3 +217,36 @@ paste model win clipboard lstPages txtCode lstResults status =
     do
         textCtrlPaste txtCode
         updatePage model win clipboard lstPages txtCode lstResults status
+
+loadModule model win _ _ _ _ status =
+    do
+        fileName <- fileOpenDialog win True True "Load Module..." [("Haskell Modules",["*.hs"])] "" ""
+        case fileName of
+            Nothing ->
+                return False
+            Just f ->
+                do
+                    set status [text := "loading..."]
+                    HPS.runIn model $ HP.loadModule f
+                    return True
+
+evalExpr model _ _ _ _ lstResults _ =
+    do
+        itemsDelete lstResults
+        rs <- HPS.runIn model $ do
+                                    ec <- HP.getExprCount
+                                    (flip mapM) [0..ec-1] $ \i ->
+                                                            do
+                                                                ex <- HP.getExprNthText i
+                                                                ev <- HP.evalNth i
+                                                                et <- HP.typeOfNth i
+                                                                return (ex, ev, et)
+        forM_ rs $ \(e, v, t) ->
+                    let v' = case v of
+                                Left verr -> show verr
+                                Right vstr -> vstr
+                        t' = case t of
+                                Left terr -> show terr
+                                Right tstr -> tstr
+                     in itemAppend lstResults [e, v', t']
+        return False                                    
