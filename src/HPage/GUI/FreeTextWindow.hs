@@ -12,10 +12,11 @@ import Data.List
 import Control.Monad
 import Graphics.UI.WX
 import Graphics.UI.WXCore
+import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import qualified HPage.Control as HP hiding (HPage)
-import qualified HPage.Server as HPS
+import qualified HPage.Stub.Control as HP
+import qualified HPage.Stub.Server as HPS
 
 gui :: IO ()
 gui =
@@ -33,24 +34,29 @@ gui =
         set win [on closing := undefined]
         
         -- Containers
-        splLR <- splitterWindow win []
-        pnlL <- panel splLR []
-        pnlR <- panel splLR []
-        splTB <- splitterWindow pnlR []
-        pnlT <- panel splTB []
-        pnlB <- panel splTB []
+        pnl <- panel win []
+        splLR <- splitterWindow pnl []
+        splTB <- splitterWindow splLR []
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrlRich pnlT []
+        txtCode <- textCtrlRich splTB [border := BorderNone,
+                                       font := fontFixed{_fontSize = 12}]
         
         -- Document Selector
-        lstPages <- singleListBox pnlL []
+        lstPages <- singleListBox splLR [style := wxLB_NEEDED_SB,
+                                         border := BorderNone,
+                                         color := red,
+                                         bgcolor := yellow,
+                                         textColor := blue,
+                                         textBgcolor := colorSystem Color3DFace]
 
         -- Results list
-        lstResults <- listCtrl pnlB [columns := [("Expression", AlignLeft, 100),
+        lstResults <- listCtrl splTB [columns := [("Expression", AlignLeft, 100),
                                                  ("Value", AlignLeft, 200),
-                                                 ("Type", AlignLeft, 300)]]
+                                                 ("Type", AlignLeft, 300)],
+                                      style := wxLB_NEEDED_SB,
+                                      border := BorderNone]
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
@@ -94,7 +100,7 @@ gui =
         menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd loadModule]
         mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
         menuLine mnuHask
-        mitEval <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",    on command := onCmd evalExpr]
+        mitEval <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",    on command := onCmd evalExprs]
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
@@ -113,13 +119,13 @@ gui =
         toolMenu tbMain mitReload "Reload" "../res/images/reload.png" [tooltip := "Reload"]
         
         -- Layout settings
-        let pnlLLayout = fill $ widget lstPages
-            pnlBLayout = fill $ widget lstResults
-            pnlTLayout = fill $ widget txtCode
-            pnlRLayout = fill $ hsplit splTB 7 100 (container pnlT pnlTLayout) (container pnlB pnlBLayout)
-        set win [layout := (margin 1) $ fill $ vsplit splLR 7 0 (container pnlL pnlLLayout) (container pnlR pnlRLayout),
-                    clientSize := sz 640 480]
-
+        let lstPagesL   = margin 0 $ widget lstPages
+            txtCodeL    = margin 0 $ widget txtCode
+            lstResultsL = margin 0 $ widget lstResults
+            rightL      = margin 0 $ hsplit splTB 5 300 txtCodeL lstResultsL
+        set win [layout := container pnl $ margin 0 $ fill $
+                           margin 0 $ vsplit splLR 5 150 lstPagesL rightL,
+                 clientSize := sz 800 600]
 
         -- ...and RUN!
         display model win clipboard lstPages txtCode lstResults status
@@ -128,8 +134,9 @@ gui =
         say x _model _win _clipboard _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
         runHP hpacc model _ _ _ _ _ _ = HPS.runIn model hpacc >> return True
 
-display :: (Textual w1, Selection w, Items w [Char], Textual sb, Items lr [String]) =>
-            HPS.ServerHandle -> t -> Clipboard () -> w -> w1 -> lr -> sb -> IO ()
+display :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
+                            HPS.ServerHandle -> Window frame -> Clipboard a -> lst ->
+                                TextCtrl txt -> lr -> sb -> IO ()
 display model _win _clipboard lstPages txtCode _lstResults status =
     do
         (ps, i, t) <- HPS.runIn model $ do
@@ -150,20 +157,22 @@ display model _win _clipboard lstPages txtCode _lstResults status =
         set lstPages [selection := i]
         set txtCode [text := t]
         set status [text := ""]
+        return ()
 
 updatePage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
-    loadModule, evalExpr :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
+    loadModule, evalExprs :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
                             HPS.ServerHandle -> Window frame -> Clipboard a -> lst ->
                                 TextCtrl txt -> lr -> sb -> IO Bool
 
-pageChange model _ _ lstPages _ _ _ =
+pageChange model win clipboard lstPages txtCode lstResults status =
     do
         i <- get lstPages selection
         HPS.runIn model $ HP.setPageIndex i
+        evalExprs model win clipboard lstPages txtCode lstResults status
         return True
 
-openPage model win _ _ _ _ status =
+openPage model win _ _ _ lstResults status =
     do
         fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -174,6 +183,7 @@ openPage model win _ _ _ _ status =
                 do
                     set status [text := "opening..."]
                     HPS.runIn model $ HP.openPage f
+                    itemsDelete lstResults
                     return True
 
 savePageAs model win _ _ _ _ status =
@@ -230,7 +240,7 @@ loadModule model win _ _ _ _ status =
                     HPS.runIn model $ HP.loadModule f
                     return True
 
-evalExpr model _ _ _ _ lstResults _ =
+evalExprs model _ _ _ _ lstResults _ =
     do
         itemsDelete lstResults
         rs <- HPS.runIn model $ do
@@ -249,4 +259,4 @@ evalExpr model _ _ _ _ lstResults _ =
                                 Left terr -> show terr
                                 Right tstr -> tstr
                      in itemAppend lstResults [e, v', t']
-        return False                                    
+        return False
