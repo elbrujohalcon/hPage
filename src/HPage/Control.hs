@@ -451,9 +451,9 @@ cancel :: HPage ()
 cancel = do
             liftTraceIO $ "canceling"
             ctx <- get
+            liftIO $ HS.stop $ server ctx
             hs <- liftIO $ HS.start
             liftIO $ HS.runIn hs $ recoveryLog ctx
-            --TODO: The current discarded server needs to be stopped here
             modify (\c -> c{server = hs,
                             running = Nothing})
             

@@ -31,7 +31,7 @@ gui =
         topLevelWindowSetIconFromFile win "../res/images/hpage.png"
         
         --HACK: closing with an exception avoids wxWidgets ugly warnings on OSX
-        set win [on closing := undefined]
+        set win [on closing := HPS.stop model >> undefined]
         
         -- Containers
         pnl <- panel win []
