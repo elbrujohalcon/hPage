@@ -30,6 +30,18 @@ instance Arbitrary ModuleName where
                     return . MN $ "Test" ++ map toLower s
     coarbitrary _ = undefined
 
+newtype ExprName = EN {enString :: String}
+    deriving (Eq)
+
+instance Show ExprName where
+    show = enString
+
+instance Arbitrary ExprName where
+    arbitrary = do
+                    s <- arbitrary
+                    return . EN $ "test" ++ (filter (not . isSpace) $  map toLower s)
+    coarbitrary _ = undefined
+
 newtype ClassName = CN {cnString :: String}
     deriving (Eq, Show)
 
@@ -55,6 +67,7 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
+{-
         runTests "vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -108,9 +121,25 @@ main =
                  ,  run $ prop_safe_close_nth_page hps
                  ,  run $ prop_safe_close_all_pages hps
                  ]
+-}
+        runTests "Naming Expressions" options
+                 [  run $ prop_setget_expr_name hps
+                 ,  run $ prop_remove_expr_name hps
+                 ,  run $ prop_set_expr_name_fail hps
+                 ,  run $ prop_setget_expr_nth_name hps
+                 ,  run $ prop_setget_expr_nth_name_fail hps
+                 ,  run $ prop_add_let_expr hps
+                 ]
+{-
+        runTests "Named Expressions vs. Hint Server" options
+                 [  run $ prop_let_fail hps hs
+                 ,  run $ prop_let_eval hps hs
+                 ,  run $ prop_let_typeOf hps hs
+                 ,  run $ prop_let_kindOf hps hs
+                 ]
+-}
         removeDirectoryRecursive testDir
                     
-
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
 
@@ -825,3 +854,84 @@ prop_safe_close_all_pages hps i =
                                                                 HP.addPage
                                                                 HP.setPageText y
                                             shouldFail HP.safeCloseAllPages
+
+prop_setget_expr_name :: HPS.ServerHandle -> ExprName -> Bool
+prop_setget_expr_name hps name =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.addPage
+                                        HP.addExpr "1+1"
+                                        HP.setExprName $ enString name
+                                        liftM (Just (enString name) ==) HP.getExprName
+
+prop_remove_expr_name :: HPS.ServerHandle -> ExprName -> Bool
+prop_remove_expr_name hps name =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.addPage
+                                        HP.addExpr "1+1"
+                                        HP.removeExprName
+                                        HP.setExprName $ enString name
+                                        HP.removeExprName
+                                        HP.removeExprName
+                                        liftM (Nothing ==) HP.getExprName
+
+prop_set_expr_name_fail :: HPS.ServerHandle -> String -> Bool
+prop_set_expr_name_fail hps name =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.addPage
+                                        HP.addExpr "1+1"
+                                        t1 <- shouldFail $ HP.setExprName ""
+                                        t2 <- shouldFail $ HP.setExprName " "
+                                        t3 <- shouldFail $ HP.setExprName $ "A" ++ name
+                                        t4 <- shouldFail $ HP.setExprName $ "1" ++ name
+                                        t5 <- shouldFail $ HP.setExprName $ name ++ " " ++ name
+                                        t6 <- shouldFail $ HP.setExprName $ name ++ "/" ++ name
+                                        t7 <- shouldFail $ HP.setExprName $ name ++ "." ++ name
+                                        HP.setExprName "valid"
+                                        t8 <- shouldFail $ HP.setExprName "valid"
+                                        HP.removeExprName
+                                        t9 <- liftM not . shouldFail $ HP.setExprName "valid"
+                                        return $ t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9
+
+prop_setget_expr_nth_name :: HPS.ServerHandle -> ExprName -> Bool
+prop_setget_expr_nth_name hps name =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        let i = length $ enString name
+                                        HP.addPage
+                                        forM [1..i] $ HP.addExpr . show
+                                        forM [0..i-1] $ \x -> HP.setExprNthName x $ enString name ++ show x
+                                        flip allM [0..i-1] $ \x ->
+                                                                 let nm = enString name ++ show x
+                                                                  in liftM (Just nm ==) $ HP.getExprNthName x
+
+prop_setget_expr_nth_name_fail :: HPS.ServerHandle -> Int -> Property
+prop_setget_expr_nth_name_fail hps i =
+    i >= 0 ==>
+    unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> shouldFail (HP.setExprNthName (i+1) "aName")
+
+prop_add_let_expr :: HPS.ServerHandle -> String -> ExprName -> Property
+prop_add_let_expr hps expr name =
+    expr /= "" ==>
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        let txt = "let " ++ enString name ++ " =" ++ expr
+                                        let restxt = "let " ++ enString name ++ " = " ++ expr
+                                        let txt2 = ' ':txt
+                                        let txt3 = '\t':txt2
+                                        HP.clearPage
+                                        HP.addExpr txt
+                                        tx1 <- HP.getExprText
+                                        nm1 <- HP.getExprName
+                                        HP.addExpr expr
+                                        tx2 <- HP.getExprText
+                                        nm2 <- HP.getExprName
+                                        HP.addExpr txt2
+                                        tx3 <- HP.getExprText
+                                        nm3 <- HP.getExprName
+                                        HP.addExpr txt3
+                                        tx4 <- HP.getExprText
+                                        nm4 <- HP.getExprName
+                                        --liftDebugIO [(tx1, nm1), (tx2, nm2), (tx3, nm3), (tx4, nm4)]
+                                        --liftDebugIO (expr, (Just . enString) name)
+                                        return $ (tx1 == restxt) && (nm1 == (Just . enString) name) &&
+                                                 (tx2 == expr) && (nm2 == Nothing) &&
+                                                 (tx3 == restxt) && (nm3 == (Just . enString) name) &&
+                                                 (tx4 == restxt) && (nm4 == (Just . enString) name)
