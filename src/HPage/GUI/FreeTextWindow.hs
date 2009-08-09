@@ -36,11 +36,11 @@ gui =
         -- Containers
         pnl <- panel win []
         splLR <- splitterWindow pnl []
-        splTB <- splitterWindow splLR []
+        pnlTB <- panel splLR []
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrlRich splTB [border := BorderNone,
+        txtCode <- textCtrlRich pnlTB [border := BorderNone,
                                        font := fontFixed{_fontSize = 12}]
         
         -- Document Selector
@@ -52,10 +52,9 @@ gui =
                                          textBgcolor := colorSystem Color3DFace]
 
         -- Results list
-        lstResults <- listCtrl splTB [columns := [("Expression", AlignLeft, 100),
+        lstResults <- listCtrl pnlTB [columns := [("Expression", AlignLeft, 100),
                                                  ("Value", AlignLeft, 200),
                                                  ("Type", AlignLeft, 300)],
-                                      style := wxLB_NEEDED_SB,
                                       border := BorderNone]
         
         -- Status bar...
@@ -120,9 +119,9 @@ gui =
         
         -- Layout settings
         let lstPagesL   = margin 0 $ widget lstPages
-            txtCodeL    = margin 0 $ widget txtCode
-            lstResultsL = margin 0 $ widget lstResults
-            rightL      = margin 0 $ hsplit splTB 5 300 txtCodeL lstResultsL
+            txtCodeL    = fill $ margin 1 $ widget txtCode
+            lstResultsL = fill $ margin 0 $ widget lstResults
+            rightL      = container pnlTB $ margin 0 $ column 5 [txtCodeL, lstResultsL]
         set win [layout := container pnl $ margin 0 $ fill $
                            margin 0 $ vsplit splLR 5 150 lstPagesL rightL,
                  clientSize := sz 800 600]
@@ -240,7 +239,7 @@ loadModule model win _ _ _ _ status =
                     HPS.runIn model $ HP.loadModule f
                     return True
 
-evalExprs model _ _ _ _ lstResults _ =
+evalExprs model win _ _ _ lstResults _ =
     do
         itemsDelete lstResults
         rs <- HPS.runIn model $ do
