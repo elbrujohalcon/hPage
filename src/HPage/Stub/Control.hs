@@ -60,15 +60,10 @@ data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
                                  pIsModified :: Bool}
     deriving (Eq, Show)
-    
+
 data Expression = Exp {exprName :: Maybe String,
                        exprText :: String}       
-    deriving (Eq)
-
-instance Show Expression where
-    show ex = (case exprName ex of
-                    Nothing -> ""
-                    Just en -> "let " ++ en ++ " = ") ++ exprText ex
+    deriving (Eq, Show)
 
 type InterpreterError = String
 

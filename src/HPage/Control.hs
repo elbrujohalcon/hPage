@@ -65,12 +65,7 @@ data PageDescription = PageDesc {pIndex :: Int,
 
 data Expression = Exp {exprName :: Maybe String,
                        exprText :: String}       
-    deriving (Eq)
-
-instance Show Expression where
-    show ex = (case exprName ex of
-                    Nothing -> ""
-                    Just en -> "let " ++ en ++ " = ") ++ exprText ex
+    deriving (Eq, Show)
 
 data InFlightData = LoadModule { loadingModule :: FilePath,
                                  runningAction :: Hint.InterpreterT IO ()
@@ -302,12 +297,10 @@ getExprText :: HPage String
 getExprText = getPage >>= getExprNthText . currentExpr
 
 setExprText :: String -> HPage ()
-setExprText expr = do
-                     page <- getPage
-                     setExprNthText (currentExpr page) expr
+setExprText expr = getPage >>= flip setExprNthText expr . currentExpr
 
 getExprNthText :: Int -> HPage String
-getExprNthText nth = withExprIndex nth $ getPage >>= return . show . (!! nth) . expressions
+getExprNthText nth = withExprIndex nth $ getPage >>= return . exprText . (!! nth) . expressions
 
 setExprNthText :: Int -> String -> HPage ()
 setExprNthText nth expr = withExprIndex nth $
@@ -606,7 +599,7 @@ fromString s = map toExp . filter (not . null) . map (joinWith "\n") . splitOn "
           dSpace = reverse . dropWhile isSpace
 
 toString :: Page -> String
-toString = joinWith "\n\n" . map show . expressions
+toString = joinWith "\n\n" . map exprText . expressions
 
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn sep = reverse . (map reverse) . (foldl (\(acc:accs) el ->

@@ -67,7 +67,6 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-{-
         runTests "vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -121,14 +120,12 @@ main =
                  ,  run $ prop_safe_close_nth_page hps
                  ,  run $ prop_safe_close_all_pages hps
                  ]
--}
         runTests "Naming Expressions" options
                  [  run $ prop_setget_expr_name hps
                  ,  run $ prop_remove_expr_name hps
                  ,  run $ prop_set_expr_name_fail hps
                  ,  run $ prop_setget_expr_nth_name hps
                  ,  run $ prop_setget_expr_nth_name_fail hps
-                 ,  run $ prop_add_let_expr hps
                  ]
 {-
         runTests "Named Expressions vs. Hint Server" options
@@ -907,31 +904,3 @@ prop_setget_expr_nth_name_fail :: HPS.ServerHandle -> Int -> Property
 prop_setget_expr_nth_name_fail hps i =
     i >= 0 ==>
     unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> shouldFail (HP.setExprNthName (i+1) "aName")
-
-prop_add_let_expr :: HPS.ServerHandle -> String -> ExprName -> Property
-prop_add_let_expr hps expr name =
-    expr /= "" ==>
-    unsafePerformIO $ HPS.runIn hps $ do
-                                        let txt = "let " ++ enString name ++ " =" ++ expr
-                                        let restxt = "let " ++ enString name ++ " = " ++ expr
-                                        let txt2 = ' ':txt
-                                        let txt3 = '\t':txt2
-                                        HP.clearPage
-                                        HP.addExpr txt
-                                        tx1 <- HP.getExprText
-                                        nm1 <- HP.getExprName
-                                        HP.addExpr expr
-                                        tx2 <- HP.getExprText
-                                        nm2 <- HP.getExprName
-                                        HP.addExpr txt2
-                                        tx3 <- HP.getExprText
-                                        nm3 <- HP.getExprName
-                                        HP.addExpr txt3
-                                        tx4 <- HP.getExprText
-                                        nm4 <- HP.getExprName
-                                        --liftDebugIO [(tx1, nm1), (tx2, nm2), (tx3, nm3), (tx4, nm4)]
-                                        --liftDebugIO (expr, (Just . enString) name)
-                                        return $ (tx1 == restxt) && (nm1 == (Just . enString) name) &&
-                                                 (tx2 == expr) && (nm2 == Nothing) &&
-                                                 (tx3 == restxt) && (nm3 == (Just . enString) name) &&
-                                                 (tx4 == restxt) && (nm4 == (Just . enString) name)
