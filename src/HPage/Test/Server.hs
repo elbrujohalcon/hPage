@@ -67,6 +67,7 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
+{-
         runTests "vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_eval hps hs
@@ -120,6 +121,7 @@ main =
                  ,  run $ prop_safe_close_nth_page hps
                  ,  run $ prop_safe_close_all_pages hps
                  ]
+-}
         runTests "Naming Expressions" options
                  [  run $ prop_setget_expr_name hps
                  ,  run $ prop_remove_expr_name hps
@@ -127,14 +129,11 @@ main =
                  ,  run $ prop_setget_expr_nth_name hps
                  ,  run $ prop_setget_expr_nth_name_fail hps
                  ]
-{-
         runTests "Named Expressions vs. Hint Server" options
                  [  run $ prop_let_fail hps hs
                  ,  run $ prop_let_eval hps hs
                  ,  run $ prop_let_typeOf hps hs
-                 ,  run $ prop_let_kindOf hps hs
                  ]
--}
         removeDirectoryRecursive testDir
                     
 instance Eq (Hint.InterpreterError) where
@@ -904,3 +903,56 @@ prop_setget_expr_nth_name_fail :: HPS.ServerHandle -> Int -> Property
 prop_setget_expr_nth_name_fail hps i =
     i >= 0 ==>
     unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> shouldFail (HP.setExprNthName (i+1) "aName")
+
+prop_let_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_let_eval hps hs txt =
+    unsafePerformIO $ do
+                        let expr = "length \"" ++ txt ++ "\"" 
+                        (hpsr1, hpsr2) <- HPS.runIn hps $ do
+                                                            HP.addPage
+                                                            HP.addExpr expr
+                                                            HP.setExprName "testL"
+                                                            HP.addExpr $ "2 * testL"
+                                                            HP.setExprName "test2L"
+                                                            r1 <- HP.eval
+                                                            HP.addExpr $ "test2L / 2"
+                                                            r2 <- HP.eval
+                                                            return (r1, r2)
+                        hsr1 <- HS.runIn hs $ Hint.eval $ "2 * " ++ expr
+                        hsr2 <- HS.runIn hs $ Hint.eval $ expr
+                        -- liftDebugIO [(hpsr1, hpsr2), (hsr1, hsr2)]
+                        return $ (hpsr1, hpsr2) == (hsr1, hsr2)
+
+prop_let_typeOf :: HPS.ServerHandle -> HS.ServerHandle -> String -> Property
+prop_let_typeOf hps hs txt = txt /= "" ==>
+    unsafePerformIO $ do
+                        let expr = "\"" ++ txt ++ "\""
+                        (hpsr1, hpsr2) <- HPS.runIn hps $ do
+                                                            HP.addPage
+                                                            HP.addExpr expr
+                                                            HP.setExprName "testL"
+                                                            r1 <- HP.typeOf
+                                                            HP.addExpr $ "length testL"
+                                                            HP.setExprName "test2L"
+                                                            HP.addExpr $ "2 * test2L"
+                                                            r2 <- HP.typeOf
+                                                            return (r1, r2)
+                        hsr1 <- HS.runIn hs $ Hint.typeOf expr
+                        hsr2 <- HS.runIn hs $ Hint.typeOf $ "2 * (length " ++ expr ++ ")"
+                        -- liftDebugIO [(hpsr1, hpsr2), (hsr1, hsr2)]
+                        return $ (hpsr1, hpsr2) == (hsr1, hsr2)
+
+prop_let_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_let_fail hps hs txt =
+    unsafePerformIO $ do
+                        let expr = "lenggth \"" ++ txt ++ "\""
+                        Left hpsr <- HPS.runIn hps $ do
+                                                        HP.addPage
+                                                        HP.addExpr expr
+                                                        HP.setExprName "testL"
+                                                        HP.addExpr $ "2 * testL"
+                                                        HP.setExprName "test2L"
+                                                        HP.addExpr $ "test2L / 2"
+                                                        HP.eval
+                        Left hsr <- HS.runIn hs $ Hint.eval expr
+                        return $ hsr == hpsr
