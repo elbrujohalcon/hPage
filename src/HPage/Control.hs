@@ -54,8 +54,8 @@ import Control.Concurrent.MVar
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
-import List ((\\))
-import qualified List as List
+import Data.List ((\\))
+import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
 
 data PageDescription = PageDesc {pIndex :: Int,
@@ -388,9 +388,9 @@ kindOf = getPage >>= kindOfNth . currentExpr
 typeOf = getPage >>= typeOfNth . currentExpr
 
 evalNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-evalNth = runInExprNth Hint.eval
+evalNth = runInExprNthWithLets Hint.eval
 kindOfNth = runInExprNth Hint.kindOf
-typeOfNth = runInExprNth Hint.typeOf
+typeOfNth = runInExprNthWithLets Hint.typeOf
 
 loadModule :: FilePath -> HPage (Either Hint.InterpreterError ())
 loadModule f = do
@@ -438,9 +438,9 @@ kindOf' = getPage >>= kindOfNth' . currentExpr
 typeOf' = getPage >>= typeOfNth' . currentExpr
 
 evalNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either Hint.InterpreterError String))
-evalNth' = runInExprNth' Hint.eval
+evalNth' = runInExprNthWithLets' Hint.eval
 kindOfNth' = runInExprNth' Hint.kindOf
-typeOfNth' = runInExprNth' Hint.typeOf
+typeOfNth' = runInExprNthWithLets' Hint.typeOf
 
 loadModule' :: FilePath -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModule' f = do
@@ -537,29 +537,37 @@ withExprName nm acc =
 
 runInExprNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNth action i = do
-                        page <- getPage
-                        let exprs = expressions page
-                        case i of
-                            -1 ->
-                                fail "Nothing selected"
-                            x | x >= length exprs ->
-                                fail "Invalid index"
-                            _ ->
-                                do
-                                    let expr = exprText $ exprs !! i
-                                    syncRun $ action expr
+                            page <- getPage
+                            let exprs = expressions page
+                            flip (withIndex i) exprs $ do
+                                                            let expr = exprText $ exprs !! i
+                                                            syncRun $ action expr
 
 runInExprNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
 runInExprNth' action i = do
-                        page <- getPage
-                        let exprs = expressions page
-                        case i of
-                            -1 ->
-                                fail "Nothing selected"
-                            _ ->
-                                do
-                                    let expr = exprText $ exprs !! i
-                                    asyncRun $ action expr
+                            page <- getPage
+                            let exprs = expressions page
+                            flip (withIndex i) exprs $ do
+                                                            let expr = exprText $ exprs !! i
+                                                            asyncRun $ action expr
+
+runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
+runInExprNthWithLets action i = do
+                                    page <- getPage
+                                    let exprs = expressions page
+                                    flip (withIndex i) exprs $ do
+                                                                    let (b, item : a) = splitAt i exprs
+                                                                        lets = filter ((Nothing /=) . exprName) $ b ++ a
+                                                                        expr = letsToString lets ++ exprText item
+                                                                    syncRun $ action expr
+
+runInExprNthWithLets' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
+runInExprNthWithLets' action i = do
+                                    page <- getPage
+                                    let exprs = expressions page
+                                    flip (withIndex i) exprs $ do
+                                                                    let expr = exprText $ exprs !! i
+                                                                    asyncRun $ action expr
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do
@@ -657,3 +665,10 @@ modifyExprName nth newName p =  let curExpr  = currentExpr p
                                       currentExpr = if curExpr < length newExprs then
                                                         curExpr else
                                                         length newExprs -1}
+
+letsToString :: [Expression] -> String
+letsToString [] = ""
+letsToString exs = "let " ++ joinWith "; " (List.map letToString exs) ++ " in "
+    where letToString ex = showName (exprName ex) ++ " = " ++ exprText ex
+          showName Nothing  = "ERROR: unnamed let expression"
+          showName (Just n) = n

@@ -915,7 +915,7 @@ prop_let_eval hps hs txt =
                                                             HP.addExpr $ "2 * testL"
                                                             HP.setExprName "test2L"
                                                             r1 <- HP.eval
-                                                            HP.addExpr $ "test2L / 2"
+                                                            HP.addExpr $ "test2L `div` 2"
                                                             r2 <- HP.eval
                                                             return (r1, r2)
                         hsr1 <- HS.runIn hs $ Hint.eval $ "2 * " ++ expr
