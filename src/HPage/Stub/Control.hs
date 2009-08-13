@@ -289,7 +289,7 @@ setExprText :: String -> HPage ()
 setExprText expr = getPage >>= flip setExprNthText expr . currentExpr
 
 getExprNthText :: Int -> HPage String
-getExprNthText nth = withExprIndex nth $ getPage >>= return . show . (!! nth) . expressions
+getExprNthText nth = withExprIndex nth $ getPage >>= return . exprText . (!! nth) . expressions
 
 setExprNthText :: Int -> String -> HPage ()
 setExprNthText nth expr = withExprIndex nth $

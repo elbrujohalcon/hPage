@@ -52,9 +52,11 @@ gui =
                                          textBgcolor := colorSystem Color3DFace]
 
         -- Results list
-        lstResults <- listCtrl pnlTB [columns := [("Expression", AlignLeft, 100),
-                                                 ("Value", AlignLeft, 200),
-                                                 ("Type", AlignLeft, 300)],
+        lstResults <- listCtrl pnlTB [columns := [("Name", AlignLeft, 200),
+                                                  ("Expression", AlignLeft, 100),
+                                                  ("Value", AlignLeft, 200),
+                                                  ("Type", AlignLeft, 300),
+                                                  ("Kind", AlignLeft, 100)],
                                       border := BorderNone]
         
         -- Status bar...
@@ -99,7 +101,12 @@ gui =
         menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd loadModule]
         mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
         menuLine mnuHask
-        mitEval <- menuItem mnuHask [text := "&Evaluate\tCtrl-e",    on command := onCmd evalExprs]
+        mitEval <- menuItem mnuHask [text := "&Evaluate Expression\tCtrl-e",    on command := onCmd evalExprs]
+        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd $ say "type"]
+        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd $ say "kind"]
+        menuLine mnuHask
+        menuItem mnuHask [text := "&Name Expression\tAlt-n",    on command := onCmd evalExprs]
+        menuItem mnuHask [text := "&Unname Expression\tAlt-u",    on command := onCmd evalExprs]
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
@@ -130,7 +137,7 @@ gui =
         display model win clipboard lstPages txtCode lstResults status
         focusOn txtCode
     where
-        say x _model _win _clipboard _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "a value", "a type"] >> return False
+        say x _model _win _clipboard _lstPages _txtCode lstResults _status = itemAppend lstResults [x, "an expr", "a value", "a type", "a kind"] >> return False
         runHP hpacc model _ _ _ _ _ _ = HPS.runIn model hpacc >> return True
 
 display :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
@@ -239,23 +246,31 @@ loadModule model win _ _ _ _ status =
                     HPS.runIn model $ HP.loadModule f
                     return True
 
-evalExprs model win _ _ _ lstResults _ =
+evalExprs model _ _ _ _ lstResults _ =
     do
         itemsDelete lstResults
         rs <- HPS.runIn model $ do
                                     ec <- HP.getExprCount
                                     (flip mapM) [0..ec-1] $ \i ->
                                                             do
+                                                                en <- HP.getExprNthName i
                                                                 ex <- HP.getExprNthText i
                                                                 ev <- HP.evalNth i
                                                                 et <- HP.typeOfNth i
-                                                                return (ex, ev, et)
-        forM_ rs $ \(e, v, t) ->
+                                                                ek <- HP.kindOfNth i
+                                                                return (en, ex, ev, et, ek)
+        forM_ rs $ \(n, e, v, t, k) ->
                     let v' = case v of
                                 Left verr -> show verr
                                 Right vstr -> vstr
                         t' = case t of
                                 Left terr -> show terr
                                 Right tstr -> tstr
-                     in itemAppend lstResults [e, v', t']
+                        k' = case k of
+                                Left kerr -> show kerr
+                                Right kstr -> kstr
+                        n' = case n of
+                                Nothing -> ""
+                                Just nm -> nm
+                     in itemAppend lstResults [n', e, v', t', k']
         return False
