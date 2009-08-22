@@ -3,5 +3,6 @@ cd src
 ghc Main.hs --make -package wx -o ../bin/hPage -odir ../out -hidir ../out $1 $2 $3
 cd ../bin
 /usr/local/wxhaskell/bin/macosx-app hPage
-open hPage.app/
-cd ..
+cd hPage.app/Contents/MacOS/
+./hPage &
+cd ../../..

@@ -505,7 +505,7 @@ fromString s = map toExp . filter (not . null) . map (joinWith "\n") . splitOn "
           dSpace = reverse . dropWhile isSpace
 
 toString :: Page -> String
-toString = joinWith "\n\n" . map show . expressions
+toString = joinWith "\n\n" . map exprText . expressions
 
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn sep = reverse . (map reverse) . (foldl (\(acc:accs) el ->
