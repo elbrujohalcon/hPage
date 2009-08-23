@@ -31,9 +31,9 @@ module HPage.Stub.Control (
     -- EDITION CONTROLS --
     undo, redo, find, findNext,
     -- HINT CONTROLS --
-    eval, evalNth, kindOf, kindOfNth, typeOf, typeOfNth,
+    valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModule, reloadModules,
-    eval', evalNth', kindOf', kindOfNth', typeOf', typeOfNth',
+    valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModule', reloadModules',
     reset, reset',
     cancel,
@@ -371,13 +371,13 @@ findNext = do
                     Just text ->
                         find text
 
-eval, kindOf, typeOf :: HPage (Either InterpreterError String)
-eval = getPage >>= evalNth . currentExpr
+valueOf, kindOf, typeOf :: HPage (Either InterpreterError String)
+valueOf = getPage >>= valueOfNth . currentExpr
 kindOf = getPage >>= kindOfNth . currentExpr
 typeOf = getPage >>= typeOfNth . currentExpr
 
-evalNth, kindOfNth, typeOfNth :: Int -> HPage (Either InterpreterError String)
-evalNth = runInExprNth "eval"
+valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either InterpreterError String)
+valueOfNth = runInExprNth "valueOf"
 kindOfNth = runInExprNth "kindOf"
 typeOfNth = runInExprNth "typeOf"
 
@@ -390,13 +390,13 @@ reloadModules = return $ Right ()
 reset :: HPage (Either InterpreterError ())
 reset = modify (\ctx -> ctx{loadedModules = empty}) >>= return . Right
 
-eval', kindOf', typeOf' :: HPage (MVar (Either InterpreterError String))
-eval' = eval >>= liftIO . newMVar
+valueOf', kindOf', typeOf' :: HPage (MVar (Either InterpreterError String))
+valueOf' = valueOf >>= liftIO . newMVar
 kindOf' = kindOf >>= liftIO . newMVar
 typeOf' = typeOf >>= liftIO . newMVar
 
-evalNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either InterpreterError String))
-evalNth' = runInExprNth' "eval"
+valueOfNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either InterpreterError String))
+valueOfNth' = runInExprNth' "valueOf"
 kindOfNth' = runInExprNth' "kindOf"
 typeOfNth' = runInExprNth' "typeOf"
 

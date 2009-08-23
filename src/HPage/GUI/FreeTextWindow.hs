@@ -104,7 +104,7 @@ gui =
         menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
         menuLine mnuHask
         mitRefresh <- menuItem mnuHask [text := "&Refresh Grid\tCtrl-r", on command := onCmd refreshExprs]
-        mitEval <- menuItem mnuHask [text := "&Evaluate Expression\tCtrl-e",    on command := onCmd $ runGridHP 2 HP.eval]
+        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd $ runGridHP 2 HP.valueOf]
         menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd $ runGridHP 3 HP.typeOf]
         menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd $ runGridHP 4 HP.kindOf]
         menuLine mnuHask
@@ -124,7 +124,6 @@ gui =
         toolMenu tbMain mitCut "Cut"  "../res/images/cut.png" [tooltip := "Cut"]
         toolMenu tbMain mitCopy "Copy" "../res/images/copy.png" [tooltip := "Copy"]
         toolMenu tbMain mitPaste "Paste" "../res/images/paste.png" [tooltip := "Paste"]
-        toolMenu tbMain mitEval "Eval" "../res/images/run.png" [tooltip := "Run"]
         toolMenu tbMain mitRefresh "Refresh" "../res/images/reload.png" [tooltip := "Refresh"]
         
         -- Layout settings

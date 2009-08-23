@@ -31,9 +31,9 @@ module HPage.Control (
     -- EDITION CONTROLS --
     undo, redo, find, findNext,
     -- HINT CONTROLS --
-    eval, evalNth, kindOf, kindOfNth, typeOf, typeOfNth,
+    valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModule, reloadModules,
-    eval', evalNth', kindOf', kindOfNth', typeOf', typeOfNth',
+    valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModule', reloadModules',
     reset, reset',
     cancel,
@@ -382,13 +382,13 @@ findNext = do
                     Just text ->
                         find text
 
-eval, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
-eval = getPage >>= evalNth . currentExpr
+valueOf, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
+valueOf = getPage >>= valueOfNth . currentExpr
 kindOf = getPage >>= kindOfNth . currentExpr
 typeOf = getPage >>= typeOfNth . currentExpr
 
-evalNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-evalNth = runInExprNthWithLets Hint.eval
+valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
+valueOfNth = runInExprNthWithLets Hint.eval
 kindOfNth = runInExprNth Hint.kindOf
 typeOfNth = runInExprNthWithLets Hint.typeOf
 
@@ -432,13 +432,13 @@ reset = do
                     liftErrorIO $ ("Error resetting", e)
             return res
 
-eval', kindOf', typeOf' :: HPage (MVar (Either Hint.InterpreterError String))
-eval' = getPage >>= evalNth' . currentExpr
+valueOf', kindOf', typeOf' :: HPage (MVar (Either Hint.InterpreterError String))
+valueOf' = getPage >>= valueOfNth' . currentExpr
 kindOf' = getPage >>= kindOfNth' . currentExpr
 typeOf' = getPage >>= typeOfNth' . currentExpr
 
-evalNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either Hint.InterpreterError String))
-evalNth' = runInExprNthWithLets' Hint.eval
+valueOfNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either Hint.InterpreterError String))
+valueOfNth' = runInExprNthWithLets' Hint.eval
 kindOfNth' = runInExprNth' Hint.kindOf
 typeOfNth' = runInExprNthWithLets' Hint.typeOf
 

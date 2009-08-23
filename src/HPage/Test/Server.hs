@@ -67,10 +67,9 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-{-
         runTests "vs. Hint Server" options
                  [  run $ prop_fail hps hs
-                 ,  run $ prop_eval hps hs
+                 ,  run $ prop_valueOf hps hs
                  ,  run $ prop_typeOf hps hs
                  ,  run $ prop_kindOf hps hs
                  ,  run $ prop_load_module hps hs
@@ -121,7 +120,6 @@ main =
                  ,  run $ prop_safe_close_nth_page hps
                  ,  run $ prop_safe_close_all_pages hps
                  ]
--}
         runTests "Naming Expressions" options
                  [  run $ prop_setget_expr_name hps
                  ,  run $ prop_remove_expr_name hps
@@ -131,7 +129,7 @@ main =
                  ]
         runTests "Named Expressions vs. Hint Server" options
                  [  run $ prop_let_fail hps hs
-                 ,  run $ prop_let_eval hps hs
+                 ,  run $ prop_let_valueOf hps hs
                  ,  run $ prop_let_typeOf hps hs
                  ]
         removeDirectoryRecursive testDir
@@ -139,11 +137,11 @@ main =
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
 
-prop_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
-prop_eval hps hs txt =
+prop_valueOf :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_valueOf hps hs txt =
     unsafePerformIO $ do
                         let expr = "length \"" ++ txt ++ "\"" 
-                        hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.eval
+                        hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.valueOf
                         hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hpsr == hsr
 
@@ -167,7 +165,7 @@ prop_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_fail hps hs txt =
     unsafePerformIO $ do
                         let expr = "lenggth \"" ++ txt ++ "\""
-                        Left hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.eval
+                        Left hpsr <- HPS.runIn hps $ HP.setPageText expr >> HP.valueOf
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
@@ -180,7 +178,7 @@ prop_load_module hps hs txt =
                                                     HP.savePageAs $ testDir ++ "test.hs"
                                                     HP.setPageText "test"
                                                     HP.loadModule $ testDir ++ "test.hs"
-                                                    HP.eval
+                                                    HP.valueOf
                         hsr <- HS.runIn hs $ do
                                                 Hint.loadModules [testDir ++ "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
@@ -197,7 +195,7 @@ prop_reload_modules hps hs txt =
                                                     HP.setPageText "test"
                                                     HP.loadModule $ testDir ++ "test.hs"
                                                     HP.reloadModules
-                                                    HP.eval
+                                                    HP.valueOf
                         hsr <- HS.runIn hs $ do
                                                 Hint.loadModules [testDir ++ "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
@@ -214,7 +212,7 @@ prop_sequential hps txt =
                                             HP.loadModule' $ testDir ++ "test.hs"
                         Right hpsr <- HPS.runIn hps $ do
                                                         HP.setPageText "test"
-                                                        HP.eval
+                                                        HP.valueOf
                         return $ hpsr == show txt
 
 prop_cancel_load :: HPS.ServerHandle -> ModuleName -> Bool
@@ -230,10 +228,10 @@ prop_cancel_load hps mn =
                                             HP.savePageAs $ testDir ++ show mn ++ ".hs"
                                             HP.setPageText "fact"
                                             HP.loadModule $ testDir ++ show mn ++ ".hs"
-                                            oldRes <- HP.eval
+                                            oldRes <- HP.valueOf
                                             HP.loadModule' $ testDir ++ show mn ++ "2.hs"
                                             HP.cancel
-                                            newRes <- HP.eval
+                                            newRes <- HP.valueOf
                                             return $ newRes == oldRes
 
 prop_setget_text :: HPS.ServerHandle -> String -> Bool
@@ -904,8 +902,8 @@ prop_setget_expr_nth_name_fail hps i =
     i >= 0 ==>
     unsafePerformIO $ HPS.runIn hps $ HP.clearPage >> shouldFail (HP.setExprNthName (i+1) "aName")
 
-prop_let_eval :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
-prop_let_eval hps hs txt =
+prop_let_valueOf :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
+prop_let_valueOf hps hs txt =
     unsafePerformIO $ do
                         let expr = "length \"" ++ txt ++ "\"" 
                         (hpsr1, hpsr2) <- HPS.runIn hps $ do
@@ -914,9 +912,9 @@ prop_let_eval hps hs txt =
                                                             HP.setExprName "testL"
                                                             HP.addExpr $ "2 * testL"
                                                             HP.setExprName "test2L"
-                                                            r1 <- HP.eval
+                                                            r1 <- HP.valueOf
                                                             HP.addExpr $ "test2L `div` 2"
-                                                            r2 <- HP.eval
+                                                            r2 <- HP.valueOf
                                                             return (r1, r2)
                         hsr1 <- HS.runIn hs $ Hint.eval $ "2 * " ++ expr
                         hsr2 <- HS.runIn hs $ Hint.eval $ expr
@@ -953,6 +951,6 @@ prop_let_fail hps hs txt =
                                                         HP.addExpr $ "2 * testL"
                                                         HP.setExprName "test2L"
                                                         HP.addExpr $ "test2L / 2"
-                                                        HP.eval
+                                                        HP.valueOf
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
