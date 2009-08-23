@@ -181,6 +181,8 @@ runGridHP col hpacc model win _ _ _ lstResults _ =
                     r <- HPS.runIn model HP.getExprIndex
                     prevItem <- get lstResults $ item r
                     set lstResults [item r := (replaceAt col sRes prevItem)]
+                    listCtrlSetItemState lstResults r wxLIST_STATE_SELECTED wxLIST_STATE_SELECTED
+                    return ()
             else
                 warningDialog win "Error" sRes 
         return False
