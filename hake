@@ -1,8 +1,8 @@
 #!/bin/sh
-cd src
-ghc Main.hs --make -package wx -o ../bin/hPage -odir ../out -hidir ../out $1 $2 $3
+cd src/
+ghc --make -package wx -o ../bin/hPage -hidir ../out -odir ../out Main.hs
 cd ../bin
 /usr/local/wxhaskell/bin/macosx-app hPage
 cd hPage.app/Contents/MacOS/
 ./hPage &
-cd ../../..
+cd ../../../..
