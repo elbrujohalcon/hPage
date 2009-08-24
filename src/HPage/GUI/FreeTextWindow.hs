@@ -16,8 +16,8 @@ import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import qualified HPage.Control as HP
-import qualified HPage.Server as HPS
+import qualified HPage.Stub.Control as HP
+import qualified HPage.Stub.Server as HPS
 
 gui :: IO ()
 gui =
@@ -29,7 +29,7 @@ gui =
         clipboard <- clipboardCreate 
         
         win <- frame [text := "hPage"]
-        topLevelWindowSetIconFromFile win "../res/images/hpage.png"
+        topLevelWindowSetIconFromFile win "../res/images/icon/hpage.tif"
         
         --HACK: closing with an exception avoids wxWidgets ugly warnings on OSX
         set win [on closing := HPS.stop model >> undefined]
