@@ -32,9 +32,9 @@ module HPage.Control (
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModule, reloadModules,
+    loadModule, reloadModules, getLoadedModules,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModule', reloadModules',
+    loadModule', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
     Hint.InterpreterError,
@@ -416,6 +416,9 @@ reloadModules = do
                                 Hint.loadModules ms
                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
 
+getLoadedModules :: HPage (Either Hint.InterpreterError [Hint.ModuleName])
+getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
+
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
             res <- syncRun $ do
@@ -461,6 +464,9 @@ reloadModules' = do
                                     liftTraceIO $ "reloading': " ++ (show ms)
                                     Hint.loadModules ms
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
+
+getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [Hint.ModuleName]))
+getLoadedModules' = confirmRunning >> asyncRun Hint.getLoadedModules
 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do

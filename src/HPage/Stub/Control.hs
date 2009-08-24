@@ -32,9 +32,9 @@ module HPage.Stub.Control (
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModule, reloadModules,
+    loadModule, reloadModules, getLoadedModules,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModule', reloadModules',
+    loadModule', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
     InterpreterError,
@@ -44,7 +44,7 @@ module HPage.Stub.Control (
 
 import System.IO
 import System.Directory
-import Data.Set (Set, empty, insert)
+import Data.Set (Set, empty, insert, toList)
 import Data.Char
 import Control.Monad.Loops
 import Control.Monad.Error
@@ -387,6 +387,9 @@ loadModule f = modify (\ctx -> ctx{loadedModules = insert f (loadedModules ctx)}
 reloadModules :: HPage (Either InterpreterError ())
 reloadModules = return $ Right ()
 
+getLoadedModules :: HPage (Either InterpreterError [String])
+getLoadedModules = get >>= return . Right . toList . loadedModules
+
 reset :: HPage (Either InterpreterError ())
 reset = modify (\ctx -> ctx{loadedModules = empty}) >>= return . Right
 
@@ -405,6 +408,9 @@ loadModule' f = loadModule f >>= liftIO . newMVar
 
 reloadModules' :: HPage (MVar (Either InterpreterError ()))
 reloadModules' = reloadModules >>= liftIO . newMVar
+
+getLoadedModules' :: HPage (MVar (Either InterpreterError [String]))
+getLoadedModules' = getLoadedModules >>= liftIO . newMVar
 
 reset' :: HPage (MVar (Either InterpreterError ()))
 reset' = reset >>= liftIO . newMVar

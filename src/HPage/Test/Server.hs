@@ -74,6 +74,7 @@ main =
                  ,  run $ prop_kindOf hps hs
                  ,  run $ prop_load_module hps hs
                  ,  run $ prop_reload_modules hps hs
+                 ,  run $ prop_get_loaded_modules hps hs
                  ]
         runTests "Cancelation" options
                  [  run $ prop_sequential hps
@@ -200,6 +201,40 @@ prop_reload_modules hps hs txt =
                                                 Hint.loadModules [testDir ++ "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                 Hint.eval "test"
+                        return $ hpsr == hsr
+    
+prop_get_loaded_modules :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
+prop_get_loaded_modules hps hs mn =
+    unsafePerformIO $ do
+                        let expr1 = "module " ++ show mn ++ " where fact = (1,2,3)"
+                        let expr2 = "test = show \"" ++ show mn ++ "\""
+                        let mnf   =  testDir ++ (show mn) ++ ".hs"
+                        let mnfam =  testDir ++ (show mn) ++ "asMain.hs"
+                        HPS.runIn hps $ do
+                                            HP.setPageText expr1
+                                            HP.savePageAs mnf
+                                            HP.setPageText expr2
+                                            HP.savePageAs mnfam
+                        hpsr <- HPS.runIn hps $ do
+                                                    HP.reset
+                                                    Right tms0 <- HP.getLoadedModules
+                                                    HP.loadModule mnf
+                                                    Right tms1 <- HP.getLoadedModules
+                                                    HP.reloadModules
+                                                    Right tms2 <- HP.getLoadedModules
+                                                    HP.loadModule mnfam
+                                                    Right tms3 <- HP.getLoadedModules
+                                                    return (tms0, tms1, tms2, tms3)
+                        Right hsr <- HS.runIn hs $ do
+                                                    tmh0 <- Hint.getLoadedModules
+                                                    Hint.loadModules [mnf]
+                                                    tmh1 <- Hint.getLoadedModules
+                                                    tmh2 <- Hint.getLoadedModules
+                                                    Hint.loadModules [mnfam]
+                                                    tmh3 <- Hint.getLoadedModules
+                                                    Hint.reset
+                                                    return (tmh0, tmh1, tmh2, tmh3)
+                        liftDebugIO [hpsr, hsr]
                         return $ hpsr == hsr
     
 prop_sequential :: HPS.ServerHandle -> String -> Bool
