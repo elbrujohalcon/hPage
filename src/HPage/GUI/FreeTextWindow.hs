@@ -18,6 +18,7 @@ import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
 import qualified HPage.Stub.Control as HP
 import qualified HPage.Stub.Server as HPS
+import Utils.Log
 
 data GUIResults t = GUIRes { resName  :: TextCtrl t,
                              resValue :: TextCtrl t,
@@ -25,11 +26,12 @@ data GUIResults t = GUIRes { resName  :: TextCtrl t,
                              resKind  :: TextCtrl t }
 
 data GUIContext w l t r s  = GUICtx { guiWin :: Window w,
-                                      guiPages :: l,
-                                      guiModules :: l,
+                                      guiPages :: SingleListBox l,
+                                      guiModules :: SingleListBox l,
                                       guiCode :: TextCtrl t,
                                       guiResults :: GUIResults r,
-                                      guiStatus :: s } 
+                                      guiStatus :: StatusField,
+                                      guiTimer :: Var (TimerEx ()) } 
 
 gui :: IO ()
 gui =
@@ -57,17 +59,19 @@ gui =
         lstPages <- singleListBox pnlR [style := wxLB_NEEDED_SB]
 
         -- Results list
-        txtName <- textEntry pnlR []
-        txtValue <- textEntry pnlR []
-        txtType <- textEntry pnlR []
-        txtKind <- textEntry pnlR []
+        txtName <- textCtrlRich pnlR []
+        txtValue <- textCtrlRich pnlR []
+        txtType <- textCtrlRich pnlR []
+        txtKind <- textCtrlRich pnlR []
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
+        refreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
+        varTimer <- varCreate refreshTimer
         set win [statusBar := [status]]
         
         let guiRes = GUIRes txtName txtValue txtType txtKind
-        let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status
+        let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status varTimer
         let onCmd acc = do
                             mustRefresh <- acc model guiCtx
                             if mustRefresh
@@ -81,7 +85,7 @@ gui =
         
         -- Events
         set lstPages [on select := onCmd pageChange]
-        controlOnText txtCode $ onCmd updatePage
+        set txtCode [on keyboard := (\_ -> onCmd restartTimer >> propagateEvent)]
         
         -- Menu bar...
         -- menuBar win []
@@ -141,7 +145,7 @@ gui =
             valueRowL   = [label "Value", hfill $ widget txtValue, widget btnGetValue]
             typeRowL    = [label "Type", hfill $ widget txtType, widget btnGetType]
             kindRowL    = [label "Kind", hfill $ widget txtKind, widget btnGetKind]
-            resultsGridL= hfill $ boxed "Expression" $ grid 5 2 [nameRowL, valueRowL, typeRowL, kindRowL]
+            resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [nameRowL, valueRowL, typeRowL, kindRowL]
             leftL       = container pnlR $ column 5 [lstPagesL, resultsGridL, lstModulesL]
         set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL txtCodeL,
                  clientSize := sz 800 600]
@@ -150,8 +154,7 @@ gui =
         display model guiCtx
         focusOn txtCode
 
-display :: (Selection l, Items l [Char], Textual s) =>
-                            HPS.ServerHandle -> GUIContext w l t r s -> IO ()
+display :: HPS.ServerHandle -> GUIContext w l t r s -> IO ()
 display model GUICtx{guiPages = lstPages,
                      guiModules = lstModules,
                      guiCode = txtCode,
@@ -182,8 +185,6 @@ display model GUICtx{guiPages = lstPages,
         set txtCode [text := t]
         set status [text := ""]
         return ()
-
-getValue, getType, getKind, nameExpr, unnameExpr :: HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
 
 getValue model GUICtx{guiWin = win, guiResults = GUIRes{resValue = txtValue}} =
     runTxtHP HP.valueOf model win txtValue >> return False 
@@ -235,20 +236,28 @@ runTxtHP hpacc model win txt =
                         return (True, r))
                     `catchError` (\err -> return (False, Right $ ioeGetErrorString err))
 
-runHP ::  (Selection l, Items l [Char], Textual s) =>
-                            HP.HPage x -> HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+runHP ::  HP.HPage x -> HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
 runHP hpacc model _ = HPS.runIn model hpacc >> return True
 
-updatePage, savePageAs, savePage, openPage,
-    pageChange, copy, cut, paste,
-    loadModule, refreshExprs :: (Selection l, Items l [Char], Textual s) =>
-                                    HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+savePageAs, savePage, openPage,
+    pageChange, copy, cut, paste, restartTimer,
+    getValue, getType, getKind, nameExpr, unnameExpr,
+    loadModule, refreshExpr :: HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+
 pageChange model guiCtx =
     do
         i <- get (guiPages guiCtx) selection
         HPS.runIn model $ HP.setPageIndex i
-        refreshExprs model guiCtx
+        refreshExpr model guiCtx
         return True
+
+restartTimer model ctx@GUICtx{guiWin = win, guiTimer = varTimer} =
+    do
+        newRefreshTimer <- timer win [interval := 1000,
+                                      on command := refreshExpr model ctx >> return ()]
+        refreshTimer <- varSwap varTimer newRefreshTimer
+        timerOnCommand refreshTimer $ return ()
+        return False
 
 openPage model GUICtx{guiWin = win,
                       guiResults = GUIRes{resName = txtName,
@@ -294,23 +303,17 @@ savePage model guiCtx =
                     HPS.runIn model HP.savePage
                     return True
 
-updatePage model guiCtx =
-    do
-        txt <- get (guiCode guiCtx) text
-        HPS.runIn model $ HP.setPageText txt
-        refreshExprs model guiCtx
-
 copy _model GUICtx{guiCode = txtCode} =
     textCtrlCopy txtCode >> return False
 cut model guiCtx =
     do
         textCtrlCut (guiCode guiCtx)
-        updatePage model guiCtx
+        refreshExpr model guiCtx
 
 paste model guiCtx =
     do
         textCtrlPaste (guiCode guiCtx)
-        updatePage model guiCtx
+        refreshExpr model guiCtx
 
 loadModule model GUICtx{guiWin = win, guiStatus = status} =
     do
@@ -329,14 +332,41 @@ loadModule model GUICtx{guiWin = win, guiStatus = status} =
                                 return True
                         Right () -> return True
 
-refreshExprs model GUICtx{guiResults = GUIRes{resName = txtName,
-                                              resValue = txtValue,
-                                              resType = txtType,
-                                              resKind = txtKind}} =
-    do
-        nm <- HPS.runIn model HP.getExprName
+refreshExpr model GUICtx{guiResults = GUIRes{resName = txtName,
+                                             resValue = txtValue,
+                                             resType = txtType,
+                                             resKind = txtKind},
+                         guiCode = txtCode,
+                         guiWin = win,
+                         guiTimer = varTimer} =
+   do
+        txt <- get txtCode text
+        HPS.runIn model $ HP.setPageText txt
+        updateExprIndex model txtCode
+        nm <- HPS.runIn model $ do
+                                    i <- HP.getExprIndex
+                                    case i of
+                                        -1 -> return Nothing
+                                        _ -> HP.getExprName
         set txtName [text := case nm of
                                 Nothing -> ""
                                 Just n -> n]
         mapM (flip set [text := ""]) [txtValue, txtType, txtKind]
+        -- kill the timer till there's new notices
+        newRefreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
+        refreshTimer <- varSwap varTimer newRefreshTimer
+        timerOnCommand refreshTimer $ return ()
         return False
+
+updateExprIndex :: HPS.ServerHandle -> TextCtrl a -> IO ()
+updateExprIndex model txtCode =
+    do
+        ip <- textCtrlGetInsertionPoint txtCode
+        txt <- get txtCode text
+        let exprIndex = length $ filter ("" ==) $ lines $ take ip txt
+        debugIO (ip, exprIndex)
+        HPS.runIn model $ do
+                            ec <- HP.getExprCount
+                            if ec > exprIndex
+                                then HP.setExprIndex exprIndex
+                                else return ()
