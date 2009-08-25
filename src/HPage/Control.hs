@@ -37,7 +37,7 @@ module HPage.Control (
     loadModule', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
-    Hint.InterpreterError,
+    Hint.InterpreterError, Hint.prettyPrintError,
     -- DEBUG --
     ctxString
  ) where
@@ -52,6 +52,7 @@ import Control.Monad.State
 import Control.Monad.State.Class
 import Control.Concurrent.MVar
 import qualified Language.Haskell.Interpreter as Hint
+import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
 import Data.List ((\\))

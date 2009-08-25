@@ -37,7 +37,7 @@ module HPage.Stub.Control (
     loadModule', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
-    InterpreterError,
+    InterpreterError, prettyPrintError,
     -- DEBUG --
     ctxString
  ) where
@@ -569,3 +569,6 @@ modifyExprName nth newName p =  let curExpr  = currentExpr p
                                       currentExpr = if curExpr < length newExprs then
                                                         curExpr else
                                                         length newExprs -1}
+
+prettyPrintError :: InterpreterError -> String
+prettyPrintError = show

@@ -173,7 +173,7 @@ runGridHP col hpacc model win _ _ _ lstResults _ =
     do
         (worked, res) <- HPS.runIn model $ try hpacc
         let sRes = case res of
-                        Left err -> show err
+                        Left err -> HP.prettyPrintError err
                         Right val -> val
         if worked
             then do
