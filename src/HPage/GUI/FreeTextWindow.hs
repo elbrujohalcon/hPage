@@ -16,8 +16,8 @@ import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import qualified HPage.Stub.Control as HP
-import qualified HPage.Stub.Server as HPS
+import qualified HPage.Control as HP
+import qualified HPage.Server as HPS
 
 gui :: IO ()
 gui =

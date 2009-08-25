@@ -67,19 +67,6 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-        runTests "vs. Hint Server" options
-                 [  run $ prop_fail hps hs
-                 ,  run $ prop_valueOf hps hs
-                 ,  run $ prop_typeOf hps hs
-                 ,  run $ prop_kindOf hps hs
-                 ,  run $ prop_load_module hps hs
-                 ,  run $ prop_reload_modules hps hs
-                 ,  run $ prop_get_loaded_modules hps hs
-                 ]
-        runTests "Cancelation" options
-                 [  run $ prop_sequential hps
-                 ,  run $ prop_cancel_load hps
-                 ]
         runTests "Editing" options
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
@@ -133,7 +120,20 @@ main =
                  ,  run $ prop_let_valueOf hps hs
                  ,  run $ prop_let_typeOf hps hs
                  ]
-        removeDirectoryRecursive testDir
+        runTests "vs. Hint Server" options
+                 [  run $ prop_fail hps hs
+                 ,  run $ prop_valueOf hps hs
+                 ,  run $ prop_typeOf hps hs
+                 ,  run $ prop_kindOf hps hs
+                 ,  run $ prop_load_module hps hs
+                 ,  run $ prop_reload_modules hps hs
+                 ,  run $ prop_get_loaded_modules hps hs
+                 ]
+        runTests "Cancelation" options
+                 [  run $ prop_sequential hps
+                 ,  run $ prop_cancel_load hps
+                 ]
+        removeDirectoryRecursive testDir        
                     
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -963,7 +963,7 @@ prop_let_typeOf hps hs txt = txt /= "" ==>
                                                             return (r1, r2)
                         hsr1 <- HS.runIn hs $ Hint.typeOf expr
                         hsr2 <- HS.runIn hs $ Hint.typeOf $ "2 * (length " ++ expr ++ ")"
-                        liftDebugIO [(hpsr1, hpsr2), (hsr1, hsr2)]
+                        -- liftDebugIO [(hpsr1, hpsr2), (hsr1, hsr2)]
                         return $ (hpsr1, hpsr2) == (hsr1, hsr2)
 
 prop_let_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool

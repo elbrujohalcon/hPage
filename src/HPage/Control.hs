@@ -599,18 +599,7 @@ apply (Just lm)    c = c{loadedModules = insert (loadingModule lm) (loadedModule
                          recoveryLog   = (recoveryLog c) >> (runningAction lm)}
 
 fromString :: String -> [Expression]
-fromString s = map toExp . filter (not . null) . map (joinWith "\n") . splitOn "" $ lines s
-    where toExp xp = case dropWhile isSpace xp of
-                        ('l':('e':('t':rest))) ->
-                            case break (== '=') rest of
-                                (_, []) ->
-                                    Exp Nothing xp
-                                (before, _:after) ->
-                                    Exp (toName before) after
-                        _ ->
-                            Exp Nothing xp
-          toName = Just . dSpace . dSpace
-          dSpace = reverse . dropWhile isSpace
+fromString = map (Exp Nothing) . filter (not . null) . map (joinWith "\n") . splitOn "" . lines
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions
