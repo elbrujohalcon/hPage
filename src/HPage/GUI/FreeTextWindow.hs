@@ -16,17 +16,26 @@ import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import qualified HPage.Control as HP
-import qualified HPage.Server as HPS
+import qualified HPage.Stub.Control as HP
+import qualified HPage.Stub.Server as HPS
+
+data GUIResults t = GUIRes { resName  :: TextCtrl t,
+                             resValue :: TextCtrl t,
+                             resType  :: TextCtrl t,
+                             resKind  :: TextCtrl t }
+
+data GUIContext w l t r s  = GUICtx { guiWin :: Window w,
+                                      guiPages :: l,
+                                      guiModules :: l,
+                                      guiCode :: TextCtrl t,
+                                      guiResults :: GUIResults r,
+                                      guiStatus :: s } 
 
 gui :: IO ()
 gui =
     do
         -- Server context
         model <- HPS.start
-        
-        -- Clipboard
-        clipboard <- clipboardCreate 
         
         win <- frame [text := "hPage"]
         topLevelWindowSetIconFromFile win "../res/images/icon/hpage.tif"
@@ -37,38 +46,42 @@ gui =
         -- Containers
         pnl <- panel win []
         splLR <- splitterWindow pnl []
-        pnlRTB <- panel splLR []
-        pnlLTB <- panel splLR []
+        pnlR <- panel splLR []
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrlRich pnlRTB [font := fontFixed{_fontSize = 12}]
+        txtCode <- textCtrlRich splLR [font := fontFixed{_fontSize = 12}]
         
         -- Document Selector
-        lstModules <- singleListBox pnlLTB [style := wxLB_NEEDED_SB]
-        lstPages <- singleListBox pnlLTB [style := wxLB_NEEDED_SB]
+        lstModules <- singleListBox pnlR [style := wxLB_NEEDED_SB]
+        lstPages <- singleListBox pnlR [style := wxLB_NEEDED_SB]
 
         -- Results list
-        lstResults <- listCtrl pnlRTB [columns := [("Name", AlignLeft, 100),
-                                                   ("Expression", AlignLeft, 100),
-                                                   ("Value", AlignLeft, 100),
-                                                   ("Type", AlignLeft, 100),
-                                                   ("Kind", AlignLeft, 100)]]
+        txtName <- textEntry pnlR []
+        txtValue <- textEntry pnlR []
+        txtType <- textEntry pnlR []
+        txtKind <- textEntry pnlR []
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
         set win [statusBar := [status]]
         
+        let guiRes = GUIRes txtName txtValue txtType txtKind
+        let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status
         let onCmd acc = do
-                            mustRefresh <- acc model win clipboard lstPages lstModules txtCode lstResults status
+                            mustRefresh <- acc model guiCtx
                             if mustRefresh
-                                then display model win clipboard lstPages lstModules txtCode lstResults status
+                                then display model guiCtx
                                 else return ()
+        
+        btnSetName <- button pnlR [text := "Set", on command := onCmd nameExpr]
+        btnGetValue <- button pnlR [text := "Get",on command := onCmd getValue]
+        btnGetType <- button pnlR [text := "Get", on command := onCmd getType]
+        btnGetKind <- button pnlR [text := "Get", on command := onCmd getKind]
         
         -- Events
         set lstPages [on select := onCmd pageChange]
         controlOnText txtCode $ onCmd updatePage
-        listCtrlOnListEvent lstResults $ (\e -> onCmd $ onListEvent e) 
         
         -- Menu bar...
         -- menuBar win []
@@ -91,20 +104,19 @@ gui =
         mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd copy]
         mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd paste]
         menuLine mnuEdit
-        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd $ say "find"]
-        menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd $ say "findNext"]
+        menuItem mnuEdit [text := "&Find...\tCtrl-f"]
+        menuItem mnuEdit [text := "&Find Next\tCtrl-g"]
 
         mnuHask <- menuPane [text := "Haskell"]
         menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd loadModule]
-        menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
+        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd $ runHP HP.reloadModules]
         menuLine mnuHask
-        mitRefresh <- menuItem mnuHask [text := "&Refresh Grid\tCtrl-r", on command := onCmd refreshExprs]
-        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd $ runGridHP 2 HP.valueOf]
-        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd $ runGridHP 3 HP.typeOf]
-        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd $ runGridHP 4 HP.kindOf]
+        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd getValue]
+        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd getType]
+        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd getKind]
         menuLine mnuHask
         menuItem mnuHask [text := "&Name Expression\tAlt-n",        on command := onCmd nameExpr]
-        menuItem mnuHask [text := "&Unname Expression\tAlt-u",      on command := onCmd $ runGridHP 1 $ HP.removeExprName >> return (Right "")]
+        menuItem mnuHask [text := "&Unname Expression\tAlt-u",      on command := onCmd unnameExpr]
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
@@ -119,28 +131,31 @@ gui =
         toolMenu tbMain mitCut "Cut"  "../res/images/cut.png" [tooltip := "Cut"]
         toolMenu tbMain mitCopy "Copy" "../res/images/copy.png" [tooltip := "Copy"]
         toolMenu tbMain mitPaste "Paste" "../res/images/paste.png" [tooltip := "Paste"]
-        toolMenu tbMain mitRefresh "Refresh" "../res/images/reload.png" [tooltip := "Refresh"]
+        toolMenu tbMain mitReload "Reload" "../res/images/reload.png" [tooltip := "Reload Modules"]
         
         -- Layout settings
-        let lstPagesL   = fill $ boxed "Pages" $ fill $ widget lstPages
+        let txtCodeL    = fill $ widget txtCode
+            lstPagesL   = fill $ boxed "Pages" $ fill $ widget lstPages
             lstModulesL = fill $ boxed "Modules" $ fill $ widget lstModules
-            leftL       = container pnlLTB $ column 5 [lstPagesL, lstModulesL]
-            txtCodeL    = fill $ boxed "Code" $ fill $ widget txtCode
-            lstResultsL = fill $ boxed "Expressions" $ fill $ widget lstResults
-            rightL      = container pnlRTB $ column 5 [txtCodeL, lstResultsL]
-        set win [layout := container pnl $ fill $ vsplit splLR 7 175 leftL rightL,
+            nameRowL    = [label "Name", hfill $ widget txtName, widget btnSetName]
+            valueRowL   = [label "Value", hfill $ widget txtValue, widget btnGetValue]
+            typeRowL    = [label "Type", hfill $ widget txtType, widget btnGetType]
+            kindRowL    = [label "Kind", hfill $ widget txtKind, widget btnGetKind]
+            resultsGridL= hfill $ boxed "Expression" $ grid 5 2 [nameRowL, valueRowL, typeRowL, kindRowL]
+            leftL       = container pnlR $ column 5 [lstPagesL, resultsGridL, lstModulesL]
+        set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL txtCodeL,
                  clientSize := sz 800 600]
 
         -- ...and RUN!
-        display model win clipboard lstPages lstModules txtCode lstResults status
+        display model guiCtx
         focusOn txtCode
-    where
-        say x _model _win _clipboard _lstPages _lstModules _txtCode lstResults _status = itemAppend lstResults [x, "an expr", "a value", "a type", "a kind"] >> return False
 
-display :: (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
-                            HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> lst ->
-                                TextCtrl txt -> lr -> sb -> IO ()
-display model _win _clipboard lstPages lstModules txtCode _lstResults status =
+display :: (Selection l, Items l [Char], Textual s) =>
+                            HPS.ServerHandle -> GUIContext w l t r s -> IO ()
+display model GUICtx{guiPages = lstPages,
+                     guiModules = lstModules,
+                     guiCode = txtCode,
+                     guiStatus = status} =
     do
         (ms, ps, i, t) <- HPS.runIn model $ do
                                                 pc <- HP.getPageCount
@@ -168,79 +183,79 @@ display model _win _clipboard lstPages lstModules txtCode _lstResults status =
         set status [text := ""]
         return ()
 
-runGridHP ::  (Selection lst, Items lst [Char], Textual sb, Items (ListCtrl lr) [String]) =>
-                            Int -> HP.HPage (Either HP.InterpreterError String) -> HPS.ServerHandle -> Window frame ->
-                                Clipboard a -> lst -> lst -> TextCtrl txt -> ListCtrl lr -> sb -> IO Bool
-runGridHP col hpacc model win _ _ _ _ lstResults _ =
+getValue, getType, getKind, nameExpr, unnameExpr :: HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+
+getValue model GUICtx{guiWin = win, guiResults = GUIRes{resValue = txtValue}} =
+    runTxtHP HP.valueOf model win txtValue >> return False 
+
+getType model GUICtx{guiWin = win, guiResults = GUIRes{resType = txtType}} =
+    runTxtHP HP.typeOf model win txtType >> return False 
+
+getKind model GUICtx{guiWin = win, guiResults = GUIRes{resKind = txtKind}} =
+    runTxtHP HP.kindOf model win txtKind >> return False
+
+unnameExpr model guiCtx =
+    do
+        let txtName = resName $ guiResults guiCtx
+        set txtName [text := ""]
+        nameExpr model guiCtx
+
+nameExpr model GUICtx{guiWin = win, guiResults = GUIRes{resName = txtName}} =
+    do
+        txt <- get txtName text
+        let acc = case txt of
+                    "" ->
+                        HP.removeExprName
+                    exprName ->
+                        HP.setExprName exprName
+        let hpacc = do
+                        acc
+                        newName <- HP.getExprName
+                        case newName of
+                            Nothing ->
+                                return $ Right ""
+                            Just nm ->
+                                return $ Right nm 
+        runTxtHP hpacc model win txtName
+        return False
+
+runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
+            HPS.ServerHandle -> Window w -> TextCtrl t -> IO ()
+runTxtHP hpacc model win txt =
     do
         (worked, res) <- HPS.runIn model $ try hpacc
         let sRes = case res of
                         Left err -> HP.prettyPrintError err
                         Right val -> val
         if worked
-            then do
-                    r <- HPS.runIn model HP.getExprIndex
-                    prevItem <- get lstResults $ item r
-                    set lstResults [item r := (replaceAt col sRes prevItem)]
-                    listCtrlSetItemState lstResults r wxLIST_STATE_SELECTED wxLIST_STATE_SELECTED
-                    return ()
-            else
-                warningDialog win "Error" sRes 
-        return False
-    where replaceAt i x xs = let (before, (_:after)) = splitAt i xs
-                              in before ++ (x:after)
-          try a = (do
+            then txt `set` [text := sRes]
+            else warningDialog win "Error" sRes
+    where try a = (do
                         r <- a
                         return (True, r))
                     `catchError` (\err -> return (False, Right $ ioeGetErrorString err))
 
-runHP ::  (Selection lst, Items lst [Char], Textual sb, Items lr [String]) =>
-                            HP.HPage x -> HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> lst ->
-                                TextCtrl txt -> lr -> sb -> IO Bool
-runHP hpacc model _ _ _ _ _ _ _ = HPS.runIn model hpacc >> return True
-
-onListEvent :: (Selection lst, Items lst [Char], Textual sb, Items (ListCtrl lr) [String]) =>
-                            EventList -> HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> lst ->
-                                TextCtrl txt -> ListCtrl lr -> sb -> IO Bool
-onListEvent ev =
-    case ev of
-        ListItemSelected i ->
-            runHP $ HP.setExprIndex i
-        _ ->
-            (\_ _ _ _ _ _ _ _ -> return False) --NOTE: we ignore the rest of the parameters
+runHP ::  (Selection l, Items l [Char], Textual s) =>
+                            HP.HPage x -> HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+runHP hpacc model _ = HPS.runIn model hpacc >> return True
 
 updatePage, savePageAs, savePage, openPage,
-    pageChange, copy, cut, paste, nameExpr,
-    loadModule, refreshExprs :: (Selection lst, Items lst [Char], Textual sb, Items (ListCtrl lr) [String]) =>
-                                    HPS.ServerHandle -> Window frame -> Clipboard a -> lst -> lst ->
-                                    TextCtrl txt -> ListCtrl lr -> sb -> IO Bool
-
-nameExpr model win clipboard lstPages lstModules txtCode lstResults status =
+    pageChange, copy, cut, paste,
+    loadModule, refreshExprs :: (Selection l, Items l [Char], Textual s) =>
+                                    HPS.ServerHandle -> GUIContext w l t r s -> IO Bool
+pageChange model guiCtx =
     do
-        dlgRes <- textDialog win "Choose name..." "hPage" ""
-        case dlgRes of
-            "" ->
-                return False
-            exprName ->
-                let hpacc = do
-                                HP.setExprName exprName
-                                newName <- HP.getExprName
-                                case newName of
-                                    Nothing ->
-                                        return $ Right ""
-                                    Just nm ->
-                                        return $ Right nm 
-                 in runGridHP 0 hpacc model win clipboard lstPages lstModules txtCode lstResults status
-                                
-
-pageChange model win clipboard lstPages lstModules txtCode lstResults status =
-    do
-        i <- get lstPages selection
+        i <- get (guiPages guiCtx) selection
         HPS.runIn model $ HP.setPageIndex i
-        refreshExprs model win clipboard lstPages lstModules txtCode lstResults status
+        refreshExprs model guiCtx
         return True
 
-openPage model win _ _ _ _ lstResults status =
+openPage model GUICtx{guiWin = win,
+                      guiResults = GUIRes{resName = txtName,
+                                          resValue = txtValue,
+                                          resType = txtType,
+                                          resKind = txtKind},
+                      guiStatus = status} =
     do
         fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -251,10 +266,10 @@ openPage model win _ _ _ _ lstResults status =
                 do
                     set status [text := "opening..."]
                     HPS.runIn model $ HP.openPage f
-                    itemsDelete lstResults
+                    mapM (flip set [text := ""]) [txtName, txtValue, txtType, txtKind]
                     return True
 
-savePageAs model win _ _ _ _ _ status =
+savePageAs model GUICtx{guiWin = win, guiStatus = status} =
     do
         fileName <- fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
@@ -267,37 +282,37 @@ savePageAs model win _ _ _ _ _ status =
                     HPS.runIn model $ HP.savePageAs f
                     return True
 
-savePage model win clipboard lstPages lstModules txtCode lstResults status =
+savePage model guiCtx =
     do
         path <- HPS.runIn model $ HP.getPagePath
         case path of
             Nothing ->
-                savePageAs model win clipboard lstPages lstModules txtCode lstResults status
+                savePageAs model guiCtx
             _ ->
                 do
-                    set status [text := "saving..."]
+                    set (guiStatus guiCtx) [text := "saving..."]
                     HPS.runIn model HP.savePage
                     return True
 
-updatePage model win clipboard lstPages lstModules txtCode lstResults status =
+updatePage model guiCtx =
     do
-        txt <- get txtCode text
+        txt <- get (guiCode guiCtx) text
         HPS.runIn model $ HP.setPageText txt
-        refreshExprs model win clipboard lstPages lstModules txtCode lstResults status
+        refreshExprs model guiCtx
 
-copy _ _ _ _ _ txtCode _ _ =
+copy _model GUICtx{guiCode = txtCode} =
     textCtrlCopy txtCode >> return False
-cut model win clipboard lstPages lstModules txtCode lstResults status =
+cut model guiCtx =
     do
-        textCtrlCut txtCode
-        updatePage model win clipboard lstPages lstModules txtCode lstResults status
+        textCtrlCut (guiCode guiCtx)
+        updatePage model guiCtx
 
-paste model win clipboard lstPages lstModules txtCode lstResults status =
+paste model guiCtx =
     do
-        textCtrlPaste txtCode
-        updatePage model win clipboard lstPages lstModules txtCode lstResults status
+        textCtrlPaste (guiCode guiCtx)
+        updatePage model guiCtx
 
-loadModule model win _ _ _ _ _ status =
+loadModule model GUICtx{guiWin = win, guiStatus = status} =
     do
         fileName <- fileOpenDialog win True True "Load Module..." [("Haskell Modules",["*.hs"])] "" ""
         case fileName of
@@ -314,19 +329,14 @@ loadModule model win _ _ _ _ _ status =
                                 return True
                         Right () -> return True
 
-refreshExprs model _ _ _ _ _ lstResults _ =
+refreshExprs model GUICtx{guiResults = GUIRes{resName = txtName,
+                                              resValue = txtValue,
+                                              resType = txtType,
+                                              resKind = txtKind}} =
     do
-        itemsDelete lstResults
-        rs <- HPS.runIn model $ do
-                                    ec <- HP.getExprCount
-                                    (flip mapM) [0..ec-1] $ \i ->
-                                                            do
-                                                                en <- HP.getExprNthName i
-                                                                ex <- HP.getExprNthText i
-                                                                return (en, ex)
-        forM_ rs $ \(n, e) ->
-                    let n' = case n of
+        nm <- HPS.runIn model HP.getExprName
+        set txtName [text := case nm of
                                 Nothing -> ""
-                                Just nm -> nm
-                     in itemAppend lstResults [n', e, "", "", ""]
+                                Just n -> n]
+        mapM (flip set [text := ""]) [txtValue, txtType, txtKind]
         return False
