@@ -52,7 +52,7 @@ import Control.Monad.State
 import Control.Monad.State.Class
 import Control.Concurrent.MVar
 import Utils.Log
-import List ((\\))
+import List ((\\), isPrefixOf)
 import qualified List as List
 import qualified Data.ByteString.Char8 as Str
 
@@ -125,9 +125,10 @@ openPage :: FilePath -> HPage ()
 openPage file = do
                     liftTraceIO $ "opening: " ++ file
                     s <- liftIO $ Str.readFile file
-                    let newExprs = fromString $ Str.unpack s
+                    let str = Str.unpack s
+                    let (newExprs, curExpr) = fromString' str $ length str
                         newPage = emptyPage{expressions = newExprs, 
-                                            currentExpr = if (length newExprs) == 0 then (-1) else 0,
+                                            currentExpr = curExpr,
                                             filePath    = Just file,
                                             original    = newExprs}
                     modify (\ctx -> ctx{pages = newPage : pages ctx,
@@ -235,12 +236,21 @@ safeSavePageNthAs i file = do
                                     else savePageNthAs i file
 
 clearPage :: HPage ()
-clearPage = setPageText ""
+clearPage = setPageText "" 0 >> return ()
 
-setPageText :: String -> HPage ()
-setPageText s = let exprs = fromString s
-                 in modifyWithUndo (\page -> page{expressions = exprs,
-                                                  currentExpr = (length exprs - 1)})
+setPageText :: String -> Int -> HPage Bool
+setPageText s ip = 
+    do
+        let (exprs, ix) = fromString' s ip
+        page <- getPage
+        if exprs /= expressions page || ix /= currentExpr page
+            then
+                do
+                    modifyWithUndo (\p -> p{expressions = exprs,
+                                            currentExpr = ix})
+                    return True
+            else
+                return False
 
 getPageText :: HPage String
 getPageText = getPage >>= return . toString
@@ -497,28 +507,26 @@ runInExprNth' action i = do
                                         liftIO . newMVar . Right $ action ++ ": " ++ expr
 
 fromString :: String -> [Expression]
-fromString s = map toExp . filter (not . null) . map (joinWith "\n") . splitOn "" $ lines s
-    where toExp xp = case dropWhile isSpace xp of
-                        ('l':('e':('t':rest))) ->
-                            case break (== '=') rest of
-                                (_, []) ->
-                                    Exp Nothing xp
-                                (before, _:after) ->
-                                    Exp (toName before) after
-                        _ ->
-                            Exp Nothing xp
-          toName = Just . dSpace . dSpace
-          dSpace = reverse . dropWhile isSpace
+fromString s = map (Exp Nothing) $ splitOn "\n\n" s
+
+fromString' :: String -> Int -> ([Expression], Int)
+fromString' s i = (fromString s,
+                   length $ splitOn "\n\n" $ take i s)
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions
 
-splitOn :: Eq a => a -> [a] -> [[a]]
-splitOn sep = reverse . (map reverse) . (foldl (\(acc:accs) el ->
-                                                if el == sep
-                                                then []:acc:accs
-                                                else (el:acc):accs)
-                                         [[]])
+splitOn :: Eq a => [a] -> [a] -> [[a]]
+splitOn [] xs = [xs]
+splitOn _ [] = []
+splitOn s xs = splitOn' [] s xs
+
+splitOn' :: Eq a => [a] -> [a] -> [a] -> [[a]]
+splitOn' [] _ [] = []
+splitOn' acc _ [] = [reverse acc]
+splitOn' acc s r@(x:xs)
+    | isPrefixOf s r = (reverse acc) : splitOn' [] s (drop (length s) r)
+    | otherwise = splitOn' (x:acc) s xs    
 
 joinWith :: [a] -> [[a]] -> [a]
 joinWith _ [] = []

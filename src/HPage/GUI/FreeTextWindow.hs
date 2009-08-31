@@ -283,33 +283,15 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
                                 guiCode = txtCode} forceClear =
    do
         txt <- get txtCode text
-        prevTxt <- HPS.runIn model HP.getPageText
-        prevIndex <- HPS.runIn model HP.getExprIndex
-
-        let txtChanged = txt /= prevTxt
-        if txtChanged
-            then HPS.runIn model $ HP.setPageText txt
-            else return ()
-        
-        --TODO: This *must* be done inside HPage (for example, on setPageText)
         ip <- textCtrlGetInsertionPoint txtCode
-        let exprIndex = length $ filter ("" ==) $ lines $ take ip txt
-        let exprChanged = exprIndex /= prevIndex
-        if exprChanged
-            then HPS.runIn model $ do
-                                        ec <- HP.getExprCount
-                                        if ec > exprIndex
-                                            then HP.setExprIndex exprIndex
-                                            else return ()
-            else return ()
+        
+        somethingChanged <- HPS.runIn model $ HP.setPageText txt ip
         
         debugIO ("Insertion point: ", ip,
-                 "Expression Index: ", exprIndex,
                  "Forced:", forceClear,
-                 "Text changed:", txtChanged,
-                 "Expr changed:", exprChanged)
+                 "Changed?:", somethingChanged)
         
-        if exprChanged || txtChanged || forceClear
+        if somethingChanged || forceClear
             then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
             else debugIO "dummy refreshExpr"
 
