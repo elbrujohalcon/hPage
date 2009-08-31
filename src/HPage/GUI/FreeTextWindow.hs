@@ -162,7 +162,9 @@ getKind model GUICtx{guiWin = win, guiResults = GUIRes{resKind = txtKind}} =
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
         i <- get lstPages selection
-        runHP' (HP.setPageIndex i) model guiCtx
+        case i of
+            (-1) -> return ()
+            _ -> runHP' (HP.setPageIndex i) model guiCtx
 
 openPage model guiCtx@GUICtx{guiWin = win,
                              guiStatus = status} =
@@ -189,13 +191,15 @@ savePageAs model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     set status [text := "saving..."]
                     runHP' (HP.savePageAs f) model guiCtx
 
-savePage model guiCtx =
+savePage model guiCtx@GUICtx{guiWin = win} =
     do
-        path <- HPS.runIn model $ HP.getPagePath
-        case path of
-            Nothing ->
+        maybePath <- tryIn' model HP.getPagePath
+        case maybePath of
+            Left err ->
+                warningDialog win "Error" err
+            Right Nothing ->
                 savePageAs model guiCtx
-            _ ->
+            Right _ ->
                 do
                     set (guiStatus guiCtx) [text := "saving..."]
                     runHP' HP.savePage model guiCtx
@@ -219,51 +223,60 @@ loadModule model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     set status [text := "loading..."]
                     runHP (HP.loadModule f) model guiCtx
 
-refreshPage model guiCtx@GUICtx{guiPages = lstPages,
+refreshPage model guiCtx@GUICtx{guiWin = win,
+                                guiPages = lstPages,
                                 guiModules = lstModules,
                                 guiCode = txtCode,
                                 guiStatus = status} =
     do
-        (ms, ps, i, t) <- HPS.runIn model $ do
-                                                pc <- HP.getPageCount
-                                                pages <- mapM HP.getPageNthDesc [0..pc-1]
-                                                ind <- HP.getPageIndex
-                                                txt <- HP.getPageText
-                                                lmsRes <- HP.getLoadedModules
-                                                let lms = case lmsRes of
-                                                            Left  _ -> []
-                                                            Right x -> x
-                                                return (lms, pages, ind, txt)
-        -- Refresh the pages list
-        itemsDelete lstPages
-        (flip mapM) ps $ \pd ->
-                            let prefix = if HP.pIsModified pd
-                                            then "*"
-                                            else ""
-                                name   = case HP.pPath pd of
-                                             Nothing -> "new page"
-                                             Just fn -> takeFileName $ dropExtension fn
-                             in itemAppend lstPages $ prefix ++ name
-        set lstPages [selection := i]
-        -- Refresh the modules list
-        itemsDelete lstModules
-        (flip mapM) ms $ itemAppend lstModules
-        -- Refresh the current text
-        set txtCode [text := t]
-        set status [text := ""]
-        -- Refresh the current expression box
-        refreshExpr model guiCtx True
+        traceIO "Refresh Page"
+        res <- tryIn' model $ do
+                                pc <- HP.getPageCount
+                                pages <- mapM HP.getPageNthDesc [0..pc-1]
+                                ind <- HP.getPageIndex
+                                txt <- HP.getPageText
+                                lmsRes <- HP.getLoadedModules
+                                let lms = case lmsRes of
+                                            Left  _ -> []
+                                            Right x -> x
+                                return (lms, pages, ind, txt)
+        case res of
+            Left err ->
+                warningDialog win "Error" err
+            Right (ms, ps, i, t) ->
+                do
+                    -- Refresh the pages list
+                    traceIO ("deleting lstPages...", ms, ps, i, t)
+                    itemsDelete lstPages
+                    (flip mapM) ps $ \pd ->
+                                        let prefix = if HP.pIsModified pd
+                                                        then "*"
+                                                        else ""
+                                            name   = case HP.pPath pd of
+                                                         Nothing -> "new page"
+                                                         Just fn -> takeFileName $ dropExtension fn
+                                         in itemAppend lstPages $ prefix ++ name
+                    set lstPages [selection := i]
+                    -- Refresh the modules list
+                    itemsDelete lstModules
+                    (flip mapM) ms $ itemAppend lstModules
+                    -- Refresh the current text
+                    set txtCode [text := t]
+                    set status [text := ""]
+                    -- Refresh the current expression box
+                    refreshExpr model guiCtx True
 
 runHP' ::  HP.HPage () -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
-runHP' a = runHP (a >>= return . Right)
+runHP' a m c = debugIO "runHP'" >> runHP (a >>= return . Right) m c
 
 runHP ::  HP.HPage (Either HP.InterpreterError ()) -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
 runHP hpacc model guiCtx@GUICtx{guiWin = win} =
     do
-        res <- HPS.runIn model hpacc
+        debugIO "runHP"
+        res <- tryIn model hpacc
         case res of
             Left err ->
-                errorDialog win "Error" $ HP.prettyPrintError err
+                warningDialog win "Error" err
             Right () ->
                 refreshPage model guiCtx
 
@@ -271,6 +284,7 @@ runTxtHP :: HP.HPage (Either HP.InterpreterError String) ->
             HPS.ServerHandle -> Window w -> TextCtrl t -> IO ()
 runTxtHP hpacc model win txt =
     do
+        debugIO "runTxtHP"
         res <- tryIn model hpacc
         case res of
             Left err -> warningDialog win "Error" err
@@ -280,20 +294,21 @@ refreshExpr :: HPS.ServerHandle -> GUIContext w l t r s -> Bool -> IO ()
 refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
                                                     resType = txtType,
                                                     resKind = txtKind},
-                                guiCode = txtCode} forceClear =
+                                guiCode = txtCode,
+                                guiWin = win} forceClear =
    do
         txt <- get txtCode text
         ip <- textCtrlGetInsertionPoint txtCode
         
-        somethingChanged <- HPS.runIn model $ HP.setPageText txt ip
+        res <- tryIn' model $ HP.setPageText txt ip
         
-        debugIO ("Insertion point: ", ip,
-                 "Forced:", forceClear,
-                 "Changed?:", somethingChanged)
-        
-        if somethingChanged || forceClear
-            then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
-            else debugIO "dummy refreshExpr"
+        case res of
+            Left err ->
+                warningDialog win "Error" err
+            Right changed ->
+                if changed || forceClear
+                    then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
+                    else debugIO "dummy refreshExpr"
 
         killTimer model guiCtx
 
@@ -316,12 +331,19 @@ killTimer _model GUICtx{guiWin = win, guiTimer = varTimer} =
 -- INTERNAL UTILS --------------------------------------------------------------
 type ErrorString = String
 
+tryIn' :: HPS.ServerHandle -> HP.HPage x -> IO (Either ErrorString x)
+tryIn' model hpacc = do
+                        debugIO "tryIn'"
+                        tryIn model $ hpacc >>= return . Right
+
 tryIn :: HPS.ServerHandle -> HP.HPage (Either HP.InterpreterError x) -> IO (Either ErrorString x)
 tryIn model hpacc =
     do
         res <- HPS.runIn model $ catchError (hpacc >>= return . Right)
                                             (\ioerr -> return $ Left ioerr)
         case res of
-            Left err          -> return . Left  $ ioeGetErrorString err
+            Left err          -> do
+                                    errorIO err
+                                    return . Left  $ ioeGetErrorString err
             Right (Left err)  -> return . Left  $ HP.prettyPrintError err
             Right (Right val) -> return . Right $ val

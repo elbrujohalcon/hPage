@@ -456,7 +456,9 @@ withIndex i acc is = case i of
                         -1 ->
                             fail "Nothing selected"
                         x | x >= length is ->
-                            fail "Invalid index"
+                        	do
+                                liftErrorIO x
+                                fail "Invalid index"
                         _ ->
                             acc 
 
@@ -488,7 +490,9 @@ runInExprNth action i = do
                                 -1 ->
                                     fail "Nothing selected"
                                 x | x >= length exprs ->
-                                    fail "Invalid index"
+                                    do
+                                        liftErrorIO x
+                                        fail "Invalid index"
                                 _ ->
                                     do
                                         let expr = exprText $ exprs !! i
@@ -509,9 +513,8 @@ runInExprNth' action i = do
 fromString :: String -> [Expression]
 fromString s = map (Exp Nothing) $ splitOn "\n\n" s
 
-fromString' :: String -> Int -> ([Expression], Int)
 fromString' s i = (fromString s,
-                   length $ splitOn "\n\n" $ take i s)
+                   flip (-) 1 . length . splitOn "\n\n" $ take i s)
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions

@@ -190,6 +190,7 @@ getPageIndex :: HPage Int
 getPageIndex = get >>= return . currentPage
 
 setPageIndex :: Int -> HPage ()
+setPageIndex (-1) = modify (\ctx -> ctx{currentPage = (-1)})
 setPageIndex i = withPageIndex i $ modify (\ctx -> ctx{currentPage = i})
 
 getPageDesc :: HPage PageDescription
@@ -523,7 +524,7 @@ withPageIndex i acc = get >>= withIndex i acc . pages
 withExprIndex :: Int -> HPage a -> HPage a
 withExprIndex i acc = getPage >>= withIndex i acc . expressions
 
-withIndex :: Int -> HPage a -> [b] -> HPage a
+withIndex :: Show b => Int -> HPage a -> [b] -> HPage a
 withIndex i acc is = case i of
                         -1 ->
                             fail "Nothing selected"
@@ -558,7 +559,9 @@ runInExprNth action i = do
                             let exprs = expressions page
                             flip (withIndex i) exprs $ do
                                                             let expr = exprText $ exprs !! i
-                                                            syncRun $ action expr
+                                                            syncRun $ if "" == expr
+                                                                        then return ""
+                                                                        else action expr
 
 runInExprNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
 runInExprNth' action i = do
@@ -566,7 +569,9 @@ runInExprNth' action i = do
                             let exprs = expressions page
                             flip (withIndex i) exprs $ do
                                                             let expr = exprText $ exprs !! i
-                                                            asyncRun $ action expr
+                                                            asyncRun $ if "" == expr
+                                                                        then return ""
+                                                                        else action expr
 
 runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNthWithLets action i = do
@@ -576,7 +581,9 @@ runInExprNthWithLets action i = do
                                                                     let (b, item : a) = splitAt i exprs
                                                                         lets = filter ((Nothing /=) . exprName) $ b ++ a
                                                                         expr = letsToString lets ++ exprText item
-                                                                    syncRun $ action expr
+                                                                    syncRun $ if "" == exprText item
+                                                                                then return ""
+                                                                                else action expr
 
 runInExprNthWithLets' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
 runInExprNthWithLets' action i = do
@@ -614,7 +621,7 @@ fromString s = map (Exp Nothing) $ splitOn "\n\n" s
 
 fromString' :: String -> Int -> ([Expression], Int)
 fromString' s i = (fromString s,
-                   length $ splitOn "\n\n" $ take i s)
+                   flip (-) 1 . length . splitOn "\n\n" $ take i s)
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions
