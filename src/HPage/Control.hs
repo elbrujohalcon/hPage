@@ -24,10 +24,8 @@ module HPage.Control (
     getExprIndex, setExprIndex, getExprCount,
     addExpr, removeExpr,
     setExprText, getExprText,
-    setExprName, getExprName, removeExprName,
     removeNth,
     setExprNthText, getExprNthText,
-    setExprNthName, getExprNthName, removeExprNthName,
     -- EDITION CONTROLS --
     undo, redo, find, findNext,
     -- HINT CONTROLS --
@@ -58,14 +56,14 @@ import Utils.Log
 import Data.List ((\\), isPrefixOf)
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
+import Language.Haskell.Exts.Parser
 
 data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
                                  pIsModified :: Bool}
     deriving (Eq, Show)
 
-data Expression = Exp {exprName :: Maybe String,
-                       exprText :: String}       
+newtype Expression = Exp {exprText :: String}       
     deriving (Eq, Show)
 
 data InFlightData = LoadModule { loadingModule :: FilePath,
@@ -277,33 +275,6 @@ setExprIndex nth = withExprIndex nth $ modifyWithUndo (\p -> p{currentExpr = nth
 
 getExprCount :: HPage Int
 getExprCount = getPage >>= return . length . expressions 
-
-getExprName :: HPage (Maybe String)
-getExprName = getPage >>= getExprNthName . currentExpr
-
-setExprName :: String -> HPage ()
-setExprName name = getPage >>= flip setExprNthName name . currentExpr
-
-removeExprName :: HPage ()
-removeExprName = getPage >>= removeExprNthName . currentExpr
-
-getExprNthName :: Int -> HPage (Maybe String)
-getExprNthName nth = withExprIndex nth $ getPage >>= return . exprName . (!! nth) . expressions
-
-setExprNthName :: Int -> String -> HPage ()
-setExprNthName nth name = withExprIndex nth $
-                          withExprName name $
-                                do
-                                    page <- getPage
-                                    liftTraceIO ("setExprNthName", nth, name, expressions page, currentExpr page)
-                                    modifyWithUndo $ modifyExprName nth (Just name)
-
-removeExprNthName :: Int -> HPage ()
-removeExprNthName nth = withExprIndex nth $
-                                do
-                                    page <- getPage
-                                    liftTraceIO ("removeExprNthName", nth, expressions page, currentExpr page)
-                                    modifyWithUndo $ modifyExprName nth Nothing
 
 getExprText :: HPage String
 getExprText = getPage >>= getExprNthText . currentExpr
@@ -533,26 +504,6 @@ withIndex i acc is = case i of
                         _ ->
                             acc 
 
-withExprName :: String -> HPage a -> HPage a
-withExprName [] _acc = fail "Empty expression name"
-withExprName nm acc =
-    do
-        case isLower (head nm) of
-            False ->
-                fail "Expression names should start with lower-case"
-            True ->
-                case all isAlphaNum (filter (/='_') nm) of
-                    False ->
-                        fail "Expression names should only include alphanumeric characters"
-                    True ->
-                        do
-                            page <- getPage
-                            case any ((Just nm ==) . exprName) (expressions page) of
-                                True ->
-                                    fail "Duplicated expression name"
-                                False ->
-                                    acc
-
 runInExprNth :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNth action i = do
                             page <- getPage
@@ -577,11 +528,10 @@ runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage 
 runInExprNthWithLets action i = do
                                     page <- getPage
                                     let exprs = expressions page
-                                    flip (withIndex i) exprs $ do
-                                                                    let (b, item : a) = splitAt i exprs
-                                                                        lets = filter ((Nothing /=) . exprName) $ b ++ a
-                                                                        expr = letsToString lets ++ exprText item
-                                                                    syncRun $ if "" == exprText item
+                                    flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
+                                                                   lets = filter isNamedExpr $ b ++ a
+                                                                   expr = letsToString lets ++ exprText item
+                                                                in syncRun $ if "" == exprText item
                                                                                 then return ""
                                                                                 else action expr
 
@@ -589,9 +539,10 @@ runInExprNthWithLets' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage
 runInExprNthWithLets' action i = do
                                     page <- getPage
                                     let exprs = expressions page
-                                    flip (withIndex i) exprs $ do
-                                                                    let expr = exprText $ exprs !! i
-                                                                    asyncRun $ action expr
+                                    flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
+                                                                   lets = filter isNamedExpr $ b ++ a
+                                                                   expr = letsToString lets ++ exprText item
+                                                                in asyncRun $ action expr
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do
@@ -617,7 +568,12 @@ apply (Just lm)    c = c{loadedModules = insert (loadingModule lm) (loadedModule
                          recoveryLog   = (recoveryLog c) >> (runningAction lm)}
 
 fromString :: String -> [Expression]
-fromString s = map (Exp Nothing) $ splitOn "\n\n" s
+fromString s = map Exp $ splitOn "\n\n" s
+
+isNamedExpr :: Expression -> Bool
+isNamedExpr e = case parseDecl (exprText e) of
+                    ParseOk _ -> True
+                    _ -> False 
 
 fromString' :: String -> Int -> ([Expression], Int)
 fromString' s i = (fromString s,
@@ -672,25 +628,11 @@ nextMatching t p = let c = currentExpr p
                             Just (i, _) ->
                                 Just i
     where rotate n xs = drop n xs ++ take n xs
-          include x (_, Exp _ xs) = (xs \\ x) /= xs
+          include x (_, Exp xs) = (xs \\ x) /= xs
 
 emptyPage :: Page
 emptyPage = Page [] (-1) [] [] Nothing [] Nothing
 
-modifyExprName :: Int -> Maybe String -> Page -> Page
-modifyExprName nth newName p =  let curExpr  = currentExpr p
-                                    curExprs = expressions p
-                                    curText  = exprText $ curExprs !! curExpr
-                                    newExpr  = Exp newName curText
-                                    newExprs = insertAt nth [newExpr] curExprs
-                                 in p{expressions = newExprs,
-                                      currentExpr = if curExpr < length newExprs then
-                                                        curExpr else
-                                                        length newExprs -1}
-
 letsToString :: [Expression] -> String
 letsToString [] = ""
-letsToString exs = "let " ++ joinWith "; " (List.map letToString exs) ++ " in "
-    where letToString ex = showName (exprName ex) ++ " = " ++ exprText ex
-          showName Nothing  = "ERROR: unnamed let expression"
-          showName (Just n) = n
+letsToString exs = "let " ++ joinWith "; " (map exprText exs) ++ " in "

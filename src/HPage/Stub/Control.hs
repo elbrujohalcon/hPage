@@ -513,6 +513,7 @@ runInExprNth' action i = do
 fromString :: String -> [Expression]
 fromString s = map (Exp Nothing) $ splitOn "\n\n" s
 
+fromString' :: String -> Int -> ([Expression], Int)
 fromString' s i = (fromString s,
                    flip (-) 1 . length . splitOn "\n\n" $ take i s)
 
