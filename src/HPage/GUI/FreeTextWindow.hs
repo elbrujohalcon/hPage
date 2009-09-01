@@ -89,7 +89,11 @@ gui =
         
         -- Events
         set lstPages [on select := onCmd "pageChange" pageChange]
-        set txtCode [on keyboard := (\_ -> onCmd "restartTimer" restartTimer >> propagateEvent)]
+        set txtCode [on keyboard := \_ -> onCmd "restartTimer" restartTimer >> propagateEvent,
+                     on mouse :=  \e -> case e of
+                                            MouseLeftUp _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
+                                            MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
+                                            _ -> propagateEvent]
         
         -- Menu bar...
         -- menuBar win []
