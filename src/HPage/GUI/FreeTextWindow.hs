@@ -58,9 +58,9 @@ gui =
         lstPages <- singleListBox pnlR [style := wxLB_NEEDED_SB]
 
         -- Results list
-        txtValue <- textCtrlRich pnlR []
-        txtType <- textCtrlRich pnlR []
-        txtKind <- textCtrlRich pnlR []
+        txtValue <- textCtrlRich pnlR [style := wxTE_READONLY]
+        txtType <- textCtrlRich pnlR [style := wxTE_READONLY]
+        txtKind <- textCtrlRich pnlR [style := wxTE_READONLY]
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
@@ -70,47 +70,47 @@ gui =
         
         let guiRes = GUIRes txtValue txtType txtKind
         let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status varTimer
-        let onCmd acc = acc model guiCtx
+        let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
         
-        btnGetValue <- button pnlR [text := "Value",on command := onCmd getValue]
-        btnGetType <- button pnlR [text := "Type", on command := onCmd getType]
-        btnGetKind <- button pnlR [text := "Kind", on command := onCmd getKind]
+        btnGetValue <- button pnlR [text := "Value",on command := onCmd "getValue" getValue]
+        btnGetType <- button pnlR [text := "Type", on command := onCmd "getType" getType]
+        btnGetKind <- button pnlR [text := "Kind", on command := onCmd "getKind" getKind]
         
         -- Events
-        set lstPages [on select := onCmd pageChange]
-        set txtCode [on keyboard := (\_ -> onCmd restartTimer >> propagateEvent)]
+        set lstPages [on select := onCmd "pageChange" pageChange]
+        set txtCode [on keyboard := (\_ -> onCmd "restartTimer" restartTimer >> propagateEvent)]
         
         -- Menu bar...
         -- menuBar win []
         mnuPage <- menuPane [text := "Page"]
-        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",    on command := onCmd $ runHP' HP.addPage]
-        menuItem mnuPage [text := "&Close\tCtrl-w",             on command := onCmd $ runHP' HP.closePage]
-        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd $ runHP' HP.closeAllPages]
+        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",    on command := onCmd "runHP' addPage" $ runHP' HP.addPage]
+        menuItem mnuPage [text := "&Close\tCtrl-w",             on command := onCmd "runHP' closePage" $ runHP' HP.closePage]
+        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages]
         menuLine mnuPage
-        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd openPage]
-        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd savePage]
-        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd savePageAs]
+        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd "openPage" openPage]
+        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd "savePage" savePage]
+        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd "savePageAs" savePageAs]
         menuLine mnuPage
         menuQuit mnuPage []
         
         mnuEdit <- menuPane [text := "Edit"]
-        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd $ runHP' HP.undo]
-        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd $ runHP' HP.redo]
+        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd "runHP' undo" $ runHP' HP.undo]
+        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd "runHP' redo" $ runHP' HP.redo]
         menuLine mnuEdit
-        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd cut]
-        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd copy]
-        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd paste]
+        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd "cut" cut]
+        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd "copy" copy]
+        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste]
         menuLine mnuEdit
-        menuItem mnuEdit [text := "&Find...\tCtrl-f"]
-        menuItem mnuEdit [text := "&Find Next\tCtrl-g"]
+        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "find" $ \_ _ -> return ()]
+        menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" $ \_ _ -> return ()]
 
         mnuHask <- menuPane [text := "Haskell"]
-        menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd loadModule]
-        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd reloadModules]
+        menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd "loadModule" loadModule]
+        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd "reloadModules" reloadModules]
         menuLine mnuHask
-        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd getValue]
-        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd getType]
-        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd getKind]
+        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd "getValue" getValue]
+        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd "getType" getType]
+        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd "getKind" getKind]
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
@@ -135,7 +135,7 @@ gui =
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
-            leftL       = container pnlR $ column 5 [lstPagesL, resultsGridL, lstModulesL]
+            leftL       = container pnlR $ column 5 [resultsGridL, lstPagesL, lstModulesL]
         set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL txtCodeL,
                  clientSize := sz 800 600]
 
@@ -150,14 +150,14 @@ refreshPage, savePageAs, savePage, openPage,
     getValue, getType, getKind,
     loadModule, reloadModules :: HPS.ServerHandle -> GUIContext w l t r s -> IO ()
 
-getValue model GUICtx{guiWin = win, guiResults = GUIRes{resValue = txtValue}} =
-    runTxtHP HP.valueOf model win txtValue
+getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue}} =
+    runTxtHP HP.valueOf model guiCtx txtValue
 
-getType model GUICtx{guiWin = win, guiResults = GUIRes{resType = txtType}} =
-    runTxtHP HP.typeOf model win txtType 
+getType model guiCtx@GUICtx{guiResults = GUIRes{resType = txtType}} =
+    runTxtHP HP.typeOf model guiCtx txtType 
 
-getKind model GUICtx{guiWin = win, guiResults = GUIRes{resKind = txtKind}} =
-    runTxtHP HP.kindOf model win txtKind
+getKind model guiCtx@GUICtx{guiResults = GUIRes{resKind = txtKind}} =
+    runTxtHP HP.kindOf model guiCtx txtKind
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -229,7 +229,6 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiCode = txtCode,
                                 guiStatus = status} =
     do
-        traceIO "Refresh Page"
         res <- tryIn' model $ do
                                 pc <- HP.getPageCount
                                 pages <- mapM HP.getPageNthDesc [0..pc-1]
@@ -246,7 +245,6 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
             Right (ms, ps, i, t) ->
                 do
                     -- Refresh the pages list
-                    traceIO ("deleting lstPages...", ms, ps, i, t)
                     itemsDelete lstPages
                     (flip mapM) ps $ \pd ->
                                         let prefix = if HP.pIsModified pd
@@ -267,12 +265,11 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     refreshExpr model guiCtx True
 
 runHP' ::  HP.HPage () -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
-runHP' a m c = debugIO "runHP'" >> runHP (a >>= return . Right) m c
+runHP' a = runHP $ a >>= return . Right
 
 runHP ::  HP.HPage (Either HP.InterpreterError ()) -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
 runHP hpacc model guiCtx@GUICtx{guiWin = win} =
     do
-        debugIO "runHP"
         res <- tryIn model hpacc
         case res of
             Left err ->
@@ -281,10 +278,10 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
                 refreshPage model guiCtx
 
 runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
-            HPS.ServerHandle -> Window w -> TextCtrl t -> IO ()
-runTxtHP hpacc model win txt =
+            HPS.ServerHandle -> GUIContext w l t r s -> TextCtrl t2 -> IO ()
+runTxtHP hpacc model guiCtx@GUICtx{guiWin = win} txt =
     do
-        debugIO "runTxtHP"
+        refreshExpr model guiCtx False
         res <- tryIn model hpacc
         case res of
             Left err -> warningDialog win "Error" err
@@ -332,9 +329,7 @@ killTimer _model GUICtx{guiWin = win, guiTimer = varTimer} =
 type ErrorString = String
 
 tryIn' :: HPS.ServerHandle -> HP.HPage x -> IO (Either ErrorString x)
-tryIn' model hpacc = do
-                        debugIO "tryIn'"
-                        tryIn model $ hpacc >>= return . Right
+tryIn' model hpacc = tryIn model $ hpacc >>= return . Right
 
 tryIn :: HPS.ServerHandle -> HP.HPage (Either HP.InterpreterError x) -> IO (Either ErrorString x)
 tryIn model hpacc =
