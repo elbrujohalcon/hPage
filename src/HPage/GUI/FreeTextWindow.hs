@@ -7,6 +7,8 @@
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
+import Control.Concurrent.Process
+import Control.Concurrent.MVar
 import System.FilePath
 import System.IO.Error hiding (try)
 import Data.List
@@ -20,9 +22,12 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import Utils.Log
 
-data GUIResults = GUIRes { resValue :: TextCtrl (),
-                           resType  :: TextCtrl (),
-                           resKind  :: TextCtrl () }
+data GUIResultRow = GUIRRow { grrButton :: Button (),
+                              grrText   :: TextCtrl ()}
+
+data GUIResults = GUIRes { resValue :: GUIResultRow,
+                           resType  :: GUIResultRow,
+                           resKind  :: GUIResultRow }
 
 data GUIContext  = GUICtx { guiWin :: Frame (),
                             guiPages :: SingleListBox (),
@@ -41,8 +46,7 @@ gui =
         win <- frame [text := "hPage"]
         topLevelWindowSetIconFromFile win "../res/images/icon/hpage.tif"
         
-        --HACK: closing with an exception avoids wxWidgets ugly warnings on OSX
-        set win [on closing := HPS.stop model >> undefined]
+        set win [on closing := HPS.stop model >> propagateEvent]
         
         -- Containers
         pnl <- panel win []
@@ -68,13 +72,20 @@ gui =
         varTimer <- varCreate refreshTimer
         set win [statusBar := [status]]
         
-        let guiRes = GUIRes txtValue txtType txtKind
+        btnGetValue <- button pnlR [text := "Value"]
+        btnGetType <- button pnlR [text := "Type"]
+        btnGetKind <- button pnlR [text := "Kind"]
+        
+        let grrValue = GUIRRow btnGetValue txtValue
+        let grrType = GUIRRow btnGetType txtType
+        let grrKind = GUIRRow btnGetKind txtKind
+        let guiRes = GUIRes grrValue grrType grrKind
         let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status varTimer
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
-        
-        btnGetValue <- button pnlR [text := "Value",on command := onCmd "getValue" getValue]
-        btnGetType <- button pnlR [text := "Type", on command := onCmd "getType" getType]
-        btnGetKind <- button pnlR [text := "Kind", on command := onCmd "getKind" getKind]
+
+        set btnGetValue [on command := onCmd "getValue" getValue]
+        set btnGetType [on command := onCmd "getType" getType]
+        set btnGetKind [on command := onCmd "getKind" getKind]
         
         -- Events
         set lstPages [on select := onCmd "pageChange" pageChange]
@@ -150,14 +161,14 @@ refreshPage, savePageAs, savePage, openPage,
     getValue, getType, getKind,
     loadModule, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
 
-getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue}} =
-    runTxtHP HP.valueOf model guiCtx txtValue
+getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
+    runTxtHP HP.valueOf' model guiCtx grrValue
 
-getType model guiCtx@GUICtx{guiResults = GUIRes{resType = txtType}} =
-    runTxtHP HP.typeOf model guiCtx txtType 
+getType model guiCtx@GUICtx{guiResults = GUIRes{resType = grrType}} =
+    runTxtHP HP.typeOf' model guiCtx grrType
 
-getKind model guiCtx@GUICtx{guiResults = GUIRes{resKind = txtKind}} =
-    runTxtHP HP.kindOf model guiCtx txtKind
+getKind model guiCtx@GUICtx{guiResults = GUIRes{resKind = grrKind}} =
+    runTxtHP HP.kindOf' model guiCtx grrKind
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -277,20 +288,50 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
-            HPS.ServerHandle -> GUIContext -> TextCtrl t2 -> IO ()
-runTxtHP hpacc model guiCtx@GUICtx{guiWin = win} txt =
+runTxtHP :: HP.HPage (MVar (Either HP.InterpreterError String)) -> 
+            HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
+runTxtHP hpacc model guiCtx@GUICtx{guiWin = win,
+                                   guiStatus = status}
+                            GUIRRow{grrButton = btn,
+                                    grrText = txtBox} =
     do
         refreshExpr model guiCtx False
-        res <- tryIn model hpacc
+        res <- tryIn' model hpacc
         case res of
             Left err -> warningDialog win "Error" err
-            Right val -> set txt [text := val]
+            Right var -> do
+                            cancelled <- varCreate False
+                            prevOnCmd <- get btn $ on command
+                            prevText <- get btn text
+                            let prevAttrs = [text := prevText,
+                                             on command := prevOnCmd]
+                            set btn [text := "Cancel",
+                                     on command := cancelHP model cancelled]
+                            set txtBox [enabled := False]
+                            set status [text := "processing..."]
+                            spawn . liftIO $ do
+                                                val <- readMVar var
+                                                wasCancelled <- varGet cancelled
+                                                if wasCancelled
+                                                    then
+                                                        set status [text := "cancelled"]
+                                                    else
+                                                        do
+                                                            set status [text := "ready"]
+                                                            case val of
+                                                                Left err -> warningDialog win "Error" $ HP.prettyPrintError err
+                                                                Right txt -> set txtBox [text := txt]
+                                                set txtBox [enabled := True]
+                                                set btn prevAttrs
+                            return ()
+
+cancelHP :: HPS.ServerHandle -> Var Bool -> IO ()
+cancelHP model cancelled = varSet cancelled True >> tryIn' model HP.cancel >> return ()        
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
-refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
-                                                    resType = txtType,
-                                                    resKind = txtKind},
+refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,
+                                                    resType = grrType,
+                                                    resKind = grrKind},
                                 guiCode = txtCode,
                                 guiWin = win} forceClear =
    do
@@ -304,7 +345,7 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
                 warningDialog win "Error" err
             Right changed ->
                 if changed || forceClear
-                    then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
+                    then mapM_ (flip set [text := ""] . grrText) [grrValue, grrType, grrKind]
                     else debugIO "dummy refreshExpr"
 
         killTimer model guiCtx
