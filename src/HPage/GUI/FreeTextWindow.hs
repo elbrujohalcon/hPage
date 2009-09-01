@@ -20,17 +20,17 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import Utils.Log
 
-data GUIResults t = GUIRes { resValue :: TextCtrl t,
-                             resType  :: TextCtrl t,
-                             resKind  :: TextCtrl t }
+data GUIResults = GUIRes { resValue :: TextCtrl (),
+                           resType  :: TextCtrl (),
+                           resKind  :: TextCtrl () }
 
-data GUIContext w l t r s  = GUICtx { guiWin :: Window w,
-                                      guiPages :: SingleListBox l,
-                                      guiModules :: SingleListBox l,
-                                      guiCode :: TextCtrl t,
-                                      guiResults :: GUIResults r,
-                                      guiStatus :: StatusField,
-                                      guiTimer :: Var (TimerEx ()) } 
+data GUIContext  = GUICtx { guiWin :: Frame (),
+                            guiPages :: SingleListBox (),
+                            guiModules :: SingleListBox (),
+                            guiCode :: TextCtrl (),
+                            guiResults :: GUIResults,
+                            guiStatus :: StatusField,
+                            guiTimer :: Var (TimerEx ()) } 
 
 gui :: IO ()
 gui =
@@ -148,7 +148,7 @@ refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModule, reloadModules :: HPS.ServerHandle -> GUIContext w l t r s -> IO ()
+    loadModule, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue}} =
     runTxtHP HP.valueOf model guiCtx txtValue
@@ -264,10 +264,10 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     -- Refresh the current expression box
                     refreshExpr model guiCtx True
 
-runHP' ::  HP.HPage () -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
+runHP' ::  HP.HPage () -> HPS.ServerHandle -> GUIContext -> IO ()
 runHP' a = runHP $ a >>= return . Right
 
-runHP ::  HP.HPage (Either HP.InterpreterError ()) -> HPS.ServerHandle -> GUIContext w l t r s -> IO ()
+runHP ::  HP.HPage (Either HP.InterpreterError ()) -> HPS.ServerHandle -> GUIContext -> IO ()
 runHP hpacc model guiCtx@GUICtx{guiWin = win} =
     do
         res <- tryIn model hpacc
@@ -278,7 +278,7 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
                 refreshPage model guiCtx
 
 runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
-            HPS.ServerHandle -> GUIContext w l t r s -> TextCtrl t2 -> IO ()
+            HPS.ServerHandle -> GUIContext -> TextCtrl t2 -> IO ()
 runTxtHP hpacc model guiCtx@GUICtx{guiWin = win} txt =
     do
         refreshExpr model guiCtx False
@@ -287,7 +287,7 @@ runTxtHP hpacc model guiCtx@GUICtx{guiWin = win} txt =
             Left err -> warningDialog win "Error" err
             Right val -> set txt [text := val]
 
-refreshExpr :: HPS.ServerHandle -> GUIContext w l t r s -> Bool -> IO ()
+refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
 refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
                                                     resType = txtType,
                                                     resKind = txtKind},
