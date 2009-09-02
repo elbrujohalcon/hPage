@@ -111,10 +111,10 @@ main =
                  ,  run $ prop_get_loaded_modules hps hs
                  ]
         runTests "Cancelation" options
-                 [  run $ prop_sequential hps
-                 ,  run $ prop_cancel_load hps
+                 [  run $ prop_cancel_load hps,
+                    run $ prop_sequential hps
                  ]
-        removeDirectoryRecursive testDir        
+        removeDirectoryRecursive testDir
                     
 instance Eq (Hint.InterpreterError) where
     a == b = show a == show b
@@ -225,21 +225,26 @@ prop_sequential hps txt =
 prop_cancel_load :: HPS.ServerHandle -> ModuleName -> Bool
 prop_cancel_load hps mn =
     unsafePerformIO $ do
-                        let expr1 = "module " ++ show mn ++ " where fact = (1,2,3)"
-                        let expr2 = "module " ++ show mn ++ "2 where fact = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
+                        let expr1 = "module " ++ show mn ++ " where cancelLoadTest = (1,2,3)"
+                        let expr2 = "module " ++ show mn ++ "2 where cancelLoadTest = foldl (*) 1 [1.." ++ show (length $ show mn) ++ "]"
                         HPS.runIn hps $ do
                                             HP.reset
                                             HP.setPageText expr2 0
                                             HP.savePageAs $ testDir ++ "/" ++ show mn ++ "2.hs"
                                             HP.setPageText expr1 0
                                             HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
-                                            HP.setPageText "fact" 0
+                                            HP.setPageText "cancelLoadTest" 0
                                             HP.loadModule $ testDir ++ "/" ++ show mn ++ ".hs"
+                                            oldMs <- HP.getLoadedModules
                                             oldRes <- HP.valueOf
+                                            oldCtx <- HP.ctxString
                                             HP.loadModule' $ testDir ++ "/" ++ show mn ++ "2.hs"
                                             HP.cancel
+                                            newMs <- HP.getLoadedModules
                                             newRes <- HP.valueOf
-                                            return $ newRes == oldRes
+                                            newCtx <- HP.ctxString
+                                            -- liftDebugIO [(oldRes, oldMs, oldCtx), (newRes, newMs, newCtx)]
+                                            return $ (oldRes, oldMs, oldCtx) == (newRes, newMs, newCtx)
 
 prop_setget_text :: HPS.ServerHandle -> String -> Bool
 prop_setget_text hps txt =
@@ -251,7 +256,7 @@ prop_setget_expr :: HPS.ServerHandle -> String -> Property
 prop_setget_expr hps txt =
     txt /= "" ==>
     unsafePerformIO $ HPS.runIn hps $ do
-                                        HP.setPageText (txt ++ "\n\nxx") 1
+                                        HP.setPageText (txt ++ "\n\nxx") (length txt + 3)
                                         exi1 <- HP.getExprIndex
                                         exp1 <- HP.getExprText
                                         HP.setExprIndex 0

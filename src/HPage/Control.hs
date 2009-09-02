@@ -576,6 +576,8 @@ isNamedExpr e = case parseDecl (exprText e) of
                     _ -> False 
 
 fromString' :: String -> Int -> ([Expression], Int)
+fromString' "" 0 = ([], -1)
+fromString' s 0 = (fromString s, 0)
 fromString' s i = (fromString s,
                    flip (-) 1 . length . splitOn "\n\n" $ take i s)
 
