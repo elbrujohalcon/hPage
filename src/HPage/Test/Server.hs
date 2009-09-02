@@ -151,20 +151,41 @@ prop_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
-prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
-prop_load_module hps hs txt =
+prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
+prop_load_module hps hs mn =
     unsafePerformIO $ do
-                        let expr = "test = length \"" ++ txt ++ "\"" 
+                        let mname = testDir ++ "." ++ show mn
+                        let ftxt = "module " ++ mname ++ " where v = 32"
+                        let f2txt = "v = \"" ++ show mn ++ "\""
                         hpsr <- HPS.runIn hps $ do
-                                                    HP.setPageText expr 0
+                                                    -- Save TestFiles/Test...hs
+                                                    HP.setPageText ftxt 0
+                                                    HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
+                                                    -- Save TestFiles/test.hs
+                                                    HP.setPageText f2txt 0
                                                     HP.savePageAs $ testDir ++ "/test.hs"
-                                                    HP.setPageText "test" 0
+                                                    -- Load TestFiles/test.hs by path
                                                     HP.loadModule $ testDir ++ "/test.hs"
-                                                    HP.valueOf
-                        hsr <- HS.runIn hs $ do
-                                                Hint.loadModules [testDir ++ "/test.hs"]
-                                                Hint.getLoadedModules >>= Hint.setTopLevelModules
-                                                Hint.eval "test"
+                                                    HP.setPageText "v" 0
+                                                    fv <- HP.valueOf
+                                                    fm <- HP.getLoadedModules
+                                                    -- Load TestFiles/Test...hs by name
+                                                    HP.loadModule mname
+                                                    HP.setPageText "v" 0
+                                                    sv <- HP.valueOf
+                                                    sm <- HP.getLoadedModules
+                                                    return (fv, sv, fm, sm)
+                        Right hsr <- HS.runIn hs $ do
+                                                    Hint.loadModules [testDir ++ "/test.hs"]
+                                                    Hint.getLoadedModules >>= Hint.setTopLevelModules
+                                                    fv <- Hint.eval "v"
+                                                    fm <- Hint.getLoadedModules
+                                                    Hint.loadModules [mname]
+                                                    Hint.getLoadedModules >>= Hint.setTopLevelModules
+                                                    sv <- Hint.eval "v"
+                                                    sm <- Hint.getLoadedModules
+                                                    return (Right fv, Right sv, Right fm, Right sm)
+                        liftDebugIO (hpsr, hsr)
                         return $ hpsr == hsr
 
 prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool

@@ -121,6 +121,8 @@ gui =
 
         mnuHask <- menuPane [text := "Haskell"]
         menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd "loadModule" loadModule]
+        menuItem mnuHask [text := "&Load module by name...\tCtrl-Shift-l",
+                                                                    on command := onCmd "loadModuleByName" loadModuleByName]
         mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd "reloadModules" reloadModules]
         menuLine mnuHask
         menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd "getValue" getValue]
@@ -163,7 +165,7 @@ refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModule, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
+    loadModule, loadModuleByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -237,6 +239,17 @@ loadModule model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                 do
                     set status [text := "loading..."]
                     runHP (HP.loadModule f) model guiCtx
+
+loadModuleByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+    do
+        moduleName <- textDialog win "Enter the module name" "Load Module..." ""
+        case moduleName of
+            "" ->
+                return ()
+            mn ->
+                do
+                    set status [text := "loading..."]
+                    runHP (HP.loadModule mn) model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
