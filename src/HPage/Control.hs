@@ -413,6 +413,7 @@ reset = do
             case res of
                 Right _ ->
                     modify (\ctx -> ctx{loadedModules = empty,
+                                        running = Nothing,
                                         recoveryLog = return ()})
                 Left e ->
                     liftErrorIO $ ("Error resetting", e)

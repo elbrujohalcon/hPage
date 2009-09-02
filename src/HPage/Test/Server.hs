@@ -111,8 +111,8 @@ main =
                  ,  run $ prop_get_loaded_modules hps hs
                  ]
         runTests "Cancelation" options
-                 [  run $ prop_cancel_load hps,
-                    run $ prop_sequential hps
+                 [  run $ prop_sequential hps
+                 ,  run $ prop_cancel_load hps
                  ]
         removeDirectoryRecursive testDir
                     
