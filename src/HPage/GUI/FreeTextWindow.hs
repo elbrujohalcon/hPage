@@ -18,6 +18,7 @@ import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
+import Graphics.UI.WXCore.WxcClasses
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import Utils.Log
@@ -116,8 +117,10 @@ gui =
         mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd "copy" copy]
         mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste]
         menuLine mnuEdit
-        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "find" $ \_ _ -> return ()]
+        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "justFind" justFind]
         menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" $ \_ _ -> return ()]
+        menuItem mnuEdit [text := "&Find Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" $ \_ _ -> return ()]
+        menuItem mnuEdit [text := "&Replace...\tCtrl-Shift-r",      on command := onCmd "findReplace" findReplace]
 
         mnuHask <- menuPane [text := "Haskell"]
         menuItem mnuHask [text := "&Load modules...\tCtrl-l",        on command := onCmd "loadModules" loadModules]
@@ -163,6 +166,7 @@ gui =
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
+    justFind, findReplace,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, loadModulesByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
@@ -227,6 +231,28 @@ cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshPage 
 
 paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshPage model guiCtx
 
+justFind _model guiCtx@GUICtx{guiWin = win} =
+    do
+        frdata <- findReplaceDataCreateDefault
+        frdialog <- findReplaceDialogCreate win frdata "Find..." dialogDefaultStyle
+        let eventHandler x = findReplaceEvent x frdata guiCtx >> propagateEvent
+        windowOnEvent frdialog [wxEVT_COMMAND_FIND] eventHandler (\evt -> eventHandler evt)
+        set frdialog [visible := True]
+
+findReplaceEvent :: Graphics.UI.WXCore.WxcClasses.Event () -> FindReplaceData a -> GUIContext -> IO ()
+findReplaceEvent _ frdata GUICtx{guiWin = win} =
+    do
+        s <- findReplaceDataGetFindString frdata
+        infoDialog win "About hPage" s
+        
+findReplace _model GUICtx{guiWin = win} =
+    do
+        frdata <- findReplaceDataCreateDefault
+        frdialog <- findReplaceDialogCreate win frdata "Find and Replace..." wxFR_REPLACEDIALOG
+        dialogShowModal frdialog
+        s <- findReplaceDataGetFindString frdata
+        infoDialog win "About hPage" s
+        
 reloadModules = runHP HP.reloadModules
 
 loadModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
