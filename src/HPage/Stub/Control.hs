@@ -30,9 +30,9 @@ module HPage.Stub.Control (
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModule, reloadModules, getLoadedModules,
+    loadModules, reloadModules, getLoadedModules,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModule', reloadModules', getLoadedModules',
+    loadModules', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
     InterpreterError, prettyPrintError,
@@ -42,7 +42,7 @@ module HPage.Stub.Control (
 
 import System.IO
 import System.Directory
-import Data.Set (Set, empty, insert, toList)
+import Data.Set (Set, empty, union, fromList, toList)
 import Data.Char
 import Control.Monad.Loops
 import Control.Monad.Error
@@ -361,8 +361,8 @@ valueOfNth = runInExprNth "valueOf"
 kindOfNth = runInExprNth "kindOf"
 typeOfNth = runInExprNth "typeOf"
 
-loadModule :: FilePath -> HPage (Either InterpreterError ())
-loadModule f = modify (\ctx -> ctx{loadedModules = insert f (loadedModules ctx)}) >>= return . Right
+loadModules :: [String] -> HPage (Either InterpreterError ())
+loadModules ms = modify (\ctx -> ctx{loadedModules = union (fromList ms) (loadedModules ctx)}) >>= return . Right
 
 reloadModules :: HPage (Either InterpreterError ())
 reloadModules = return $ Right ()
@@ -383,8 +383,8 @@ valueOfNth' = runInExprNth' "valueOf"
 kindOfNth' = runInExprNth' "kindOf"
 typeOfNth' = runInExprNth' "typeOf"
 
-loadModule' :: FilePath -> HPage (MVar (Either InterpreterError ()))
-loadModule' f = loadModule f >>= liftIO . newMVar
+loadModules' :: [String] -> HPage (MVar (Either InterpreterError ()))
+loadModules' ms = loadModules ms >>= liftIO . newMVar
 
 reloadModules' :: HPage (MVar (Either InterpreterError ()))
 reloadModules' = reloadModules >>= liftIO . newMVar

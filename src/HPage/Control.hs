@@ -30,9 +30,9 @@ module HPage.Control (
     undo, redo, find, findNext,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModule, reloadModules, getLoadedModules,
+    loadModules, reloadModules, getLoadedModules,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModule', reloadModules', getLoadedModules',
+    loadModules', reloadModules', getLoadedModules',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
@@ -42,7 +42,7 @@ module HPage.Control (
 
 import System.IO
 import System.Directory
-import Data.Set (Set, empty, insert, toList)
+import Data.Set (Set, empty, union, fromList, toList)
 import Data.Char
 import Control.Monad.Loops
 import Control.Monad.Error
@@ -66,9 +66,9 @@ data PageDescription = PageDesc {pIndex :: Int,
 newtype Expression = Exp {exprText :: String}       
     deriving (Eq, Show)
 
-data InFlightData = LoadModule { loadingModule :: FilePath,
-                                 runningAction :: Hint.InterpreterT IO ()
-                               } | Reset
+data InFlightData = LoadModules { loadingModules :: Set String,
+                                  runningAction :: Hint.InterpreterT IO ()
+                                } | Reset
 
 data Page = Page { -- Display --
                    expressions :: [Expression],
@@ -90,7 +90,7 @@ data Context = Context { -- Pages --
                          pages :: [Page],
                          currentPage :: Int,
                          -- Hint --
-                         loadedModules :: Set FilePath,
+                         loadedModules :: Set String,
                          server :: HS.ServerHandle,
                          running :: Maybe InFlightData,
                          recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
@@ -375,19 +375,19 @@ valueOfNth = runInExprNthWithLets Hint.eval
 kindOfNth = runInExprNth Hint.kindOf
 typeOfNth = runInExprNthWithLets Hint.typeOf
 
-loadModule :: FilePath -> HPage (Either Hint.InterpreterError ())
-loadModule f = do
+loadModules :: [String] -> HPage (Either Hint.InterpreterError ())
+loadModules ms = do
                     let action = do
-                                    liftTraceIO $ "loading: " ++ f
-                                    Hint.loadModules [f]
+                                    liftTraceIO $ "loading: " ++ show ms
+                                    Hint.loadModules ms
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                     res <- syncRun action
                     case res of
                         Right _ ->
-                            modify (\ctx -> ctx{loadedModules = insert f (loadedModules ctx),
+                            modify (\ctx -> ctx{loadedModules = union (fromList ms) (loadedModules ctx),
                                                 recoveryLog = recoveryLog ctx >> action >> return ()})
                         Left e ->
-                            liftErrorIO $ ("Error loading module", f, e)
+                            liftErrorIO $ ("Error loading modules", ms, e)
                     return res
 
 reloadModules :: HPage (Either Hint.InterpreterError ())
@@ -429,14 +429,14 @@ valueOfNth' = runInExprNthWithLets' Hint.eval
 kindOfNth' = runInExprNth' Hint.kindOf
 typeOfNth' = runInExprNthWithLets' Hint.typeOf
 
-loadModule' :: FilePath -> HPage (MVar (Either Hint.InterpreterError ()))
-loadModule' f = do
+loadModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
+loadModules' ms = do
                     let action = do
-                                    liftTraceIO $ "loading': " ++ f
-                                    Hint.loadModules [f]
+                                    liftTraceIO $ "loading': " ++ show ms
+                                    Hint.loadModules ms
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                     res <- asyncRun action
-                    modify (\ctx -> ctx{running = Just $ LoadModule f action})
+                    modify (\ctx -> ctx{running = Just $ LoadModules (fromList ms) action})
                     return res
                             
 
@@ -565,7 +565,7 @@ apply Nothing      c = c
 apply (Just Reset) c = c{loadedModules = empty,
                          recoveryLog = return (),
                          running = Nothing}
-apply (Just lm)    c = c{loadedModules = insert (loadingModule lm) (loadedModules c),
+apply (Just lm)    c = c{loadedModules = union (loadingModules lm) (loadedModules c),
                          recoveryLog   = (recoveryLog c) >> (runningAction lm)}
 
 fromString :: String -> [Expression]

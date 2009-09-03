@@ -165,12 +165,12 @@ prop_load_module hps hs mn =
                                                     HP.setPageText f2txt 0
                                                     HP.savePageAs $ testDir ++ "/test.hs"
                                                     -- Load TestFiles/test.hs by path
-                                                    HP.loadModule $ testDir ++ "/test.hs"
+                                                    HP.loadModules [testDir ++ "/test.hs"]
                                                     HP.setPageText "v" 0
                                                     fv <- HP.valueOf
                                                     fm <- HP.getLoadedModules
                                                     -- Load TestFiles/Test...hs by name
-                                                    HP.loadModule mname
+                                                    HP.loadModules [mname]
                                                     HP.setPageText "v" 0
                                                     sv <- HP.valueOf
                                                     sm <- HP.getLoadedModules
@@ -185,7 +185,7 @@ prop_load_module hps hs mn =
                                                     sv <- Hint.eval "v"
                                                     sm <- Hint.getLoadedModules
                                                     return (Right fv, Right sv, Right fm, Right sm)
-                        liftDebugIO (hpsr, hsr)
+                        -- liftDebugIO (hpsr, hsr)
                         return $ hpsr == hsr
 
 prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
@@ -196,7 +196,7 @@ prop_reload_modules hps hs txt =
                                                     HP.setPageText expr 0
                                                     HP.savePageAs $ testDir ++ "/test.hs"
                                                     HP.setPageText "test" 0
-                                                    HP.loadModule $ testDir ++ "/test.hs"
+                                                    HP.loadModules [testDir ++ "/test.hs"]
                                                     HP.reloadModules
                                                     HP.valueOf
                         hsr <- HS.runIn hs $ do
@@ -221,11 +221,11 @@ prop_get_loaded_modules hps hs mn =
                                             HP.savePageAs mnf2
                                             HP.setPageText expr3 0
                                             HP.savePageAs mnf3
-                        hpsr1 <- HPS.runIn hps $ HP.loadModule mnf1 >> HP.getLoadedModules
+                        hpsr1 <- HPS.runIn hps $ HP.loadModules [mnf1] >> HP.getLoadedModules
                         hsr1 <- HS.runIn hs $ Hint.loadModules [mnf1] >> Hint.getLoadedModules
-                        hpsr2 <- HPS.runIn hps $ HP.loadModule mnf2 >> HP.getLoadedModules
+                        hpsr2 <- HPS.runIn hps $ HP.loadModules [mnf2] >> HP.getLoadedModules
                         hsr2 <- HS.runIn hs $ Hint.loadModules [mnf2] >> Hint.getLoadedModules
-                        hpsr3 <- HPS.runIn hps $ HP.loadModule mnf3 >> HP.getLoadedModules
+                        hpsr3 <- HPS.runIn hps $ HP.loadModules [mnf3] >> HP.getLoadedModules
                         hsr3 <- HS.runIn hs $ Hint.loadModules [mnf3] >> Hint.getLoadedModules
                         --liftDebugIO [(hpsr1, hpsr2, hpsr3), (hsr1, hsr2, hsr3)]
                         return $ (hpsr1, hpsr2, hpsr3) == (hsr1, hsr2, hsr3)
@@ -237,7 +237,7 @@ prop_sequential hps txt =
                         HPS.runIn hps $ do
                                             HP.setPageText expr 0
                                             HP.savePageAs $ testDir ++ "/test.hs"
-                                            HP.loadModule' $ testDir ++ "/test.hs"
+                                            HP.loadModules' [testDir ++ "/test.hs"]
                         Right hpsr <- HPS.runIn hps $ do
                                                         HP.setPageText "test" 0
                                                         HP.valueOf
@@ -255,11 +255,11 @@ prop_cancel_load hps mn =
                                             HP.setPageText expr1 0
                                             HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
                                             HP.setPageText "cancelLoadTest" 0
-                                            HP.loadModule $ testDir ++ "/" ++ show mn ++ ".hs"
+                                            HP.loadModules [testDir ++ "/" ++ show mn ++ ".hs"]
                                             oldMs <- HP.getLoadedModules
                                             oldRes <- HP.valueOf
                                             oldCtx <- HP.ctxString
-                                            HP.loadModule' $ testDir ++ "/" ++ show mn ++ "2.hs"
+                                            HP.loadModules' [testDir ++ "/" ++ show mn ++ "2.hs"]
                                             HP.cancel
                                             newMs <- HP.getLoadedModules
                                             newRes <- HP.valueOf

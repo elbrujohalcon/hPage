@@ -55,16 +55,16 @@ gui =
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrlRich splLR [font := fontFixed{_fontSize = 12}]
+        txtCode <- textCtrl splLR [font := fontFixed]
         
         -- Document Selector
         lstModules <- singleListBox pnlR [style := wxLB_NEEDED_SB]
         lstPages <- singleListBox pnlR [style := wxLB_NEEDED_SB]
 
         -- Results list
-        txtValue <- textCtrlRich pnlR [style := wxTE_READONLY]
-        txtType <- textCtrlRich pnlR [style := wxTE_READONLY]
-        txtKind <- textCtrlRich pnlR [style := wxTE_READONLY]
+        txtValue <- textEntry pnlR [style := wxTE_READONLY]
+        txtType <- textEntry pnlR [style := wxTE_READONLY]
+        txtKind <- textEntry pnlR [style := wxTE_READONLY]
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
@@ -120,9 +120,9 @@ gui =
         menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" $ \_ _ -> return ()]
 
         mnuHask <- menuPane [text := "Haskell"]
-        menuItem mnuHask [text := "&Load module...\tCtrl-l",        on command := onCmd "loadModule" loadModule]
-        menuItem mnuHask [text := "&Load module by name...\tCtrl-Shift-l",
-                                                                    on command := onCmd "loadModuleByName" loadModuleByName]
+        menuItem mnuHask [text := "&Load modules...\tCtrl-l",        on command := onCmd "loadModules" loadModules]
+        menuItem mnuHask [text := "&Load modules by name...\tCtrl-Shift-l",
+                                                                    on command := onCmd "loadModulesByName" loadModulesByName]
         mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd "reloadModules" reloadModules]
         menuLine mnuHask
         menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd "getValue" getValue]
@@ -165,7 +165,7 @@ refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModule, loadModuleByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
+    loadModules, loadModulesByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -186,15 +186,15 @@ pageChange model guiCtx@GUICtx{guiPages = lstPages} =
 openPage model guiCtx@GUICtx{guiWin = win,
                              guiStatus = status} =
     do
-        fileName <- fileOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
-                                                                 ("Any file",["*.*"])] "" ""
-        case fileName of
-            Nothing ->
+        fileNames <- filesOpenDialog win True True "Open file..." [("Haskells",["*.hs"]),
+                                                                   ("Any file",["*.*"])] "" ""
+        case fileNames of
+            [] ->
                 return ()
-            Just f ->
+            fs ->
                 do
                     set status [text := "opening..."]
-                    runHP' (HP.openPage f) model guiCtx
+                    flip mapM_ fs $ \f -> runHP' (HP.openPage f) model guiCtx
 
 savePageAs model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
@@ -229,27 +229,27 @@ paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshP
 
 reloadModules = runHP HP.reloadModules
 
-loadModule model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+loadModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
-        fileName <- fileOpenDialog win True True "Load Module..." [("Haskell Modules",["*.hs"])] "" ""
-        case fileName of
-            Nothing ->
+        fileNames <- filesOpenDialog win True True "Load Module..." [("Haskell Modules",["*.hs"])] "" ""
+        case fileNames of
+            [] ->
                 return ()
-            Just f ->
+            fs ->
                 do
                     set status [text := "loading..."]
-                    runHP (HP.loadModule f) model guiCtx
+                    runHP (HP.loadModules fs) model guiCtx
 
-loadModuleByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
-        moduleName <- textDialog win "Enter the module name" "Load Module..." ""
-        case moduleName of
+        moduleNames <- textDialog win "Enter the module names, separated by spaces" "Load Modules..." ""
+        case moduleNames of
             "" ->
                 return ()
-            mn ->
+            mns ->
                 do
                     set status [text := "loading..."]
-                    runHP (HP.loadModule mn) model guiCtx
+                    runHP (HP.loadModules $ words mns) model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
