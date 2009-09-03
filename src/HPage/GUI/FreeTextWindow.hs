@@ -231,27 +231,17 @@ cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshPage 
 
 paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshPage model guiCtx
 
-justFind _model guiCtx@GUICtx{guiWin = win} =
+justFind model guiCtx@GUICtx{guiWin = win} =
     do
         frdata <- findReplaceDataCreateDefault
         frdialog <- findReplaceDialogCreate win frdata "Find..." dialogDefaultStyle
-        let eventHandler x = findReplaceEvent x frdata guiCtx >> propagateEvent
-        windowOnEvent frdialog [wxEVT_COMMAND_FIND] eventHandler (\evt -> eventHandler evt)
-        set frdialog [visible := True]
+        openFindDialog model guiCtx frdata frdialog
 
-findReplaceEvent :: Graphics.UI.WXCore.WxcClasses.Event () -> FindReplaceData a -> GUIContext -> IO ()
-findReplaceEvent _ frdata GUICtx{guiWin = win} =
-    do
-        s <- findReplaceDataGetFindString frdata
-        infoDialog win "About hPage" s
-        
-findReplace _model GUICtx{guiWin = win} =
+findReplace model guiCtx@GUICtx{guiWin = win} =
     do
         frdata <- findReplaceDataCreateDefault
         frdialog <- findReplaceDialogCreate win frdata "Find and Replace..." wxFR_REPLACEDIALOG
-        dialogShowModal frdialog
-        s <- findReplaceDataGetFindString frdata
-        infoDialog win "About hPage" s
+        openFindDialog model guiCtx frdata frdialog
         
 reloadModules = runHP HP.reloadModules
 
@@ -426,3 +416,55 @@ tryIn model hpacc =
                                     return . Left  $ ioeGetErrorString err
             Right (Left err)  -> return . Left  $ HP.prettyPrintError err
             Right (Right val) -> return . Right $ val
+
+-- FIND/REPLACE UTILS ----------------------------------------------------------
+openFindDialog :: HPS.ServerHandle -> GUIContext -> FindReplaceData a -> Dialog d -> IO ()
+openFindDialog model guiCtx frdata frdialog =
+    do
+        winSet wxEVT_COMMAND_FIND findFindButton
+        winSet wxEVT_COMMAND_FIND_CLOSE findCloseButton
+        winSet wxEVT_COMMAND_FIND_NEXT findNextButton
+        winSet wxEVT_COMMAND_FIND_REPLACE findReplaceButton
+        winSet wxEVT_COMMAND_FIND_REPLACE_ALL findReplaceAllButton
+        set frdialog [visible := True]
+    where winSet k f =
+            let hnd _ = f model guiCtx frdata
+             in windowOnEvent frdialog [k] hnd hnd
+        
+
+findFindButton, findCloseButton, findNextButton,
+    findReplaceButton, findReplaceAllButton :: HPS.ServerHandle -> GUIContext -> FindReplaceData a -> IO ()
+findFindButton _model _guiCtx frdata =
+    do
+        s <- findReplaceDataGetFindString frdata
+        r <- findReplaceDataGetReplaceString frdata
+        fs <- findReplaceDataGetFlags frdata
+        debugIO ("find", s, r, fs)
+        
+findCloseButton _model _guiCtx frdata =
+    do
+        s <- findReplaceDataGetFindString frdata
+        r <- findReplaceDataGetReplaceString frdata
+        fs <- findReplaceDataGetFlags frdata
+        debugIO ("close", s, r, fs)
+
+findNextButton _model _guiCtx frdata =
+    do
+        s <- findReplaceDataGetFindString frdata
+        r <- findReplaceDataGetReplaceString frdata
+        fs <- findReplaceDataGetFlags frdata
+        debugIO ("next", s, r, fs)
+
+findReplaceButton _model _guiCtx frdata =
+    do
+        s <- findReplaceDataGetFindString frdata
+        r <- findReplaceDataGetReplaceString frdata
+        fs <- findReplaceDataGetFlags frdata
+        debugIO ("replace", s, r, fs)
+        
+findReplaceAllButton _model _guiCtx frdata =
+    do
+        s <- findReplaceDataGetFindString frdata
+        r <- findReplaceDataGetReplaceString frdata
+        fs <- findReplaceDataGetFlags frdata
+        debugIO ("all", s, r, fs)
