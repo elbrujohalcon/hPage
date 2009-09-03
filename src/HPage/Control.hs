@@ -27,7 +27,7 @@ module HPage.Control (
     removeNth,
     setExprNthText, getExprNthText,
     -- EDITION CONTROLS --
-    undo, redo, find, findNext,
+    undo, redo,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules, reloadModules, getLoadedModules,
@@ -53,7 +53,7 @@ import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
-import Data.List ((\\), isPrefixOf)
+import Data.List (isPrefixOf)
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
 import Language.Haskell.Exts.Parser
@@ -75,7 +75,6 @@ data Page = Page { -- Display --
                    currentExpr :: Int,
                    undoActions :: [HPage ()],
                    redoActions :: [HPage ()],
-                   lastSearch  :: Maybe String,
                    original :: [Expression],
                    -- File System --
                    filePath    :: Maybe FilePath
@@ -346,25 +345,6 @@ redo = do
                                          in page{undoActions = undoAct : undoActions page,
                                                  redoActions = accs})
  
-find :: String -> HPage ()
-find text = do
-                page <- getPage
-                modifyPage (\p -> p{lastSearch = Just text})
-                case nextMatching text page of
-                    Nothing ->
-                        return ()
-                    Just i ->
-                        setExprIndex i
-
-findNext :: HPage ()
-findNext = do
-                page <- getPage
-                case lastSearch page of
-                    Nothing ->
-                        return ()
-                    Just text ->
-                        find text
-
 valueOf, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
 valueOf = getPage >>= valueOfNth . currentExpr
 kindOf = getPage >>= kindOfNth . currentExpr
@@ -621,20 +601,8 @@ modifyWithUndo f = modifyPage (\page ->
                                  in newPage{undoActions = undoAct : undoActions page,
                                             redoActions = []}) 
 
-nextMatching :: String -> Page -> Maybe Int
-nextMatching t p = let c = currentExpr p
-                       es = expressions p
-                       oes = rotate (c+1) $ zip [0..length es] es
-                    in case List.find (include t) oes of
-                            Nothing ->
-                                Nothing;
-                            Just (i, _) ->
-                                Just i
-    where rotate n xs = drop n xs ++ take n xs
-          include x (_, Exp xs) = (xs \\ x) /= xs
-
 emptyPage :: Page
-emptyPage = Page [] (-1) [] [] Nothing [] Nothing
+emptyPage = Page [] (-1) [] [] [] Nothing
 
 letsToString :: [Expression] -> String
 letsToString [] = ""

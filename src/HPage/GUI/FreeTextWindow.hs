@@ -422,17 +422,16 @@ openFindDialog :: HPS.ServerHandle -> GUIContext -> FindReplaceData a -> Dialog 
 openFindDialog model guiCtx frdata frdialog =
     do
         winSet wxEVT_COMMAND_FIND findFindButton
-        winSet wxEVT_COMMAND_FIND_CLOSE findCloseButton
         winSet wxEVT_COMMAND_FIND_NEXT findNextButton
         winSet wxEVT_COMMAND_FIND_REPLACE findReplaceButton
         winSet wxEVT_COMMAND_FIND_REPLACE_ALL findReplaceAllButton
         set frdialog [visible := True]
     where winSet k f =
-            let hnd _ = f model guiCtx frdata
+            let hnd _ = f model guiCtx frdata >> propagateEvent
              in windowOnEvent frdialog [k] hnd hnd
         
 
-findFindButton, findCloseButton, findNextButton,
+findFindButton, findNextButton,
     findReplaceButton, findReplaceAllButton :: HPS.ServerHandle -> GUIContext -> FindReplaceData a -> IO ()
 findFindButton _model _guiCtx frdata =
     do
@@ -441,13 +440,6 @@ findFindButton _model _guiCtx frdata =
         fs <- findReplaceDataGetFlags frdata
         debugIO ("find", s, r, fs)
         
-findCloseButton _model _guiCtx frdata =
-    do
-        s <- findReplaceDataGetFindString frdata
-        r <- findReplaceDataGetReplaceString frdata
-        fs <- findReplaceDataGetFlags frdata
-        debugIO ("close", s, r, fs)
-
 findNextButton _model _guiCtx frdata =
     do
         s <- findReplaceDataGetFindString frdata
