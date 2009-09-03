@@ -13,6 +13,7 @@ import System.FilePath
 import System.IO.Error hiding (try)
 import Data.List
 import Data.Bits
+import Data.Char (toLower)
 import Control.Monad.Error
 import Graphics.UI.WX
 import Graphics.UI.WXCore
@@ -376,7 +377,7 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,
                 if changed || forceClear
                     then mapM_ (flip set [text := ""] . grrText) [grrValue, grrType, grrKind]
                     else debugIO "dummy refreshExpr"
-
+        
         killTimer model guiCtx
 
 
@@ -430,37 +431,85 @@ openFindDialog model guiCtx@GUICtx{guiWin = win, guiSearch = search} title dlgSt
         frdialog <- findReplaceDialogCreate win search title $ dlgStyle .+. wxFR_NOWHOLEWORD
         let winSet k f = let hnd _ = f model guiCtx >> propagateEvent
                           in windowOnEvent frdialog [k] hnd hnd
-        winSet wxEVT_COMMAND_FIND findFindButton
+        winSet wxEVT_COMMAND_FIND findNextButton
         winSet wxEVT_COMMAND_FIND_NEXT findNextButton
         winSet wxEVT_COMMAND_FIND_REPLACE findReplaceButton
         winSet wxEVT_COMMAND_FIND_REPLACE_ALL findReplaceAllButton
         set frdialog [visible := True]
         
 
-findFindButton, findNextButton,
-    findReplaceButton, findReplaceAllButton :: HPS.ServerHandle -> GUIContext -> IO ()
-findFindButton _model GUICtx{guiSearch = search} =
-    do
-        s <- findReplaceDataGetFindString search
-        fs <- findReplaceDataGetFlags search >>= buildFRFlags 
-        debugIO ("find", s, fs)
-        
-findNextButton _model GUICtx{guiSearch = search} =
+findNextButton, findReplaceButton, findReplaceAllButton :: HPS.ServerHandle -> GUIContext -> IO ()
+findNextButton model guiCtx@GUICtx{guiSearch = search,
+                                   guiCode = txtCode,
+                                   guiWin = win} =
     do
         s <- findReplaceDataGetFindString search
         fs <- findReplaceDataGetFlags search >>= buildFRFlags
-        debugIO ("next", s, fs)
+        mip <- findMatch s fs txtCode
+        debugIO ("find/next", s, fs, mip)
+        case mip of
+            Nothing ->
+                infoDialog win "Find Results" $ s ++ " not found."
+            Just ip ->
+                do
+                    textCtrlSetSelection txtCode (length s + ip) ip
+                    restartTimer model guiCtx 
 
-findReplaceButton _model GUICtx{guiSearch = search} =
+findReplaceButton _model GUICtx{guiSearch = search,
+                                guiCode = txtCode} =
     do
         s <- findReplaceDataGetFindString search
         r <- findReplaceDataGetReplaceString search
         fs <- findReplaceDataGetFlags search >>= buildFRFlags
+        -- textCtrlReplace txtCode from to with
         debugIO ("replace", s, r, fs)
         
-findReplaceAllButton _model GUICtx{guiSearch = search} =
+findReplaceAllButton _model GUICtx{guiSearch = search,
+                                   guiCode = txtCode} =
     do
         s <- findReplaceDataGetFindString search
-        r <- findReplaceDataGetReplaceString search
+        r <- findReplaceDataGetReplaceString search        
         fs <- findReplaceDataGetFlags search >>= buildFRFlags
         debugIO ("all", s, r, fs)
+        
+findMatch :: String -> FRFlags -> TextCtrl () -> IO (Maybe Int)
+findMatch query flags txtCode =
+    do
+        txt <- get txtCode text
+        ip <- textCtrlGetInsertionPoint txtCode
+        let (substring, string) = if frfMatchCase flags
+                                    then (query, txt)
+                                    else (map toLower query, map toLower txt)
+            funct = if frfGoingDown flags
+                        then nextMatch (ip + 1)
+                        else prevMatch ip
+        return $ funct substring string
+
+prevMatch, nextMatch :: Int -> String -> String -> Maybe Int
+prevMatch _ [] _ = Nothing -- When looking for nothing, that's what you get
+prevMatch from substring string | length substring > length string = Nothing
+                                | length string < from || from <= 0 = prevMatch (length string) substring string
+                                | otherwise =
+                                        case nextMatch (fromBack from) (reverse substring) (reverse string) of
+                                            Nothing -> Nothing
+                                            Just ri -> Just $ fromBack (ri + length substring)
+    where fromBack x = length string - x
+
+nextMatch _ [] _ = Nothing -- When looking for nothing, that's what you get
+nextMatch from substring string | length substring > length string = Nothing
+                                | length string <= from = nextMatch 0 substring string
+                                | otherwise =
+                                        let after = drop from string
+                                            before = take (from + length substring) string
+                                            aIndex = indexOf substring after
+                                            bIndex = indexOf substring before
+                                         in case aIndex of
+                                                Just ai ->
+                                                    Just $ from + ai
+                                                Nothing ->
+                                                    case bIndex of
+                                                        Nothing -> Nothing
+                                                        Just bi -> Just bi
+    
+indexOf :: String -> String -> Maybe Int
+indexOf substring string = findIndex (isPrefixOf substring) $ tails string
