@@ -15,14 +15,15 @@ import Data.List
 import Data.Bits
 import Data.Char (toLower)
 import Control.Monad.Error
+import Control.Monad.Loops
 import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
 import Graphics.UI.WXCore.WxcClasses
-import qualified HPage.Control as HP
-import qualified HPage.Server as HPS
+import qualified HPage.Stub.Control as HP
+import qualified HPage.Stub.Server as HPS
 import Utils.Log
 
 data GUIResultRow = GUIRRow { grrButton :: Button (),
@@ -51,7 +52,7 @@ gui =
         topLevelWindowSetIconFromFile win "../res/images/icon/hpage.tif"
         
         set win [on closing := HPS.stop model >> propagateEvent]
-        
+
         -- Containers
         pnl <- panel win []
         splLR <- splitterWindow pnl []
@@ -80,7 +81,7 @@ gui =
         btnGetType <- button pnlR [text := "Type"]
         btnGetKind <- button pnlR [text := "Kind"]
         
-        search <- findReplaceDataCreateDefault
+        search <- findReplaceDataCreate wxFR_DOWN
         
         let grrValue = GUIRRow btnGetValue txtValue
         let grrType = GUIRRow btnGetType txtType
@@ -238,7 +239,7 @@ paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshP
 
 justFind model guiCtx = openFindDialog model guiCtx "Find..." dialogDefaultStyle
 
-findReplace model guiCtx = openFindDialog model guiCtx "Find and Replace..." wxFR_REPLACEDIALOG
+findReplace model guiCtx = openFindDialog model guiCtx "Find and Replace..." $ dialogDefaultStyle + wxFR_REPLACEDIALOG
         
 reloadModules = runHP HP.reloadModules
 
@@ -417,18 +418,21 @@ tryIn model hpacc =
 -- FIND/REPLACE UTILS ----------------------------------------------------------
 data FRFlags = FRFlags {frfGoingDown :: Bool,
                         frfMatchCase :: Bool,
-                        frfWholeWord :: Bool}
+                        frfWholeWord :: Bool,
+                        frfWrapSearch :: Bool}
     deriving (Eq, Show)
 
-buildFRFlags :: Int -> IO FRFlags
-buildFRFlags x = return FRFlags {frfGoingDown = (x .&. wxFR_DOWN) /= 0,
-                                 frfMatchCase = (x .&. wxFR_MATCHCASE) /= 0,
-                                 frfWholeWord = (x .&. wxFR_WHOLEWORD) /= 0}
+buildFRFlags :: Bool -> Int -> IO FRFlags
+buildFRFlags w x = return FRFlags {frfGoingDown = (x .&. wxFR_DOWN) /= 0,
+                                   frfMatchCase = (x .&. wxFR_MATCHCASE) /= 0,
+                                   frfWholeWord = (x .&. wxFR_WHOLEWORD) /= 0,
+                                   frfWrapSearch = w}
 
 openFindDialog :: HPS.ServerHandle -> GUIContext -> String -> Int -> IO ()
-openFindDialog model guiCtx@GUICtx{guiWin = win, guiSearch = search} title dlgStyle =
+openFindDialog model guiCtx@GUICtx{guiWin = win,
+                                   guiSearch = search} title dlgStyle =
     do
-        frdialog <- findReplaceDialogCreate win search title $ dlgStyle .+. wxFR_NOWHOLEWORD
+        frdialog <- findReplaceDialogCreate win search title $ dlgStyle + wxFR_NOWHOLEWORD
         let winSet k f = let hnd _ = f model guiCtx >> propagateEvent
                           in windowOnEvent frdialog [k] hnd hnd
         winSet wxEVT_COMMAND_FIND findNextButton
@@ -436,15 +440,14 @@ openFindDialog model guiCtx@GUICtx{guiWin = win, guiSearch = search} title dlgSt
         winSet wxEVT_COMMAND_FIND_REPLACE findReplaceButton
         winSet wxEVT_COMMAND_FIND_REPLACE_ALL findReplaceAllButton
         set frdialog [visible := True]
-        
 
 findNextButton, findReplaceButton, findReplaceAllButton :: HPS.ServerHandle -> GUIContext -> IO ()
-findNextButton model guiCtx@GUICtx{guiSearch = search,
-                                   guiCode = txtCode,
-                                   guiWin = win} =
+findNextButton model guiCtx@GUICtx{guiCode = txtCode,
+                                   guiWin = win,
+                                   guiSearch = search} =
     do
         s <- findReplaceDataGetFindString search
-        fs <- findReplaceDataGetFlags search >>= buildFRFlags
+        fs <- findReplaceDataGetFlags search >>= buildFRFlags True
         mip <- findMatch s fs txtCode
         debugIO ("find/next", s, fs, mip)
         case mip of
@@ -453,24 +456,44 @@ findNextButton model guiCtx@GUICtx{guiSearch = search,
             Just ip ->
                 do
                     textCtrlSetSelection txtCode (length s + ip) ip
-                    restartTimer model guiCtx 
+                    refreshExpr model guiCtx False 
 
-findReplaceButton _model GUICtx{guiSearch = search,
-                                guiCode = txtCode} =
+findReplaceButton model guiCtx@GUICtx{guiCode = txtCode,
+                                      guiWin = win,
+                                      guiSearch = search} =
     do
         s <- findReplaceDataGetFindString search
         r <- findReplaceDataGetReplaceString search
-        fs <- findReplaceDataGetFlags search >>= buildFRFlags
-        -- textCtrlReplace txtCode from to with
-        debugIO ("replace", s, r, fs)
+        fs <- findReplaceDataGetFlags search >>= buildFRFlags True
+        mip <- findMatch s fs txtCode
+        debugIO ("replace", s, r, fs, mip)
+        case mip of
+            Nothing ->
+                infoDialog win "Find Results" $ s ++ " not found."
+            Just ip ->
+                do
+                    textCtrlReplace txtCode ip (length s + ip) r
+                    textCtrlSetSelection txtCode (length r + ip) ip
+                    refreshExpr model guiCtx False
         
-findReplaceAllButton _model GUICtx{guiSearch = search,
-                                   guiCode = txtCode} =
+findReplaceAllButton _model GUICtx{guiCode = txtCode,
+                                   guiSearch = search} =
     do
         s <- findReplaceDataGetFindString search
         r <- findReplaceDataGetReplaceString search        
-        fs <- findReplaceDataGetFlags search >>= buildFRFlags
+        fs <- findReplaceDataGetFlags search >>= buildFRFlags False
         debugIO ("all", s, r, fs)
+        textCtrlSetInsertionPoint txtCode 0
+        unfoldM_ $ do
+                        mip <- findMatch s fs txtCode
+                        case mip of
+                            Nothing ->
+                                return mip
+                            Just ip ->
+                                do
+                                    textCtrlReplace txtCode ip (length s + ip) r
+                                    textCtrlSetInsertionPoint txtCode $ length r + ip
+                                    return mip
         
 findMatch :: String -> FRFlags -> TextCtrl () -> IO (Maybe Int)
 findMatch query flags txtCode =
@@ -483,20 +506,23 @@ findMatch query flags txtCode =
             funct = if frfGoingDown flags
                         then nextMatch (ip + 1)
                         else prevMatch ip
-        return $ funct substring string
+            (mip, wrapped) = funct substring string
+        return $ if (not $ frfWrapSearch flags) && wrapped
+                    then Nothing
+                    else mip
+        
 
-prevMatch, nextMatch :: Int -> String -> String -> Maybe Int
-prevMatch _ [] _ = Nothing -- When looking for nothing, that's what you get
-prevMatch from substring string | length substring > length string = Nothing
-                                | length string < from || from <= 0 = prevMatch (length string) substring string
+prevMatch, nextMatch :: Int -> String -> String -> (Maybe Int, Bool)
+prevMatch _ [] _ = (Nothing, True) -- When looking for nothing, that's what you get
+prevMatch from substring string | length string < from || from <= 0 = prevMatch (length string) substring string
                                 | otherwise =
                                         case nextMatch (fromBack from) (reverse substring) (reverse string) of
-                                            Nothing -> Nothing
-                                            Just ri -> Just $ fromBack (ri + length substring)
+                                            (Nothing, wrapped) -> (Nothing, wrapped)
+                                            (Just ri, wrapped) -> (Just $ fromBack (ri + length substring), wrapped)
     where fromBack x = length string - x
 
-nextMatch _ [] _ = Nothing -- When looking for nothing, that's what you get
-nextMatch from substring string | length substring > length string = Nothing
+nextMatch _ [] _ = (Nothing, True) -- When looking for nothing, that's what you get
+nextMatch from substring string | length substring > length string = (Nothing, True)
                                 | length string <= from = nextMatch 0 substring string
                                 | otherwise =
                                         let after = drop from string
@@ -505,11 +531,11 @@ nextMatch from substring string | length substring > length string = Nothing
                                             bIndex = indexOf substring before
                                          in case aIndex of
                                                 Just ai ->
-                                                    Just $ from + ai
+                                                    (Just $ from + ai,  False)
                                                 Nothing ->
                                                     case bIndex of
-                                                        Nothing -> Nothing
-                                                        Just bi -> Just bi
+                                                        Nothing -> (Nothing, True)
+                                                        Just bi -> (Just bi, True)
     
 indexOf :: String -> String -> Maybe Int
 indexOf substring string = findIndex (isPrefixOf substring) $ tails string
