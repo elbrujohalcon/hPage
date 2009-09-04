@@ -124,8 +124,8 @@ gui =
         mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste]
         menuLine mnuEdit
         menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "justFind" justFind]
-        menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" $ \_ _ -> return ()]
-        menuItem mnuEdit [text := "&Find Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" $ \_ _ -> return ()]
+        menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" justFindNext]
+        menuItem mnuEdit [text := "&Find Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" justFindPrev]
         menuItem mnuEdit [text := "&Replace...\tCtrl-Shift-r",      on command := onCmd "findReplace" findReplace]
 
         mnuHask <- menuPane [text := "Haskell"]
@@ -172,7 +172,7 @@ gui =
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
-    justFind, findReplace,
+    justFind, justFindNext, justFindPrev, findReplace,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, loadModulesByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
@@ -239,7 +239,19 @@ paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshP
 
 justFind model guiCtx = openFindDialog model guiCtx "Find..." dialogDefaultStyle
 
-findReplace model guiCtx = openFindDialog model guiCtx "Find and Replace..." $ dialogDefaultStyle + wxFR_REPLACEDIALOG
+justFindNext model guiCtx@GUICtx{guiSearch = search} =
+    do
+        curFlags <- findReplaceDataGetFlags search
+        findReplaceDataSetFlags search $ curFlags .|. wxFR_DOWN
+        findNextButton model guiCtx
+
+justFindPrev model guiCtx@GUICtx{guiSearch = search} =
+    do
+        curFlags <- findReplaceDataGetFlags search
+        findReplaceDataSetFlags search $ curFlags .&. complement wxFR_DOWN
+        findNextButton model guiCtx
+
+findReplace model guiCtx = openFindDialog model guiCtx "Find and Replace..." $ dialogDefaultStyle .|. wxFR_REPLACEDIALOG
         
 reloadModules = runHP HP.reloadModules
 
