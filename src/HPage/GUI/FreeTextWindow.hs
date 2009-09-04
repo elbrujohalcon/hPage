@@ -22,8 +22,8 @@ import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
 import Graphics.UI.WXCore.WxcClasses
-import qualified HPage.Stub.Control as HP
-import qualified HPage.Stub.Server as HPS
+import qualified HPage.Control as HP
+import qualified HPage.Server as HPS
 import Utils.Log
 
 data GUIResultRow = GUIRRow { grrButton :: Button (),
