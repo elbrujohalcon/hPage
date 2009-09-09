@@ -56,15 +56,16 @@ gui =
         -- Containers
         pnl <- panel win []
         splLR <- splitterWindow pnl []
+        pnlL <- panel splLR []
         pnlR <- panel splLR []
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrl splLR [font := fontFixed]
+        txtCode <- textCtrl pnlR [font := fontFixed]
         
         -- Document Selector
-        lstModules <- singleListBox pnlR [style := wxLB_NEEDED_SB]
-        lstPages <- singleListBox pnlR [style := wxLB_NEEDED_SB]
+        lstModules <- singleListBox pnlL [style := wxLB_NEEDED_SB]
+        lstPages <- singleListBox pnlL [style := wxLB_NEEDED_SB]
 
         -- Results list
         txtValue <- textEntry pnlR [style := wxTE_READONLY]
@@ -161,8 +162,9 @@ gui =
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
-            leftL       = container pnlR $ column 5 [resultsGridL, lstPagesL, lstModulesL]
-        set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL txtCodeL,
+            leftL       = container pnlL $ column 5 [lstPagesL, lstModulesL]
+            rightL      = container pnlR $ column 5 [txtCodeL, resultsGridL]
+        set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL rightL,
                  clientSize := sz 800 600]
 
         -- ...and RUN!
