@@ -54,7 +54,7 @@ Executable hpage
     cpp-options:
     cc-options:
     ld-options:
-    pkgconfig-depends: wx
+    pkgconfig-depends:
     frameworks:
     c-sources:
     extensions: CPP
