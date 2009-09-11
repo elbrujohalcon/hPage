@@ -31,7 +31,7 @@ data-files: LICENSE README
             res/images/run.png
             res/images/save.png
 data-dir: ""
-extra-source-files: Setup.hs
+extra-source-files: Setup.lhs
 extra-tmp-files:
 
 Executable hpage
