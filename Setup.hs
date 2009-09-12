@@ -25,8 +25,9 @@ main = do
  where
   addMacHook h =
    case os of
-    "darwin" -> h { postInst = appBundleHook } -- is it OK to treat darwin as synonymous with MacOS X?
-    _        -> h
+    "darwin" -> h { postInst = appBundleHook,
+                    runTests = hPageTestRunner } -- is it OK to treat darwin as synonymous with MacOS X?
+    _        -> h { runTests = hPageTestRunner }
 
 appBundleHook :: Args -> InstallFlags -> PackageDescription -> LocalBuildInfo -> IO ()
 appBundleHook _ _ pkg localb =
@@ -83,3 +84,8 @@ makeExecutable f =
          m2 = m .|. ownerExecuteMode .|. groupExecuteMode .|. otherExecuteMode
      setFileMode f m2
 #endif
+
+hPageTestRunner :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
+hPageTestRunner _ _ _ _ = do
+                            system "runhaskell -i./src src/HPage/Test/Server.hs"
+                            return ()

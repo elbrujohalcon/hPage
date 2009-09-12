@@ -16,23 +16,19 @@ category: Development, IDE, Editor
 author: Fernando "Brujo" Benavides
 tested-with: GHC ==6.10.3, GHC ==6.10.4
 data-files: LICENSE README
-            res/images/about.png
-            res/images/copy.png
-            res/images/cut.png
+            res/images/*.png
             res/images/icon/hpage.gif
             res/images/icon/hPage.icns
             res/images/icon/hpage.jpg
             res/images/icon/hpage.png
             res/images/icon/hpage.tif
-            res/images/new.png
-            res/images/open.png
-            res/images/paste.png
-            res/images/reload.png
-            res/images/run.png
-            res/images/save.png
 data-dir: ""
 extra-source-files: Setup.hs
 extra-tmp-files:
+
+source-repository head
+    type:     git
+    location: git://github.com/elbrujohalcon/hPage.git
 
 Executable hpage
     if os(windows)
