@@ -26,6 +26,11 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import Utils.Log
 
+import Paths_hpage -- cabal locations of data files
+
+imageFile :: FilePath -> IO FilePath
+imageFile = getDataFileName . ("res/images/"++)
+
 data GUIResultRow = GUIRRow { grrButton :: Button (),
                               grrText   :: TextCtrl ()}
 
@@ -49,7 +54,7 @@ gui =
         model <- HPS.start
         
         win <- frame [text := "hPage"]
-        topLevelWindowSetIconFromFile win "../res/images/icon/hpage.tif"
+        imageFile "icon/hpage.tif" >>= topLevelWindowSetIconFromFile win 
         
         set win [on closing := HPS.stop model >> propagateEvent]
 
@@ -146,13 +151,20 @@ gui =
     
         -- Tool bar...
         tbMain <- toolBarEx win True True []
-        toolMenu tbMain mitNew "New"  "../res/images/new.png" [tooltip := "New"]
-        toolMenu tbMain mitOpen "Open" "../res/images/open.png" [tooltip := "Open"]
-        toolMenu tbMain mitSave "Save" "../res/images/save.png" [tooltip := "Save"]
-        toolMenu tbMain mitCut "Cut"  "../res/images/cut.png" [tooltip := "Cut"]
-        toolMenu tbMain mitCopy "Copy" "../res/images/copy.png" [tooltip := "Copy"]
-        toolMenu tbMain mitPaste "Paste" "../res/images/paste.png" [tooltip := "Paste"]
-        toolMenu tbMain mitReload "Reload" "../res/images/reload.png" [tooltip := "Reload Modules"]
+        newPath <- imageFile "new.png"
+        openPath <- imageFile "open.png"
+        savePath <- imageFile "save.png"
+        cutPath <- imageFile "cut.png"
+        copyPath <- imageFile "copy.png"
+        pastePath <- imageFile "paste.png"
+        reloadPath <- imageFile "reload.png"
+        toolMenu tbMain mitNew "New" newPath [tooltip := "New"]
+        toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open"]
+        toolMenu tbMain mitSave "Save" savePath [tooltip := "Save"]
+        toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
+        toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
+        toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
+        toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
         
         -- Layout settings
         let txtCodeL    = fill $ widget txtCode

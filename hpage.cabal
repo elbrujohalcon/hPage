@@ -74,7 +74,7 @@ Executable hpage
                     Utils.Log
     ghc-prof-options: -auto-all -prof
     ghc-shared-options: -auto-all -prof
-    ghc-options: -Wall -package wx -O2
+    ghc-options: -Wall -package wx
     hugs-options:
     nhc98-options:
     jhc-options:
