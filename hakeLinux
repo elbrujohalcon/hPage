@@ -1,6 +1,0 @@
-#!/bin/sh
-cd src/
-ghc --make -package wx -o ../bin/hPage -hidir ../out -odir ../out Main.hs
-cd ../bin
-./hPage &
-cd ..

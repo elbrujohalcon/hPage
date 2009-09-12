@@ -1,7 +1,7 @@
 name: hpage
 version: 0.1.0
 cabal-version: >=1.4
-build-type: Simple
+build-type: Custom
 license: BSD3
 license-file: LICENSE
 copyright: 2009 Fernando "Brujo" Benavides
@@ -31,7 +31,7 @@ data-files: LICENSE README
             res/images/run.png
             res/images/save.png
 data-dir: ""
-extra-source-files: Setup.lhs
+extra-source-files: Setup.hs
 extra-tmp-files:
 
 Executable hpage
