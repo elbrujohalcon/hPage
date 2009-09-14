@@ -1,6 +1,6 @@
 name: hpage
-version: 0.1.0
-cabal-version: >=1.4
+version: 0.1.1
+cabal-version: >=1.6
 build-type: Custom
 license: BSD3
 license-file: LICENSE
