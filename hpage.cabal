@@ -70,7 +70,7 @@ Executable hpage
                     Utils.Log
     ghc-prof-options: -auto-all -prof
     ghc-shared-options: -auto-all -prof
-    ghc-options: -Wall -package wx
+    ghc-options: -package wx -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns
     hugs-options:
     nhc98-options:
     jhc-options:
