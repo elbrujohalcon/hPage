@@ -66,7 +66,7 @@ gui =
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrl pnlR [font := fontFixed, text := ""]
+        txtCode <- textCtrl pnlR [font := fontFixed, text := emptyPageText]
         
         -- Document Selector
         lstModules <- singleListBox pnlL [style := wxLB_NEEDED_SB]
@@ -327,7 +327,9 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     itemsDelete lstModules
                     (flip mapM) ms $ itemAppend lstModules
                     -- Refresh the current text
-                    set txtCode [text := t]
+                    set txtCode [text := if null t
+                                            then emptyPageText
+                                            else t]
                     set status [text := ""]
                     -- Refresh the current expression box
                     refreshExpr model guiCtx True
@@ -565,3 +567,6 @@ nextMatch from substring string | length substring > length string = (Nothing, T
     
 indexOf :: String -> String -> Maybe Int
 indexOf substring string = findIndex (isPrefixOf substring) $ tails string
+
+emptyPageText :: String
+emptyPageText = "-- type in your haskell instructions, separate them by empty lines\n"
