@@ -66,7 +66,7 @@ gui =
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrl pnlR [font := fontFixed]
+        txtCode <- textCtrl pnlR [font := fontFixed, text := ""]
         
         -- Document Selector
         lstModules <- singleListBox pnlL [style := wxLB_NEEDED_SB]
