@@ -13,6 +13,7 @@ import System.Directory
 import Control.Monad.Loops
 import qualified Data.ByteString.Char8 as Str
 import Utils.Log
+import Data.Set (fromList)
 
 instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
@@ -112,6 +113,11 @@ main =
         runTests "Cancelation" options
                  [  run $ prop_sequential hps
                  ,  run $ prop_cancel_load hps
+                 ]
+        runTests "Extensions" options
+                 [  run $ prop_get_available_extensions hps hs
+                 ,  run $ prop_set_unset_extension hps
+                 ,  run $ prop_set_unset_extension_fail hps
                  ]
         removeDirectoryRecursive testDir
                     
@@ -898,3 +904,11 @@ prop_let_fail hps hs txt =
                                                         HP.valueOf
                         Left hsr <- HS.runIn hs $ Hint.eval "lenggth \"\""
                         return $ hsr == hpsr
+    
+prop_get_available_extensions :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
+prop_get_available_extensions hps hs _ =
+    unsafePerformIO $ do
+                        hpsr <- HPS.runIn hps HP.availableExtensions
+                        hsr <- HS.runIn hs $ liftM fromList Hint.availableExtensions
+                        --liftDebugIO (hpsr, hsr)
+                        return (hpsr == hsr)
