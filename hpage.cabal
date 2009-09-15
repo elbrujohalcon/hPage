@@ -36,7 +36,7 @@ Executable hpage
                    haskell-src-exts >=1.1.3,    haskell-src-exts < 1.2,
                    bytestring >=0.9.1,          bytestring <0.10,
                    hint >=0.3.1,                hint < 0.4,
-                   MonadCatchIO-mtl >= 0.1.0,   MonadCatchIO-mtl < 0.2,
+                   MonadCatchIO-mtl >= 0.1.0,   MonadCatchIO-mtl < 0.3,
                    monad-loops >=0.3.0,         monad-loops < 0.4,
                    containers >=0.2.0,          containers < 0.3,
                    directory >=1.0.0,           directory < 1.1,
