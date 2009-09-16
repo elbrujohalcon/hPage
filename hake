@@ -1,3 +1,8 @@
 #!/bin/sh
-sudo cabal install
-/Users/tim/.cabal/bin/hpage &
+cd src/
+ghc --make -package wx -o ../bin/hPage -hidir ../out -odir ../out Main.hs
+cd ../bin
+/usr/local/wxhaskell/bin/macosx-app hPage
+cd hPage.app/Contents/MacOS/
+./hPage &
+cd ../../../..

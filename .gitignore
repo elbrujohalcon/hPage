@@ -3,3 +3,4 @@ bin
 bin/hPage.app/Contents/MacOS/hPage
 dist
 src/Paths_hpage.hs
+src/HPage/Stub
