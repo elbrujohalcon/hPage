@@ -20,7 +20,7 @@ import Data.Bits ( (.|.) )
 
 main :: IO ()
 main = do
-            putStrLn $ "processing for " ++ os
+            putStrLn $ "Setting up hpage for " ++ os
             defaultMainWithHooks $ addMacHook simpleUserHooks
  where
   addMacHook h =
