@@ -33,5 +33,6 @@ liftTraceIO _ = return ()
 liftDebugIO = liftLogIO Debug
 liftInfoIO = liftLogIO Info
 liftWarnIO = liftLogIO Warning
-liftErrorIO = liftLogIO Error
+-- liftErrorIO = liftLogIO Error
+liftErrorIO _ = return ()
 liftFatalIO = liftLogIO Fatal

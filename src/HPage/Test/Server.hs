@@ -42,6 +42,24 @@ instance Arbitrary HP.Extension where
     arbitrary = elements HP.availableExtensions
     coarbitrary _ = undefined
 
+data WorkingExtension = WEX {wexExts :: [HP.Extension],
+                             wexModule :: String}
+    deriving (Eq, Show)
+    
+instance Arbitrary WorkingExtension where
+    arbitrary = elements [wexTypeSynonymInstances, wexOverlappingInstances, wexFlexibleInstances]
+    coarbitrary _ = undefined
+
+wexTypeSynonymInstances :: WorkingExtension
+wexTypeSynonymInstances = WEX [HP.TypeSynonymInstances] "HPage/Test/Extensions/TypeSynonymInstances.hs"
+
+wexOverlappingInstances :: WorkingExtension
+wexOverlappingInstances = WEX [HP.TypeSynonymInstances,
+                               HP.OverlappingInstances] "HPage/Test/Extensions/OverlappingInstances.hs"
+
+wexFlexibleInstances :: WorkingExtension
+wexFlexibleInstances = WEX [HP.FlexibleInstances] "HPage/Test/Extensions/FlexibleInstances.hs"
+
 shouldFail :: (MonadError e m) => m a -> m Bool
 shouldFail a = (a >> return False) `catchError` (\_ -> return True)
 
@@ -121,7 +139,8 @@ main =
         runTests "Extensions" options
                  [  run prop_get_available_extensions
                  ,  run $ prop_get_set_extensions hps
-                 --,  run $ prop_set_set_extension_fail hps
+                 ,  run $ prop_working_extensions hps
+                 ,  run $ prop_set_set_extension_fail hps
                  ]
         removeDirectoryRecursive testDir
                     
@@ -923,4 +942,24 @@ prop_get_set_extensions hps exs =
                                         HP.setLanguageExtensions []
                                         exs2 <- HP.getLanguageExtensions
                                         return $ (exs0 == Right []) && (exs1 == Right exs) && (exs2 == Right [])
-                        
+
+prop_working_extensions :: HPS.ServerHandle -> WorkingExtension -> Bool
+prop_working_extensions hps (WEX es m) =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.setLanguageExtensions []
+                                        before <- HP.loadModules [m]
+                                        HP.setLanguageExtensions es
+                                        after <- HP.loadModules [m]
+                                        let failed = case before of
+                                                        Left _ -> True
+                                                        _ -> False
+                                        -- liftDebugIO (before, after, failed)
+                                        return $ failed && (after == Right ())
+
+prop_set_set_extension_fail :: HPS.ServerHandle -> String -> Bool
+prop_set_set_extension_fail hps s =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        r <- HP.setLanguageExtensions [HP.UnknownExtension s]
+                                        case r of
+                                            Left _ -> return True
+                                            Right _ -> return False

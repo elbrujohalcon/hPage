@@ -38,7 +38,7 @@ module HPage.Control (
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
-    Hint.availableExtensions, Hint.Extension,
+    Hint.availableExtensions, Hint.Extension(..),
     -- DEBUG --
     ctxString
  ) where
