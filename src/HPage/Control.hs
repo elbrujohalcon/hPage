@@ -2,6 +2,7 @@
              MultiParamTypeClasses,
              FlexibleInstances,
              FunctionalDependencies,
+             TypeSynonymInstances,
              UndecidableInstances #-} 
 
 module HPage.Control (
@@ -38,7 +39,7 @@ module HPage.Control (
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
-    Hint.availableExtensions, Hint.Extension(..),
+    Hint.availableExtensions, Extension,
     -- DEBUG --
     ctxString
  ) where
@@ -116,6 +117,10 @@ instance MonadError e m => MonadError e (HPageT m) where
     throwError = lift . throwError
     catchError (HPT a) h = HPT $ a `catchError` (\e -> state $ h e)
 
+type Extension = Hint.Extension
+
+instance Ord Extension where
+    e1 `compare` e2 = (show e1) `compare` (show e2)
 
 type HPage = HPageT IO
 

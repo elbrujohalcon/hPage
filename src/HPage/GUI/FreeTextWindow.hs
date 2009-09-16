@@ -17,6 +17,7 @@ import Data.Char (toLower)
 import Control.Monad.Error
 import Control.Monad.Loops
 import Graphics.UI.WX
+import Graphics.UI.WX.Dialogs.Extra
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
@@ -111,34 +112,50 @@ gui =
         -- Menu bar...
         -- menuBar win []
         mnuPage <- menuPane [text := "Page"]
-        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",    on command := onCmd "runHP' addPage" $ runHP' HP.addPage]
-        menuItem mnuPage [text := "&Close\tCtrl-w",             on command := onCmd "runHP' closePage" $ runHP' HP.closePage]
+        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",    on command := onCmd "runHP' addPage" $ runHP' HP.addPage,
+                                     identity := wxID_NEW]
+        menuItem mnuPage [text := "&Close\tCtrl-w",             on command := onCmd "runHP' closePage" $ runHP' HP.closePage
+                         , identity := wxID_CLOSE]
         menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages]
         menuLine mnuPage
-        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd "openPage" openPage]
-        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd "savePage" savePage]
-        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd "savePageAs" savePageAs]
+        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd "openPage" openPage,
+                                     identity := wxID_OPEN]
+        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd "savePage" savePage,
+                                     identity := wxID_SAVE]
+        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd "savePageAs" savePageAs,
+                         identity := wxID_SAVEAS]
         menuLine mnuPage
         menuQuit mnuPage []
         
         mnuEdit <- menuPane [text := "Edit"]
-        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd "runHP' undo" $ runHP' HP.undo]
-        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd "runHP' redo" $ runHP' HP.redo]
+        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd "runHP' undo" $ runHP' HP.undo,
+                          identity := wxID_UNDO]
+        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd "runHP' redo" $ runHP' HP.redo,
+                          identity := wxID_REDO]
         menuLine mnuEdit
-        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd "cut" cut]
-        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd "copy" copy]
-        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste]
+        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd "cut" cut,
+                                     identity := wxID_CUT]
+        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd "copy" copy,
+                                     identity := wxID_COPY]
+        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste,
+                                      identity := wxID_PASTE]
         menuLine mnuEdit
-        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "justFind" justFind]
-        menuItem mnuEdit [text := "&Find Next\tCtrl-g",             on command := onCmd "findNext" justFindNext]
-        menuItem mnuEdit [text := "&Find Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" justFindPrev]
+        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "justFind" justFind,
+                         identity := wxID_FIND]
+        menuItem mnuEdit [text := "Find &Next\tCtrl-g",             on command := onCmd "findNext" justFindNext,
+                         identity := wxID_FORWARD]
+        menuItem mnuEdit [text := "Find &Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" justFindPrev,
+                         identity := wxID_BACKWARD]
         menuItem mnuEdit [text := "&Replace...\tCtrl-Shift-r",      on command := onCmd "findReplace" findReplace]
 
         mnuHask <- menuPane [text := "Haskell"]
         menuItem mnuHask [text := "&Load modules...\tCtrl-l",        on command := onCmd "loadModules" loadModules]
-        menuItem mnuHask [text := "&Load modules by name...\tCtrl-Shift-l",
+        menuItem mnuHask [text := "Load modules by &name...\tCtrl-Shift-l",
                                                                     on command := onCmd "loadModulesByName" loadModulesByName]
         mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd "reloadModules" reloadModules]
+        menuLine mnuHask
+        menuItem mnuHask [text := "&Extensions...\tCtrl-Shift-x",   on command := onCmd "extensions" configureExtensions,
+                         identity := wxID_SETUP] --TODO: Change the identity of this button
         menuLine mnuHask
         menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd "getValue" getValue]
         menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd "getType" getType]
@@ -189,7 +206,8 @@ refreshPage, savePageAs, savePage, openPage,
     justFind, justFindNext, justFindPrev, findReplace,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModules, loadModulesByName, reloadModules :: HPS.ServerHandle -> GUIContext -> IO ()
+    loadModules, loadModulesByName, reloadModules,
+    configureExtensions :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -290,6 +308,23 @@ loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                 do
                     set status [text := "loading..."]
                     runHP (HP.loadModules $ words mns) model guiCtx
+
+configureExtensions model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+    do
+        hpsRes <- tryIn model HP.getLanguageExtensions
+        case hpsRes of
+            Left err ->
+                warningDialog win "Error" err
+            Right exs ->
+                do
+                    res <- multiOptionsDialog win "Choose the language extensions to activate" "Extensions" (sort HP.availableExtensions) exs
+                    case res of
+                        Nothing ->
+                            return ()
+                        Just newexs ->
+                            do
+                                set status [text := "setting..."]
+                                runHP (HP.setLanguageExtensions newexs) model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
