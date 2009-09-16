@@ -31,12 +31,14 @@ module HPage.Control (
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules, reloadModules, getLoadedModules,
+    getLanguageExtensions, setLanguageExtensions,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules',
+    getLanguageExtensions', setLanguageExtensions',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
-    Hint.availableExtensions,
+    Hint.availableExtensions, Hint.Extension,
     -- DEBUG --
     ctxString
  ) where
@@ -50,6 +52,7 @@ import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.State.Class
 import Control.Concurrent.MVar
+import Language.Haskell.Interpreter (OptionVal((:=)))
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
@@ -383,6 +386,12 @@ reloadModules = do
 getLoadedModules :: HPage (Either Hint.InterpreterError [Hint.ModuleName])
 getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
 
+getLanguageExtensions :: HPage (Either Hint.InterpreterError [Hint.Extension])
+getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensions)
+
+setLanguageExtensions :: [Hint.Extension] -> HPage (Either Hint.InterpreterError ())
+setLanguageExtensions exs = confirmRunning >> syncRun (Hint.set [Hint.languageExtensions := exs])
+
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
             res <- syncRun $ do
@@ -432,6 +441,12 @@ reloadModules' = do
 
 getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [Hint.ModuleName]))
 getLoadedModules' = confirmRunning >> asyncRun Hint.getLoadedModules
+
+getLanguageExtensions' :: HPage (MVar (Either Hint.InterpreterError [Hint.Extension]))
+getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExtensions)
+
+setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.InterpreterError ()))
+setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do

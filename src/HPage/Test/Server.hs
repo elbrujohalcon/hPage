@@ -13,7 +13,7 @@ import System.Directory
 import Control.Monad.Loops
 import qualified Data.ByteString.Char8 as Str
 import Utils.Log
-import Data.Set (fromList)
+-- import Data.Set (fromList)
 
 instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
@@ -35,7 +35,11 @@ newtype ClassName = CN {cnString :: String}
     deriving (Eq, Show)
 
 instance Arbitrary ClassName where
-    arbitrary = elements $ map CN [ "HPage", "IO", "IO a", "Int", "String"]
+    arbitrary = elements $ map CN ["HPage", "IO", "IO a", "Int", "String"]
+    coarbitrary _ = undefined
+
+instance Arbitrary HP.Extension where
+    arbitrary = elements HP.availableExtensions
     coarbitrary _ = undefined
 
 shouldFail :: (MonadError e m) => m a -> m Bool
@@ -101,7 +105,7 @@ main =
                  ,  run $ prop_let_valueOf hps hs
                  ,  run $ prop_let_typeOf hps hs
                  ]
-        runTests "vs. Hint Server" options
+        runTests "Expressions vs. Hint Server" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_valueOf hps hs
                  ,  run $ prop_typeOf hps hs
@@ -115,9 +119,9 @@ main =
                  ,  run $ prop_cancel_load hps
                  ]
         runTests "Extensions" options
-                 [  run $ prop_get_available_extensions hps hs
-                 ,  run $ prop_set_unset_extension hps
-                 ,  run $ prop_set_unset_extension_fail hps
+                 [  run prop_get_available_extensions
+                 ,  run $ prop_get_set_extensions hps
+                 --,  run $ prop_set_set_extension_fail hps
                  ]
         removeDirectoryRecursive testDir
                     
@@ -156,31 +160,32 @@ prop_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
-prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
+prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
 prop_load_module hps hs mn =
-    unsafePerformIO $ do
-                        let mname = testDir ++ "." ++ show mn
-                        let ftxt = "module " ++ mname ++ " where v = 32"
-                        let f2txt = "v = \"" ++ show mn ++ "\""
-                        hpsr <- HPS.runIn hps $ do
-                                                    -- Save TestFiles/Test...hs
-                                                    HP.setPageText ftxt 0
-                                                    HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
-                                                    -- Save TestFiles/test.hs
-                                                    HP.setPageText f2txt 0
-                                                    HP.savePageAs $ testDir ++ "/test.hs"
-                                                    -- Load TestFiles/test.hs by path
-                                                    HP.loadModules [testDir ++ "/test.hs"]
-                                                    HP.setPageText "v" 0
-                                                    fv <- HP.valueOf
-                                                    fm <- HP.getLoadedModules
-                                                    -- Load TestFiles/Test...hs by name
-                                                    HP.loadModules [mname]
-                                                    HP.setPageText "v" 0
-                                                    sv <- HP.valueOf
-                                                    sm <- HP.getLoadedModules
-                                                    return (fv, sv, fm, sm)
-                        Right hsr <- HS.runIn hs $ do
+    (show mn /= "Test") ==>
+        unsafePerformIO $ do
+                            let mname = testDir ++ "." ++ show mn
+                            let ftxt = "module " ++ mname ++ " where v = 32"
+                            let f2txt = "v = \"" ++ show mn ++ "\""
+                            hpsr <- HPS.runIn hps $ do
+                                                        -- Save TestFiles/Test...hs
+                                                        HP.setPageText ftxt 0
+                                                        HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
+                                                        -- Save TestFiles/test.hs
+                                                        HP.setPageText f2txt 0
+                                                        HP.savePageAs $ testDir ++ "/test.hs"
+                                                        -- Load TestFiles/test.hs by path
+                                                        HP.loadModules [testDir ++ "/test.hs"]
+                                                        HP.setPageText "v" 0
+                                                        fv <- HP.valueOf
+                                                        fm <- HP.getLoadedModules
+                                                        -- Load TestFiles/Test...hs by name
+                                                        HP.loadModules [mname]
+                                                        HP.setPageText "v" 0
+                                                        sv <- HP.valueOf
+                                                        sm <- HP.getLoadedModules
+                                                        return (fv, sv, fm, sm)
+                            hsr <- HS.runIn hs $ do
                                                     Hint.loadModules [testDir ++ "/test.hs"]
                                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                     fv <- Hint.eval "v"
@@ -190,8 +195,8 @@ prop_load_module hps hs mn =
                                                     sv <- Hint.eval "v"
                                                     sm <- Hint.getLoadedModules
                                                     return (Right fv, Right sv, Right fm, Right sm)
-                        -- liftDebugIO (hpsr, hsr)
-                        return $ hpsr == hsr
+                            -- liftDebugIO (hpsr, hsr)
+                            return $ Right hpsr == hsr
 
 prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_reload_modules hps hs txt =
@@ -905,10 +910,17 @@ prop_let_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval "lenggth \"\""
                         return $ hsr == hpsr
     
-prop_get_available_extensions :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
-prop_get_available_extensions hps hs _ =
-    unsafePerformIO $ do
-                        hpsr <- HPS.runIn hps HP.availableExtensions
-                        hsr <- HS.runIn hs $ liftM fromList Hint.availableExtensions
-                        --liftDebugIO (hpsr, hsr)
-                        return (hpsr == hsr)
+prop_get_available_extensions :: String -> Bool
+prop_get_available_extensions _ = HP.availableExtensions == Hint.availableExtensions
+
+prop_get_set_extensions :: HPS.ServerHandle -> [HP.Extension] -> Bool
+prop_get_set_extensions hps exs =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.setLanguageExtensions []
+                                        exs0 <- HP.getLanguageExtensions
+                                        HP.setLanguageExtensions exs
+                                        exs1 <- HP.getLanguageExtensions
+                                        HP.setLanguageExtensions []
+                                        exs2 <- HP.getLanguageExtensions
+                                        return $ (exs0 == Right []) && (exs1 == Right exs) && (exs2 == Right [])
+                        
