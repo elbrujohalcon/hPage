@@ -33,13 +33,15 @@ module HPage.Control (
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules, reloadModules, getLoadedModules,
     getLanguageExtensions, setLanguageExtensions,
+    resetSourceDirs, addSourceDirs,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules',
     getLanguageExtensions', setLanguageExtensions',
+    resetSourceDirs', addSourceDirs',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
-    Hint.availableExtensions, Extension,
+    Hint.availableExtensions, Hint.Extension(..),
     -- DEBUG --
     ctxString
  ) where
@@ -55,6 +57,7 @@ import Control.Monad.State.Class
 import Control.Concurrent.MVar
 import Language.Haskell.Interpreter (OptionVal((:=)))
 import qualified Language.Haskell.Interpreter as Hint
+import qualified Language.Haskell.Interpreter.Unsafe as Hint
 import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
@@ -397,6 +400,12 @@ getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensi
 setLanguageExtensions :: [Hint.Extension] -> HPage (Either Hint.InterpreterError ())
 setLanguageExtensions exs = confirmRunning >> syncRun (Hint.set [Hint.languageExtensions := exs])
 
+resetSourceDirs :: HPage (Either Hint.InterpreterError ())
+resetSourceDirs = confirmRunning >> syncRun (Hint.unsafeSetGhcOption "-i" >> Hint.unsafeSetGhcOption "-i.")
+
+addSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
+addSourceDirs ds = confirmRunning >> syncRun (Hint.unsafeSetGhcOption $ "-i" ++ joinWith ";" ds)
+
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
             res <- syncRun $ do
@@ -452,6 +461,12 @@ getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExten
 
 setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.InterpreterError ()))
 setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
+
+resetSourceDirs' :: HPage (MVar (Either Hint.InterpreterError ()))
+resetSourceDirs' = confirmRunning >> asyncRun (Hint.unsafeSetGhcOption "-i" >> Hint.unsafeSetGhcOption "-i.")
+
+addSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
+addSourceDirs' ds = confirmRunning >> asyncRun (Hint.unsafeSetGhcOption $ "-i" ++ joinWith ";" ds)
 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do

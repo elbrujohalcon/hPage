@@ -118,12 +118,12 @@ main =
                  ,  run $ prop_safe_close_nth_page hps
                  ,  run $ prop_safe_close_all_pages hps
                  ]
-        runTests "Named Expressions vs. Hint Server" options
+        runTests "Named Expressions" options
                  [  run $ prop_let_fail hps hs
                  ,  run $ prop_let_valueOf hps hs
                  ,  run $ prop_let_typeOf hps hs
                  ]
-        runTests "Expressions vs. Hint Server" options
+        runTests "Expressions" options
                  [  run $ prop_fail hps hs
                  ,  run $ prop_valueOf hps hs
                  ,  run $ prop_typeOf hps hs
@@ -140,7 +140,10 @@ main =
                  [  run prop_get_available_extensions
                  ,  run $ prop_get_set_extensions hps
                  ,  run $ prop_working_extensions hps
-                 ,  run $ prop_set_set_extension_fail hps
+                 ,  run $ prop_get_set_extension_fail hps
+                 ]
+        runTests "Src. Dirs." options
+                 [  run $ prop_working_source_dirs hps
                  ]
         removeDirectoryRecursive testDir
                     
@@ -956,10 +959,23 @@ prop_working_extensions hps (WEX es m) =
                                         -- liftDebugIO (before, after, failed)
                                         return $ failed && (after == Right ())
 
-prop_set_set_extension_fail :: HPS.ServerHandle -> String -> Bool
-prop_set_set_extension_fail hps s =
+prop_get_set_extension_fail :: HPS.ServerHandle -> String -> Bool
+prop_get_set_extension_fail hps s =
     unsafePerformIO $ HPS.runIn hps $ do
                                         r <- HP.setLanguageExtensions [HP.UnknownExtension s]
                                         case r of
                                             Left _ -> return True
                                             Right _ -> return False
+
+prop_working_source_dirs :: HPS.ServerHandle -> WorkingExtension -> Bool
+prop_working_source_dirs hps (WEX es _) =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.resetSourceDirs
+                                        before <- HP.loadModules [show es]
+                                        HP.addSourceDirs ["HPage/Test/Extensions/"]
+                                        after <- HP.loadModules [show es]
+                                        let failed = case before of
+                                                        Left _ -> True
+                                                        _ -> False
+                                        -- liftDebugIO (before, after, failed)
+                                        return $ failed && (after == Right ())
