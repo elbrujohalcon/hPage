@@ -404,7 +404,7 @@ resetSourceDirs :: HPage (Either Hint.InterpreterError ())
 resetSourceDirs = confirmRunning >> syncRun (Hint.unsafeSetGhcOption "-i" >> Hint.unsafeSetGhcOption "-i.")
 
 addSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
-addSourceDirs ds = confirmRunning >> syncRun (Hint.unsafeSetGhcOption $ "-i" ++ joinWith ";" ds)
+addSourceDirs ds = confirmRunning >> syncRun (forM_ ds $ \d -> Hint.unsafeSetGhcOption ("-i" ++ d))
 
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do

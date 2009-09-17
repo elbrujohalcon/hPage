@@ -967,13 +967,16 @@ prop_get_set_extension_fail hps s =
                                             Left _ -> return True
                                             Right _ -> return False
 
-prop_working_source_dirs :: HPS.ServerHandle -> WorkingExtension -> Bool
-prop_working_source_dirs hps (WEX es _) =
+prop_working_source_dirs :: HPS.ServerHandle -> ModuleName -> Bool
+prop_working_source_dirs hps (MN file) =
     unsafePerformIO $ HPS.runIn hps $ do
+                                        let path = testDir ++ "/" ++ file ++ ".hs"
+                                        HP.setPageText ("module " ++ file ++ " where t = 1") 0
+                                        HP.savePageAs path
                                         HP.resetSourceDirs
-                                        before <- HP.loadModules [show es]
-                                        HP.addSourceDirs ["HPage/Test/Extensions/"]
-                                        after <- HP.loadModules [show es]
+                                        before <- HP.loadModules [file]
+                                        HP.addSourceDirs [testDir, testDir]
+                                        after <- HP.loadModules [file]
                                         let failed = case before of
                                                         Left _ -> True
                                                         _ -> False
