@@ -19,6 +19,7 @@ import Control.Monad.Loops
 import Graphics.UI.WX
 import Graphics.UI.WX.Dialogs.Extra
 import Graphics.UI.WXCore
+import Graphics.UI.WXCore.WxcDefs.ExtraIdentities
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
@@ -112,62 +113,76 @@ gui =
         -- Menu bar...
         -- menuBar win []
         mnuPage <- menuPane [text := "Page"]
-        mitNew  <- menuItem mnuPage [text := "&New\tCtrl-n",    on command := onCmd "runHP' addPage" $ runHP' HP.addPage,
-                                     identity := wxID_NEW]
-        menuItem mnuPage [text := "&Close\tCtrl-w",             on command := onCmd "runHP' closePage" $ runHP' HP.closePage
-                         , identity := wxID_CLOSE]
-        menuItem mnuPage [text := "&Close All\tCtrl-Shift-w",   on command := onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages]
-        menuLine mnuPage
-        mitOpen <- menuItem mnuPage [text := "&Open...\tCtrl-o", on command := onCmd "openPage" openPage,
-                                     identity := wxID_OPEN]
-        mitSave <- menuItem mnuPage [text := "&Save\tCtrl-s",    on command := onCmd "savePage" savePage,
-                                     identity := wxID_SAVE]
-        menuItem mnuPage [text := "&Save as...\tCtrl-Shift-s",   on command := onCmd "savePageAs" savePageAs,
-                         identity := wxID_SAVEAS]
-        menuLine mnuPage
+        menuAppend mnuPage wxID_NEW "&New\tCtrl-n" "New Page" False
+        menuAppend mnuPage wxID_CLOSE "&Close\tCtrl-w" "Close Page" False
+        menuAppend mnuPage wxID_CLOSE_ALL "&Close All\tCtrl-Shift-w" "Close All Pages" False
+        menuAppendSeparator mnuPage
+        menuAppend mnuPage wxID_OPEN "&Open...\tCtrl-o" "Open Page" False
+        menuAppend mnuPage wxID_SAVE "&Save\tCtrl-s" "Save Page" False
+        menuAppend mnuPage wxID_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
+        menuAppendSeparator mnuPage
         menuQuit mnuPage []
         
         mnuEdit <- menuPane [text := "Edit"]
-        menuItem mnuEdit [text := "&Undo\tCtrl-z",         on command := onCmd "runHP' undo" $ runHP' HP.undo,
-                          identity := wxID_UNDO]
-        menuItem mnuEdit [text := "&Redo\tCtrl-Shift-z",   on command := onCmd "runHP' redo" $ runHP' HP.redo,
-                          identity := wxID_REDO]
-        menuLine mnuEdit
-        mitCut  <- menuItem mnuEdit [text := "C&ut\tCtrl-x",        on command := onCmd "cut" cut,
-                                     identity := wxID_CUT]
-        mitCopy <- menuItem mnuEdit [text := "&Copy\tCtrl-c",       on command := onCmd "copy" copy,
-                                     identity := wxID_COPY]
-        mitPaste <- menuItem mnuEdit [text := "&Paste\tCtrl-v",     on command := onCmd "paste" paste,
-                                      identity := wxID_PASTE]
-        menuLine mnuEdit
-        menuItem mnuEdit [text := "&Find...\tCtrl-f",               on command := onCmd "justFind" justFind,
-                         identity := wxID_FIND]
-        menuItem mnuEdit [text := "Find &Next\tCtrl-g",             on command := onCmd "findNext" justFindNext,
-                         identity := wxID_FORWARD]
-        menuItem mnuEdit [text := "Find &Previous\tCtrl-Shift-g",   on command := onCmd "findPrev" justFindPrev,
-                         identity := wxID_BACKWARD]
-        menuItem mnuEdit [text := "&Replace...\tCtrl-Shift-r",      on command := onCmd "findReplace" findReplace]
+        menuAppend mnuEdit wxID_UNDO "&Undo\tCtrl-z" "Undo" False
+        menuAppend mnuEdit wxID_REDO "&Redo\tCtrl-Shift-z" "Redo" False
+        menuAppendSeparator mnuEdit
+        menuAppend mnuEdit wxID_CUT "C&ut\tCtrl-x" "Cut" False
+        menuAppend mnuEdit wxID_COPY "&Copy\tCtrl-c" "Copy" False
+        menuAppend mnuEdit wxID_PASTE "&Paste\tCtrl-v" "Paste" False
+        menuAppendSeparator mnuEdit
+        menuAppend mnuEdit wxID_FIND "&Find...\tCtrl-f" "Find" False
+        menuAppend mnuEdit wxID_FORWARD "Find &Next\tCtrl-g" "Find Next" False
+        menuAppend mnuEdit wxID_BACKWARD "Find &Previous\tCtrl-Shift-g" "Find Previous" False
+        menuAppend mnuEdit wxID_REPLACE "&Replace...\tCtrl-Shift-r" "Replace" False
 
         mnuHask <- menuPane [text := "Haskell"]
-        menuItem mnuHask [text := "&Load modules...\tCtrl-l",        on command := onCmd "loadModules" loadModules]
-        menuItem mnuHask [text := "Load modules by &name...\tCtrl-Shift-l",
-                                                                    on command := onCmd "loadModulesByName" loadModulesByName]
-        mitReload <- menuItem mnuHask [text := "&Reload\tCtrl-r",   on command := onCmd "reloadModules" reloadModules]
-        menuLine mnuHask
-        menuItem mnuHask [text := "&Extensions...\tCtrl-Shift-x",   on command := onCmd "extensions" configureExtensions,
-                         identity := wxID_SETUP] --TODO: Change the identity of this button
-        menuLine mnuHask
-        menuItem mnuHask [text := "&Value of Expression\tCtrl-e",   on command := onCmd "getValue" getValue]
-        menuItem mnuHask [text := "&Type of Expression\tCtrl-t",    on command := onCmd "getType" getType]
-        menuItem mnuHask [text := "&Kind of Expression\tCtrl-k",    on command := onCmd "getKind" getKind]
+        menuAppend mnuHask wxID_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
+        menuAppend mnuHask wxID_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
+        menuAppend mnuHask wxID_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
+        menuAppendSeparator mnuHask
+        menuAppend mnuHask wxID_HASK_EXTENSIONS "&Extensions...\tCtrl-Shift-x" "Configure Extensions" False
+        menuAppendSeparator mnuHask
+        menuAppend mnuHask wxID_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
+        menuAppend mnuHask wxID_HASK_TYPE "&Type\tCtrl-t" "Get the Type of the Current Expression" False
+        menuAppend mnuHask wxID_HASK_KIND "&Kind\tCtrl-k" "Get the Kind of the Current Expression" False
         
         mnuHelp <- menuHelp []
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
         
         set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
-    
+        evtHandlerOnMenuCommand win wxID_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
+        evtHandlerOnMenuCommand win wxID_CLOSE $ onCmd "runHP' closePage" $ runHP' HP.closePage
+        evtHandlerOnMenuCommand win wxID_CLOSE_ALL $ onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages
+        evtHandlerOnMenuCommand win wxID_OPEN $ onCmd "openPage" openPage
+        evtHandlerOnMenuCommand win wxID_SAVE $ onCmd "savePage" savePage
+        evtHandlerOnMenuCommand win wxID_SAVEAS $ onCmd "savePageAs" savePageAs
+        evtHandlerOnMenuCommand win wxID_UNDO $ onCmd "runHP' undo" $ runHP' HP.undo
+        evtHandlerOnMenuCommand win wxID_REDO $ onCmd "runHP' redo" $ runHP' HP.redo
+        evtHandlerOnMenuCommand win wxID_CUT $ onCmd "cut" cut
+        evtHandlerOnMenuCommand win wxID_COPY $ onCmd "copy" copy
+        evtHandlerOnMenuCommand win wxID_PASTE $ onCmd "paste" paste
+        evtHandlerOnMenuCommand win wxID_FIND $ onCmd "justFind" justFind
+        evtHandlerOnMenuCommand win wxID_FORWARD $ onCmd "findNext" justFindNext
+        evtHandlerOnMenuCommand win wxID_BACKWARD $ onCmd "findPrev" justFindPrev
+        evtHandlerOnMenuCommand win wxID_REPLACE $ onCmd "findReplace" findReplace
+        evtHandlerOnMenuCommand win wxID_HASK_LOAD $ onCmd "loadModules" loadModules
+        evtHandlerOnMenuCommand win wxID_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
+        evtHandlerOnMenuCommand win wxID_HASK_RELOAD $ onCmd "reloadModules" reloadModules
+        evtHandlerOnMenuCommand win wxID_HASK_EXTENSIONS $ onCmd "extensions" configureExtensions
+        evtHandlerOnMenuCommand win wxID_HASK_VALUE $ onCmd "getValue" getValue
+        evtHandlerOnMenuCommand win wxID_HASK_TYPE $ onCmd "getType" getType
+        evtHandlerOnMenuCommand win wxID_HASK_KIND $ onCmd "getKind" getKind
+        
         -- Tool bar...
         tbMain <- toolBarEx win True True []
+        mitNew <- menuFindItem mnuPage wxID_NEW
+        mitOpen <- menuFindItem mnuPage wxID_OPEN
+        mitSave <- menuFindItem mnuPage wxID_SAVE
+        mitCut <- menuFindItem mnuEdit wxID_CUT
+        mitCopy <- menuFindItem mnuEdit wxID_COPY
+        mitPaste <- menuFindItem mnuEdit wxID_PASTE
+        mitReload <- menuFindItem mnuHask wxID_HASK_RELOAD
         newPath <- imageFile "new.png"
         openPath <- imageFile "open.png"
         savePath <- imageFile "save.png"
@@ -178,11 +193,14 @@ gui =
         toolMenu tbMain mitNew "New" newPath [tooltip := "New"]
         toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open"]
         toolMenu tbMain mitSave "Save" savePath [tooltip := "Save"]
+        toolBarAddSeparator tbMain
         toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
         toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
         toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
+        toolBarAddSeparator tbMain
         toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
-        
+        toolBarSetToolBitmapSize tbMain $ sz 32 32
+
         -- Layout settings
         let txtCodeL    = fill $ widget txtCode
             lstPagesL   = fill $ boxed "Pages" $ fill $ widget lstPages
