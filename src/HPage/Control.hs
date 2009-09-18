@@ -33,11 +33,11 @@ module HPage.Control (
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules, reloadModules, getLoadedModules,
     getLanguageExtensions, setLanguageExtensions,
-    resetSourceDirs, addSourceDirs,
+    getSourceDirs, setSourceDirs,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules',
     getLanguageExtensions', setLanguageExtensions',
-    resetSourceDirs', addSourceDirs',
+    getSourceDirs', setSourceDirs',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
@@ -76,7 +76,11 @@ newtype Expression = Exp {exprText :: String}
 
 data InFlightData = LoadModules { loadingModules :: Set String,
                                   runningAction :: Hint.InterpreterT IO ()
-                                } | Reset
+                                  } | 
+                    SetSourceDirs { settingSrcDirs :: [FilePath],
+                                    runningAction :: Hint.InterpreterT IO ()
+                                    } |
+                    Reset
 
 data Page = Page { -- Display --
                    expressions :: [Expression],
@@ -98,6 +102,7 @@ data Context = Context { -- Pages --
                          currentPage :: Int,
                          -- Hint --
                          loadedModules :: Set String,
+                         extraSrcDirs :: [FilePath],
                          server :: HS.ServerHandle,
                          running :: Maybe InFlightData,
                          recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
@@ -131,7 +136,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyContext = Context [emptyPage] 0 empty hs Nothing nop
+                    let emptyContext = Context [emptyPage] 0 empty [] hs Nothing nop
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -400,11 +405,24 @@ getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensi
 setLanguageExtensions :: [Hint.Extension] -> HPage (Either Hint.InterpreterError ())
 setLanguageExtensions exs = confirmRunning >> syncRun (Hint.set [Hint.languageExtensions := exs])
 
-resetSourceDirs :: HPage (Either Hint.InterpreterError ())
-resetSourceDirs = confirmRunning >> syncRun (Hint.unsafeSetGhcOption "-i" >> Hint.unsafeSetGhcOption "-i.")
+getSourceDirs :: HPage [FilePath]
+getSourceDirs = confirmRunning >> get >>= return . extraSrcDirs
 
-addSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
-addSourceDirs ds = confirmRunning >> syncRun (forM_ ds $ \d -> Hint.unsafeSetGhcOption ("-i" ++ d))
+setSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
+setSourceDirs ds =  do
+                        let action = do
+                                        liftTraceIO $ "setting src dirs: " ++ show ds
+                                        Hint.unsafeSetGhcOption "-i"
+                                        Hint.unsafeSetGhcOption "-i."
+                                        forM_ ds $ Hint.unsafeSetGhcOption . ("-i" ++)
+                        res <- syncRun action
+                        case res of
+                            Right _ ->
+                                modify (\ctx -> ctx{extraSrcDirs = ds,
+                                                    recoveryLog = recoveryLog ctx >> action >> return ()})
+                            Left e ->
+                                liftErrorIO $ ("Error setting source dirs", ds, e)
+                        return res
 
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
@@ -417,6 +435,7 @@ reset = do
             case res of
                 Right _ ->
                     modify (\ctx -> ctx{loadedModules = empty,
+                                        extraSrcDirs = [],
                                         running = Nothing,
                                         recoveryLog = return ()})
                 Left e ->
@@ -462,11 +481,22 @@ getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExten
 setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.InterpreterError ()))
 setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
 
-resetSourceDirs' :: HPage (MVar (Either Hint.InterpreterError ()))
-resetSourceDirs' = confirmRunning >> asyncRun (Hint.unsafeSetGhcOption "-i" >> Hint.unsafeSetGhcOption "-i.")
+getSourceDirs' :: HPage (MVar [FilePath])
+getSourceDirs' = do
+                    confirmRunning
+                    ctx <- get
+                    liftIO $ newMVar (extraSrcDirs ctx)
 
-addSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
-addSourceDirs' ds = confirmRunning >> asyncRun (Hint.unsafeSetGhcOption $ "-i" ++ joinWith ";" ds)
+setSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
+setSourceDirs' ds = do
+                        let action = do
+                                        liftTraceIO $ "setting src dirs: " ++ show ds
+                                        Hint.unsafeSetGhcOption "-i"
+                                        Hint.unsafeSetGhcOption "-i."
+                                        forM_ ds $ Hint.unsafeSetGhcOption . ("-i" ++)
+                        res <- asyncRun action
+                        modify (\ctx -> ctx{running = Just $ SetSourceDirs ds action})
+                        return res
 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do
@@ -579,10 +609,14 @@ confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
 apply :: Maybe InFlightData -> Context -> Context
 apply Nothing      c = c
 apply (Just Reset) c = c{loadedModules = empty,
+                         extraSrcDirs = [],
                          recoveryLog = return (),
                          running = Nothing}
-apply (Just lm)    c = c{loadedModules = union (loadingModules lm) (loadedModules c),
-                         recoveryLog   = (recoveryLog c) >> (runningAction lm)}
+apply (Just LoadModules{loadingModules = lms, runningAction = ra}) c =
+    c{loadedModules = union lms (loadedModules c),
+      recoveryLog   = (recoveryLog c) >> ra}
+apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
+    c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
 
 fromString :: String -> [Expression]
 fromString s = map Exp $ splitOn "\n\n" s

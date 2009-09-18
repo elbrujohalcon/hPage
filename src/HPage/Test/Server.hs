@@ -143,7 +143,8 @@ main =
                  ,  run $ prop_get_set_extension_fail hps
                  ]
         runTests "Src. Dirs." options
-                 [  run $ prop_working_source_dirs hps
+                 [  run $ prop_get_set_source_dirs hps
+                 ,  run $ prop_working_source_dirs hps
                  ]
         removeDirectoryRecursive testDir
                     
@@ -967,15 +968,26 @@ prop_get_set_extension_fail hps s =
                                             Left _ -> return True
                                             Right _ -> return False
 
+prop_get_set_source_dirs :: HPS.ServerHandle -> [FilePath] -> Bool
+prop_get_set_source_dirs hps sds =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        HP.setSourceDirs []
+                                        sds0 <- HP.getSourceDirs
+                                        HP.setSourceDirs sds
+                                        sds1 <- HP.getSourceDirs
+                                        HP.setSourceDirs []
+                                        sds2 <- HP.getSourceDirs
+                                        return $ (sds0 == []) && (sds1 == sds) && (sds2 == [])
+
 prop_working_source_dirs :: HPS.ServerHandle -> ModuleName -> Bool
 prop_working_source_dirs hps (MN file) =
     unsafePerformIO $ HPS.runIn hps $ do
                                         let path = testDir ++ "/" ++ file ++ ".hs"
                                         HP.setPageText ("module " ++ file ++ " where t = 1") 0
                                         HP.savePageAs path
-                                        HP.resetSourceDirs
+                                        HP.setSourceDirs []
                                         before <- HP.loadModules [file]
-                                        HP.addSourceDirs [testDir, testDir]
+                                        HP.setSourceDirs [testDir, testDir]
                                         after <- HP.loadModules [file]
                                         let failed = case before of
                                                         Left _ -> True
