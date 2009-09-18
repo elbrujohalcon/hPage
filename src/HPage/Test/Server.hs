@@ -146,6 +146,11 @@ main =
                  [  run $ prop_get_set_source_dirs hps
                  ,  run $ prop_working_source_dirs hps
                  ]
+        runTests "GHC Options" options
+                 [  run $ prop_get_set_ghc_opts hps
+                 ,  run $ prop_get_set_ghc_opts_fail hps
+                 ,  run $ prop_working_ghc_opts hps
+                 ]
         removeDirectoryRecursive testDir
                     
 instance Eq (Hint.InterpreterError) where
@@ -988,6 +993,42 @@ prop_working_source_dirs hps (MN file) =
                                         HP.setSourceDirs []
                                         before <- HP.loadModules [file]
                                         HP.setSourceDirs [testDir, testDir]
+                                        after <- HP.loadModules [file]
+                                        let failed = case before of
+                                                        Left _ -> True
+                                                        _ -> False
+                                        -- liftDebugIO (before, after, failed)
+                                        return $ failed && (after == Right ())
+
+
+prop_get_set_ghc_opts :: HPS.ServerHandle -> String -> Bool
+prop_get_set_ghc_opts hps ops =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        ops0 <- HP.getGhcOpts
+                                        HP.setGhcOpts $ "-i" ++ ops
+                                        ops1 <- HP.getGhcOpts
+                                        HP.setGhcOpts ""
+                                        ops2 <- HP.getGhcOpts
+                                        -- liftDebugIO (ops, ops0, ops1, ops2)
+                                        return $ (ops1 == (ops0 ++ " -i" ++ ops)) && (ops2 == ops1)
+
+prop_get_set_ghc_opts_fail :: HPS.ServerHandle -> ClassName -> Bool
+prop_get_set_ghc_opts_fail hps (CN ops) =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        res <- HP.setGhcOpts ops
+                                        case res of
+                                            Left _ -> return True
+                                            _ -> return False
+
+prop_working_ghc_opts :: HPS.ServerHandle -> ModuleName -> Bool
+prop_working_ghc_opts hps (MN file) =
+    unsafePerformIO $ HPS.runIn hps $ do
+                                        let path = testDir ++ "/" ++ file ++ ".hs"
+                                        HP.setPageText ("module " ++ file ++ " where t = 1") 0
+                                        HP.savePageAs path
+                                        HP.setSourceDirs []
+                                        before <- HP.loadModules [file]
+                                        HP.setGhcOpts $ "-i" ++ testDir
                                         after <- HP.loadModules [file]
                                         let failed = case before of
                                                         Left _ -> True

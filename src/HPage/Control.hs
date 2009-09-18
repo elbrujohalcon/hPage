@@ -34,10 +34,12 @@ module HPage.Control (
     loadModules, reloadModules, getLoadedModules,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
+    getGhcOpts, setGhcOpts,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
+    getGhcOpts', setGhcOpts',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
@@ -80,6 +82,9 @@ data InFlightData = LoadModules { loadingModules :: Set String,
                     SetSourceDirs { settingSrcDirs :: [FilePath],
                                     runningAction :: Hint.InterpreterT IO ()
                                     } |
+                    SetGhcOpts { settingGhcOpts :: String,
+                                 runningAction :: Hint.InterpreterT IO ()
+                                 } |
                     Reset
 
 data Page = Page { -- Display --
@@ -103,6 +108,7 @@ data Context = Context { -- Pages --
                          -- Hint --
                          loadedModules :: Set String,
                          extraSrcDirs :: [FilePath],
+                         ghcOptions :: String,
                          server :: HS.ServerHandle,
                          running :: Maybe InFlightData,
                          recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
@@ -136,7 +142,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyContext = Context [emptyPage] 0 empty [] hs Nothing nop
+                    let emptyContext = Context [emptyPage] 0 empty [] "" hs Nothing nop
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -424,6 +430,23 @@ setSourceDirs ds =  do
                                 liftErrorIO $ ("Error setting source dirs", ds, e)
                         return res
 
+getGhcOpts :: HPage String
+getGhcOpts = confirmRunning >> get >>= return . ghcOptions
+
+setGhcOpts :: String -> HPage (Either Hint.InterpreterError ())
+setGhcOpts opts =  do
+                        let action = do
+                                        liftTraceIO $ "setting ghc opts: " ++ opts
+                                        Hint.unsafeSetGhcOption opts
+                        res <- syncRun action
+                        case res of
+                            Right _ ->
+                                modify (\ctx -> ctx{ghcOptions = (ghcOptions ctx) ++ " " ++ opts,
+                                                    recoveryLog = recoveryLog ctx >> action >> return ()})
+                            Left e ->
+                                liftErrorIO $ ("Error setting ghc opts dirs", opts, e)
+                        return res
+
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
             res <- syncRun $ do
@@ -436,6 +459,7 @@ reset = do
                 Right _ ->
                     modify (\ctx -> ctx{loadedModules = empty,
                                         extraSrcDirs = [],
+                                        ghcOptions = "",
                                         running = Nothing,
                                         recoveryLog = return ()})
                 Left e ->
@@ -482,10 +506,7 @@ setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.Interpret
 setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
 
 getSourceDirs' :: HPage (MVar [FilePath])
-getSourceDirs' = do
-                    confirmRunning
-                    ctx <- get
-                    liftIO $ newMVar (extraSrcDirs ctx)
+getSourceDirs' = confirmRunning >> get >>= liftIO . newMVar . extraSrcDirs
 
 setSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
 setSourceDirs' ds = do
@@ -495,7 +516,19 @@ setSourceDirs' ds = do
                                         Hint.unsafeSetGhcOption "-i."
                                         forM_ ds $ Hint.unsafeSetGhcOption . ("-i" ++)
                         res <- asyncRun action
-                        modify (\ctx -> ctx{running = Just $ SetSourceDirs ds action})
+                        modify $ \ctx -> ctx{running = Just $ SetSourceDirs ds action}
+                        return res
+
+getGhcOpts' :: HPage (MVar String)
+getGhcOpts' = confirmRunning >> get >>= liftIO . newMVar . ghcOptions
+
+setGhcOpts' :: String -> HPage (MVar (Either Hint.InterpreterError ()))
+setGhcOpts' opts =  do
+                        let action = do
+                                        liftTraceIO $ "setting ghc opts: " ++ opts
+                                        Hint.unsafeSetGhcOption opts
+                        res <- asyncRun action
+                        modify $ \ctx -> ctx{running = Just $ SetGhcOpts opts action}
                         return res
 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
@@ -610,6 +643,7 @@ apply :: Maybe InFlightData -> Context -> Context
 apply Nothing      c = c
 apply (Just Reset) c = c{loadedModules = empty,
                          extraSrcDirs = [],
+                         ghcOptions = "",
                          recoveryLog = return (),
                          running = Nothing}
 apply (Just LoadModules{loadingModules = lms, runningAction = ra}) c =
@@ -617,6 +651,8 @@ apply (Just LoadModules{loadingModules = lms, runningAction = ra}) c =
       recoveryLog   = (recoveryLog c) >> ra}
 apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
     c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
+apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =
+    c{ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
 
 fromString :: String -> [Expression]
 fromString s = map Exp $ splitOn "\n\n" s
