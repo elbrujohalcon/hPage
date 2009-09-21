@@ -17,7 +17,6 @@ import Data.Char (toLower)
 import Control.Monad.Error
 import Control.Monad.Loops
 import Graphics.UI.WX
-import Graphics.UI.WX.Dialogs.Extra
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.WxcDefs.ExtraIdentities
 import Graphics.UI.WXCore.Types
@@ -26,6 +25,7 @@ import Graphics.UI.WXCore.Events
 import Graphics.UI.WXCore.WxcClasses
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
+import HPage.GUI.Dialogs
 import Utils.Log
 
 import Paths_hpage -- cabal locations of data files
@@ -135,13 +135,13 @@ gui =
         menuAppend mnuEdit wxID_FORWARD "Find &Next\tCtrl-g" "Find Next" False
         menuAppend mnuEdit wxID_BACKWARD "Find &Previous\tCtrl-Shift-g" "Find Previous" False
         menuAppend mnuEdit wxID_REPLACE "&Replace...\tCtrl-Shift-r" "Replace" False
+        menuAppendSeparator mnuEdit
+        menuAppend mnuEdit wxID_PREFERENCES "&Preferences...\tCtrl-," "Preferences" False
 
         mnuHask <- menuPane [text := "Haskell"]
         menuAppend mnuHask wxID_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
         menuAppend mnuHask wxID_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
         menuAppend mnuHask wxID_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
-        menuAppendSeparator mnuHask
-        menuAppend mnuHask wxID_HASK_EXTENSIONS "&Extensions...\tCtrl-Shift-x" "Configure Extensions" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxID_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
         menuAppend mnuHask wxID_HASK_TYPE "&Type\tCtrl-t" "Get the Type of the Current Expression" False
@@ -169,7 +169,7 @@ gui =
         evtHandlerOnMenuCommand win wxID_HASK_LOAD $ onCmd "loadModules" loadModules
         evtHandlerOnMenuCommand win wxID_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
         evtHandlerOnMenuCommand win wxID_HASK_RELOAD $ onCmd "reloadModules" reloadModules
-        evtHandlerOnMenuCommand win wxID_HASK_EXTENSIONS $ onCmd "extensions" configureExtensions
+        evtHandlerOnMenuCommand win wxID_PREFERENCES $ onCmd "preferences" configure
         evtHandlerOnMenuCommand win wxID_HASK_VALUE $ onCmd "getValue" getValue
         evtHandlerOnMenuCommand win wxID_HASK_TYPE $ onCmd "getType" getType
         evtHandlerOnMenuCommand win wxID_HASK_KIND $ onCmd "getKind" getKind
@@ -225,7 +225,7 @@ refreshPage, savePageAs, savePage, openPage,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, loadModulesByName, reloadModules,
-    configureExtensions :: HPS.ServerHandle -> GUIContext -> IO ()
+    configure :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -327,22 +327,32 @@ loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     set status [text := "loading..."]
                     runHP (HP.loadModules $ words mns) model guiCtx
 
-configureExtensions model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
-        hpsRes <- tryIn model HP.getLanguageExtensions
+        hpsRes <- tryIn model $ do
+                                    les <- HP.getLanguageExtensions
+                                    sds <- HP.getSourceDirs
+                                    gos <- HP.getGhcOpts
+                                    case les of
+                                        Left e -> return $ Left e
+                                        Right l -> return $ Right (l, sds, gos)
         case hpsRes of
             Left err ->
                 warningDialog win "Error" err
-            Right exs ->
+            Right (les, sds, gos) ->
                 do
-                    res <- multiOptionsDialog win "Choose the language extensions to activate" "Extensions" (sort HP.availableExtensions) exs
+                    res <- preferencesDialog win "Preferences" $ Prefs les sds gos
                     case res of
                         Nothing ->
                             return ()
-                        Just newexs ->
+                        Just newps ->
                             do
                                 set status [text := "setting..."]
-                                runHP (HP.setLanguageExtensions newexs) model guiCtx
+                                runHP (do
+                                            HP.setLanguageExtensions $ languageExtensions newps
+                                            HP.setSourceDirs $ sourceDirs newps
+                                            HP.setGhcOpts $ ghcOptions newps
+                                            ) model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
