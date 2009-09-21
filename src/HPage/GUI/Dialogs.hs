@@ -24,7 +24,7 @@ preferencesDialog win caption currentPrefs =
         
         lstExts <- multiListBox dlg [items := map show availExts]
         let selIndexes = foldr (\option acc ->
-                                    case elemIndex option [] of
+                                    case elemIndex option availExts of
                                         Nothing -> acc
                                         Just ind -> ind : acc) [] $ languageExtensions currentPrefs
         set lstExts [selections := selIndexes]
@@ -33,17 +33,18 @@ preferencesDialog win caption currentPrefs =
         btnadd <- button dlg [text := "+", on command := addDir win lstDirs]
         btndel <- button dlg [text := "-", on command := delDir lstDirs]
 
-        txtGhc <- textEntry dlg [text := ghcOptions currentPrefs]
+        txtGhcOld <- textEntry dlg [text := ghcOptions currentPrefs, style := wxTE_READONLY]
+        txtGhcNew <- textEntry dlg [text := ""]
                 
         let lesL = fill $ boxed "Extensions" $ fill $ widget lstExts
             sdsL = fill $ boxed "Source Dirs" $ fill $ column 2 [fill $ widget lstDirs,
                                                                  floatRight $ row 5 [widget btnadd, widget btndel]]
-            gosL = fill $ boxed "Ghc Options" $ fill $ widget txtGhc
+            gosL = fill $ boxed "Ghc Options" $ fill $ row 0 [widget txtGhcOld, fill $ widget txtGhcNew]
             btnsL = margin 5 $ floatRight $ row 5 [widget btnnok, widget btnok]  
         set dlg [layout := fill $ column 5 [lesL, sdsL, gosL, btnsL]] 
         showModal dlg $ \stopFun -> do
                                         focusOn lstExts
-                                        set btnok [on command := getCurrentPrefs lstExts lstDirs txtGhc >>= stopFun . Just]
+                                        set btnok [on command := getCurrentPrefs lstExts lstDirs txtGhcNew >>= stopFun . Just]
                                         set btnnok [on command := stopFun Nothing]
     where getCurrentPrefs e d g = do
                                     let availExts = sort HP.availableExtensions

@@ -351,7 +351,9 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                                 runHP (do
                                             HP.setLanguageExtensions $ languageExtensions newps
                                             HP.setSourceDirs $ sourceDirs newps
-                                            HP.setGhcOpts $ ghcOptions newps
+                                            case ghcOptions newps of
+                                                "" -> return $ Right ()
+                                                newopts -> HP.setGhcOpts newopts
                                             ) model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
