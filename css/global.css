@@ -1,0 +1,230 @@
+/**
+ * CSS 2.x
+ * (c) 2007 Darío G. Ruellan
+ * Based on Yahoo's YUI Reset CSS 
+ */
+
+/**
+ * COLORS:
+ * Cyan: 		#82d8ed
+ * Black: 		#212226
+ * Faded Cyan: 	#111b13
+ * Lime: 		#131714
+ * Blue: 		#0a0c0d
+ */
+ 
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { 
+	margin:0;
+	padding:0;
+}
+table {
+	border-collapse:collapse;
+	border-spacing:0;
+}
+fieldset,img { 
+	border:0;
+}
+address,caption,cite,code,dfn,em,strong,th,var {
+	font-style:normal;
+	font-weight:normal;
+}
+ol,ul {
+	list-style:none;
+}
+caption,th {
+	text-align:left;
+}
+h1,h2,h3,h4,h5,h6 {
+	font-size:100%;
+	font-weight:normal;
+}
+q:before,q:after {
+	content:'';
+}
+abbr,acronym { 
+	border:0;
+}
+
+/* CSS Helpers */
+
+div.clear {
+	clear: both;
+	height: 1px;
+	line-height: 0px;
+	font-size: 0px;
+	margin-bottom: -1px;
+}
+
+hr {
+	background: gray; 
+	color: gray;
+	clear: both; 
+	float: none; 
+	width: 100%; 
+	height: 0.1em;
+	margin: 0 0 1.4em 0;
+	border: none; 
+}
+img {
+	vertical-align: top;
+}
+a {
+	font-weight: bold;
+	color: #0a0c0d;
+}
+
+/* BODY */
+
+body {
+	background: white;
+	font-family: Tahoma, Geneva, Calibri, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 11pt;
+	text-align: center;
+	margin: 0;
+	color: #212226;
+}
+
+.frame {
+	position: relative;
+	width: 900px;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: left;
+}
+
+/* Header */
+
+#header {
+	position: relative;
+	background: #82d8ed url(../images/header_background.png) repeat-x top;
+	height: 176px;
+}
+#header .mainlogo {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+#header .github {
+	position: absolute;
+	right: 0;
+	top: 0;
+	z-index: 10;
+}
+#header .social a.twitter{
+	position: absolute;
+	right: 30px;
+	top: -10px;
+}
+#header .social a.facebook{
+	position: absolute;
+	right: 170px;
+	top: -10px;
+}
+
+/* Body */
+
+#body {
+	position: relative;
+	background: white url(../images/body_background.png) repeat-x top;
+	z-index: 1;
+}
+#stripe {
+	position: absolute;
+	background: #212226 url(../images/shadow_background.png) repeat-x top;
+	top: 0;
+	left: 180px;
+	z-index: 2;
+	width: 143px;
+	height: 100%;
+}
+
+/* Text */
+
+#text {
+	position: relative;
+	z-index: 5;
+	padding-left: 350px;
+	padding-top: 20px;
+	padding-bottom: 40px;
+}
+#text > div {
+	padding-bottom: 44px;
+}
+#text h2 {
+	margin-bottom: 8px;
+}
+#text p {
+	position: relative;
+	line-height: 150%;
+	margin-bottom: 8px;
+}
+#text em {
+	font-weight: bold;
+	font-size: 1.3em;
+}
+#text a {
+	padding: 1px;
+}
+	#text a:hover {
+		color: #82d8ed;
+	}
+#text a.external {
+	padding-right: 13px;
+	background: url(../images/icn_popout.png) no-repeat 100% 4px;
+}
+
+#text ul {
+	margin-bottom: 8px;
+}
+#text ul li {
+	list-style: circle;
+	margin-left: 24px;
+	padding-top: 4px;
+}
+
+/* Text Elements */
+
+#text .icon {
+	position: absolute;
+	z-index: 5;
+	margin-left: -120px;
+	margin-top: -20px;
+}
+
+#text .download {
+	float: left;
+	background: url(../images/icn_download.png) no-repeat bottom left;
+	padding: 5px 5px 5px 40px;
+	font-size: 1.2em;
+	font-weight: 900;
+	padding-top: 10px;
+	margin-right: 30px;
+	margin-bottom: 18px;
+}
+
+#text code {
+	background-color: gray;
+	color: white;
+	padding: 15px;
+	display: block;
+}
+
+/* Footer */
+
+#footer {
+	position: relative;
+	z-index: 5;
+	padding-left: 350px;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	font-size: 9pt;
+}
+#footer a {
+	font-weight: bold;
+}
+	#footer a:hover {
+		color: #82d8ed;
+	}
+#footer p {
+	margin-bottom: 4px;
+}
