@@ -39,9 +39,11 @@ preferencesDialog win caption currentPrefs =
         let lesL = fill $ boxed "Extensions" $ fill $ widget lstExts
             sdsL = fill $ boxed "Source Dirs" $ fill $ column 2 [fill $ widget lstDirs,
                                                                  floatRight $ row 5 [widget btnadd, widget btndel]]
-            gosL = fill $ boxed "Ghc Options" $ fill $ row 0 [widget txtGhcOld, fill $ widget txtGhcNew]
+            gosL = fill $ boxed "Ghc Options" $ fill $ column 2 [row 5 [label "Applied", fill $ widget txtGhcOld],
+                                                                 row 5 [label "New", fill $ widget txtGhcNew]]
             btnsL = margin 5 $ floatRight $ row 5 [widget btnnok, widget btnok]  
-        set dlg [layout := fill $ column 5 [lesL, sdsL, gosL, btnsL]] 
+        set dlg [layout := fill $ column 5 [lesL, sdsL, gosL, btnsL],
+                 clientSize := sz 500 300] 
         showModal dlg $ \stopFun -> do
                                         focusOn lstExts
                                         set btnok [on command := getCurrentPrefs lstExts lstDirs txtGhcNew >>= stopFun . Just]

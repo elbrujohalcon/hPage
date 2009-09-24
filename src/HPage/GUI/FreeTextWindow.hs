@@ -33,6 +33,9 @@ import Paths_hpage -- cabal locations of data files
 imageFile :: FilePath -> IO FilePath
 imageFile = getDataFileName . ("res/images/"++)
 
+helpFile :: IO FilePath
+helpFile = getDataFileName "res/help/helpPage.hs"
+
 data GUIResultRow = GUIRRow { grrButton :: Button (),
                               grrText   :: TextCtrl ()}
 
@@ -148,6 +151,7 @@ gui =
         menuAppend mnuHask wxID_HASK_KIND "&Kind\tCtrl-k" "Get the Kind of the Current Expression" False
         
         mnuHelp <- menuHelp []
+        menuAppend mnuHelp wxID_HELP "&Help page\tCtrl-h" "Open the Help Page" False
         menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
         
         set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
@@ -173,6 +177,7 @@ gui =
         evtHandlerOnMenuCommand win wxID_HASK_VALUE $ onCmd "getValue" getValue
         evtHandlerOnMenuCommand win wxID_HASK_TYPE $ onCmd "getType" getType
         evtHandlerOnMenuCommand win wxID_HASK_KIND $ onCmd "getKind" getKind
+        evtHandlerOnMenuCommand win wxID_HELP $ onCmd "help" openHelpPage
         
         -- Tool bar...
         tbMain <- toolBarEx win True True []
@@ -216,6 +221,7 @@ gui =
 
         -- ...and RUN!
         refreshPage model guiCtx
+        onCmd "start" openHelpPage
         focusOn txtCode
 
 -- EVENT HANDLERS --------------------------------------------------------------
@@ -225,7 +231,7 @@ refreshPage, savePageAs, savePage, openPage,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, loadModulesByName, reloadModules,
-    configure :: HPS.ServerHandle -> GUIContext -> IO ()
+    configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -355,6 +361,14 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                                                 "" -> return $ Right ()
                                                 newopts -> HP.setGhcOpts newopts
                                             ) model guiCtx
+
+openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
+    do
+        f <- helpFile
+        txt <- readFile f
+        set txtCode [text := txt]
+        -- Refresh the current expression box
+        refreshExpr model guiCtx True
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,

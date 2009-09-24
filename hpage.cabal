@@ -22,6 +22,7 @@ data-files: LICENSE README
             res/images/icon/hpage.jpg
             res/images/icon/hpage.png
             res/images/icon/hpage.tif
+            res/help/helpPage.hs
 data-dir: ""
 extra-source-files: Setup.hs
 extra-tmp-files:
