@@ -35,11 +35,13 @@ module HPage.Control (
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
+    loadPrefsFromCabal,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
     getGhcOpts', setGhcOpts',
+    loadPrefsFromCabal',
     reset, reset',
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
@@ -50,6 +52,7 @@ module HPage.Control (
 
 import System.IO
 import System.Directory
+import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
 import Data.Char
 import Control.Monad.Loops
@@ -64,9 +67,15 @@ import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import Utils.Log
 import Data.List (isPrefixOf)
+import Data.List.Utils
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
-import Language.Haskell.Exts.Parser
+import qualified Language.Haskell.Exts.Parser as Parser
+import Distribution.Simple.Configure
+import Distribution.Simple.LocalBuildInfo
+import Distribution.Package
+import Distribution.PackageDescription
+import Distribution.Compiler
 
 data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
@@ -85,6 +94,9 @@ data InFlightData = LoadModules { loadingModules :: Set String,
                     SetGhcOpts { settingGhcOpts :: String,
                                  runningAction :: Hint.InterpreterT IO ()
                                  } |
+                    LoadingCabal { settingSrcDirs :: [FilePath],
+                                   settingGhcOpts :: String,
+                                   runningAction :: Hint.InterpreterT IO () } |
                     Reset
 
 data Page = Page { -- Display --
@@ -447,6 +459,34 @@ setGhcOpts opts =  do
                                 liftErrorIO $ ("Error setting ghc opts dirs", opts, e)
                         return res
 
+loadPrefsFromCabal :: FilePath -> HPage (Either Hint.InterpreterError PackageIdentifier)
+loadPrefsFromCabal file = do
+                                let dir = dropFileName file
+                                lbinfo <- liftIO $ getPersistBuildConfig dir
+                                let pkgdesc = localPkgDescr lbinfo
+                                    pkgname = package pkgdesc
+                                    bldinfos= allBuildInfo pkgdesc
+                                    dirs = uniq $ concatMap hsSourceDirs bldinfos
+                                    exts = uniq . map (read . show) $ concatMap extensions bldinfos
+                                    opts = joinWith " " . uniq $ concatMap (hcOptions GHC) bldinfos
+                                    action = do
+                                                liftTraceIO $ "loading package: " ++ show pkgname
+                                                Hint.unsafeSetGhcOption "-i"
+                                                Hint.unsafeSetGhcOption "-i."
+                                                forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
+                                                Hint.set [Hint.languageExtensions := exts]
+                                                Hint.unsafeSetGhcOption opts
+                                                return pkgname
+                                res <- syncRun action
+                                case res of
+                                    Right _ ->
+                                        modify (\ctx -> ctx{extraSrcDirs = dirs,
+                                                            ghcOptions = (ghcOptions ctx) ++ " " ++ opts,
+                                                            recoveryLog = recoveryLog ctx >> action >> return ()})
+                                    Left e ->
+                                        liftErrorIO $ ("Error loading package", pkgname, e)
+                                return res
+
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
             res <- syncRun $ do
@@ -531,6 +571,28 @@ setGhcOpts' opts =  do
                         modify $ \ctx -> ctx{running = Just $ SetGhcOpts opts action}
                         return res
 
+loadPrefsFromCabal' :: FilePath -> HPage (MVar (Either Hint.InterpreterError PackageIdentifier))
+loadPrefsFromCabal' file = do
+                                let dir = dropFileName file
+                                lbinfo <- liftIO $ getPersistBuildConfig dir
+                                let pkgdesc = localPkgDescr lbinfo
+                                    pkgname = package pkgdesc
+                                    bldinfos= allBuildInfo pkgdesc
+                                    dirs = uniq $ concatMap hsSourceDirs bldinfos
+                                    exts = uniq . map (read . show) $ concatMap extensions bldinfos
+                                    opts = joinWith " " . uniq $ concatMap (hcOptions GHC) bldinfos
+                                    action = do
+                                                liftTraceIO $ "loading package: " ++ show pkgname
+                                                Hint.unsafeSetGhcOption "-i"
+                                                Hint.unsafeSetGhcOption "-i."
+                                                forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
+                                                Hint.set [Hint.languageExtensions := exts]
+                                                Hint.unsafeSetGhcOption opts
+                                                return pkgname
+                                res <- asyncRun action
+                                modify $ \ctx -> ctx{running = Just $ LoadingCabal dirs opts $ action >> return ()}
+                                return res
+                                
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do
             res <- asyncRun $ do
@@ -653,13 +715,15 @@ apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
     c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
 apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =
     c{ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
+apply (Just LoadingCabal{settingSrcDirs = ssds, settingGhcOpts = opts, runningAction = ra}) c =
+    c{extraSrcDirs = ssds, ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
 
 fromString :: String -> [Expression]
 fromString s = map Exp $ splitOn "\n\n" s
 
 isNamedExpr :: Expression -> Bool
-isNamedExpr e = case parseDecl (exprText e) of
-                    ParseOk _ -> True
+isNamedExpr e = case Parser.parseDecl (exprText e) of
+                    Parser.ParseOk _ -> True
                     _ -> False 
 
 fromString' :: String -> Int -> ([Expression], Int)

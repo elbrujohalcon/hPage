@@ -351,7 +351,16 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     case res of
                         Nothing ->
                             return ()
-                        Just newps ->
+                        Just (LoadPrefs file) ->
+                            do
+                                set status [text := "setting..."]
+                                loadres <- tryIn' model (HP.loadPrefsFromCabal file)
+                                case loadres of
+                                    Left err ->
+                                        warningDialog win "Error" err
+                                    Right pkg ->
+                                        infoDialog win "hPage" $ "Settings from package " ++ show pkg ++ " succesfully loaded" 
+                        Just (SetPrefs newps) ->
                             do
                                 set status [text := "setting..."]
                                 runHP (do
