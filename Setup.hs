@@ -87,5 +87,5 @@ makeExecutable f =
 
 hPageTestRunner :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
 hPageTestRunner _ _ _ _ = do
-                            system "runhaskell -i./src src/HPage/Test/Server.hs"
+                            system "cd src && runhaskell HPage/Test/Server.hs"
                             return ()
