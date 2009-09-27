@@ -354,7 +354,7 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                         Just (LoadPrefs file) ->
                             do
                                 set status [text := "setting..."]
-                                loadres <- tryIn' model (HP.loadPrefsFromCabal file)
+                                loadres <- tryIn model (HP.loadPrefsFromCabal file)
                                 case loadres of
                                     Left err ->
                                         warningDialog win "Error" err
