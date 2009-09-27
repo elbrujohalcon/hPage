@@ -468,20 +468,20 @@ loadPrefsFromCabal file = do
                                     bldinfos= allBuildInfo pkgdesc
                                     dirs = uniq $ concatMap hsSourceDirs bldinfos
                                     exts = uniq . map (read . show) $ concatMap extensions bldinfos
-                                    opts = joinWith " " . uniq $ concatMap (hcOptions GHC) bldinfos
+                                    opts = uniq $ concatMap (hcOptions GHC) bldinfos
                                     action = do
                                                 liftTraceIO $ "loading package: " ++ show pkgname
                                                 Hint.unsafeSetGhcOption "-i"
                                                 Hint.unsafeSetGhcOption "-i."
                                                 forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
                                                 Hint.set [Hint.languageExtensions := exts]
-                                                Hint.unsafeSetGhcOption opts
+                                                forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
                                                 return pkgname
                                 res <- syncRun action
                                 case res of
                                     Right _ ->
                                         modify (\ctx -> ctx{extraSrcDirs = dirs,
-                                                            ghcOptions = (ghcOptions ctx) ++ " " ++ opts,
+                                                            ghcOptions = (ghcOptions ctx) ++ " " ++ (joinWith " " opts),
                                                             recoveryLog = recoveryLog ctx >> action >> return ()})
                                     Left e ->
                                         liftErrorIO $ ("Error loading package", pkgname, e)
