@@ -1,3 +1,35 @@
-we've reach our first alpha release!!
+Welcome to hPage!
 
-This file will contain information about how to install the system in the different platforms, but for now it's here just to show happiness :)
+-- INSTALL -------------------------------------------------------------------------------------------------------
+The easiest way to install hPage is through cabal-install:
+1. Install wxWidgets 2.8.10 (or superior) from http://wxwidgets.org
+2. Install Cabal from http://www.haskell.org/cabal/
+3. Run $ sudo cabal install hpage
+4. Run $ ~/.cabal/bin/hpage
+
+-- USE -----------------------------------------------------------------------------------------------------------
+To start using it, just write some haskell expressions separated by empty lines like the following ones:
+
+12 + 30
+
+length [0..41]
+
+Now you can place your cursor on any of them and then press the [Value] or [Type] buttons to get their values or types
+You can also type in Type names, like...
+
+Int
+
+IO
+
+...to see their kind, using the [Kind] button
+
+You can define functions, let's try out the well known fact...
+
+fact x = foldl (*) 1 [1..x]
+
+Now if you place your cursor on something like...
+
+fact 20
+
+... you can ask for its value or type
+That's just to start up... you can do some serious stuff with this application, just check out the different menues
