@@ -14,6 +14,8 @@ import System.IO.Error hiding (try)
 import Data.List
 import Data.Bits
 import Data.Char (toLower)
+import Data.Version
+import Distribution.Package
 import Control.Monad.Error
 import Control.Monad.Loops
 import Graphics.UI.WX
@@ -66,7 +68,7 @@ gui =
         -- Containers
         pnl <- panel win []
         splLR <- splitterWindow pnl []
-        pnlL <- panel splLR []
+        pnlL <- panel splLR [clientSize := sz 200 600]
         pnlR <- panel splLR []
         
         -- Text page...
@@ -214,7 +216,7 @@ gui =
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
-            leftL       = container pnlL $ column 5 [lstPagesL, lstModulesL]
+            leftL       = container pnlL $ hfill $ column 5 [lstPagesL, lstModulesL]
             rightL      = container pnlR $ column 5 [txtCodeL, resultsGridL]
         set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL rightL,
                  clientSize := sz 800 600]
@@ -359,7 +361,8 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                                     Left err ->
                                         warningDialog win "Error" err
                                     Right pkg ->
-                                        infoDialog win "hPage" $ "Settings from package " ++ show pkg ++ " succesfully loaded" 
+                                        infoDialog win "hPage" $ "Settings from package " ++ prettyShow pkg ++ " succesfully loaded"
+				refreshPage model guiCtx
                         Just (SetPrefs newps) ->
                             do
                                 set status [text := "setting..."]
@@ -370,6 +373,8 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                                                 "" -> return $ Right ()
                                                 newopts -> HP.setGhcOpts newopts
                                             ) model guiCtx
+  where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
+				     pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
 
 openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
     do
