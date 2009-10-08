@@ -409,14 +409,15 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                 ind <- HP.getPageIndex
                                 txt <- HP.getPageText
                                 lmsRes <- HP.getLoadedModules
+                                ims <- HP.getImportedModules
                                 let lms = case lmsRes of
                                             Left  _ -> []
                                             Right x -> x
-                                return (lms, pages, ind, txt)
+                                return (ims, lms, pages, ind, txt)
         case res of
             Left err ->
                 warningDialog win "Error" err
-            Right (ms, ps, i, t) ->
+            Right (ims, ms, ps, i, t) ->
                 do
                     -- Refresh the pages list
                     itemsDelete lstPages
@@ -431,6 +432,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     set lstPages [selection := i]
                     -- Refresh the modules list
                     itemsDelete lstModules
+                    (flip mapM) ims $ itemAppend lstModules . ('*':)
                     (flip mapM) ms $ itemAppend lstModules
                     -- Refresh the current text
                     set txtCode [text := t]
