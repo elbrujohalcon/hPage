@@ -88,7 +88,6 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
-        quickCheck $ prop_add_module hps hs
         runTests "Editing" options
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
@@ -140,7 +139,7 @@ main =
                  ,  run $ prop_typeOf hps hs
                  ,  run $ prop_kindOf hps hs
                  ,  run $ prop_load_module hps hs
-                 ,  run $ prop_add_module hps hs
+                 ,  run $ prop_import_module hps
                  ,  run $ prop_reload_modules hps hs
                  ,  run $ prop_get_loaded_modules hps hs
                  ]
@@ -200,26 +199,19 @@ prop_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
-prop_add_module :: HPS.ServerHandle -> HS.ServerHandle -> KnownModuleName -> Bool
-prop_add_module hps hs kmn =
+prop_import_module :: HPS.ServerHandle -> KnownModuleName -> Bool
+prop_import_module hps kmn =
         unsafePerformIO $ do
                             let mn = kmnString kmn
-                            hpsr <- HPS.runIn hps $ do
-                                                        Right r0 <- HP.getLoadedModules
-                                                        HP.importModules [mn]
-                                                        Right r1 <- HP.getLoadedModules
-                                                        HP.importModules [mn]
-                                                        Right r2 <- HP.getLoadedModules
-                                                        return (r0, r1, r2)
-                            Right hsr <- HS.runIn hs $ do
-                                                        r0 <- Hint.getLoadedModules
-                                                        Hint.setTopLevelModules $ mn:r0
-                                                        r1 <- Hint.getLoadedModules
-                                                        Hint.setTopLevelModules $ mn:r1
-                                                        r2 <- Hint.getLoadedModules
-                                                        return (r0, r1, r2)
-                            liftDebugIO [hpsr, hsr]
-                            return $ hpsr == hsr
+                            HPS.runIn hps $ do
+                                                r1 <- HP.importModules [mn]
+                                                r2 <- HP.getImportedModules
+                                                r3 <- HP.importModules [mn]
+                                                r4 <- HP.getImportedModules
+                                                return $ r1 == (Right ()) &&
+                                                         r3 == (Right ()) &&
+                                                         mn `elem` r2 &&
+                                                         mn `elem` r4
 
 
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property

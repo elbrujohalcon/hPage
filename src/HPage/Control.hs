@@ -30,13 +30,13 @@ module HPage.Control (
     undo, redo,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModules, reloadModules, getLoadedModules, importModules,
+    loadModules, reloadModules, getLoadedModules, importModules, getImportedModules,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
     loadPrefsFromCabal,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModules', reloadModules', getLoadedModules', importModules',
+    loadModules', reloadModules', getLoadedModules', importModules', getImportedModules',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
     getGhcOpts', setGhcOpts',
@@ -415,7 +415,6 @@ importModules newms = do
                                 action = do
                                             liftTraceIO $ "importing: " ++ show newms
                                             Hint.setImports $ ms ++ newms
-                                            Hint.getLoadedModules >>= Hint.setTopLevelModules . (newms ++)
                             res <- syncRun action
                             case res of
                                 Right _ ->
@@ -437,6 +436,9 @@ reloadModules = do
 getLoadedModules :: HPage (Either Hint.InterpreterError [Hint.ModuleName])
 getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
 
+getImportedModules :: HPage [Hint.ModuleName]
+getImportedModules = confirmRunning >>= return . toList . importedModules 
+
 getLanguageExtensions :: HPage (Either Hint.InterpreterError [Hint.Extension])
 getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensions)
 
@@ -444,7 +446,7 @@ setLanguageExtensions :: [Hint.Extension] -> HPage (Either Hint.InterpreterError
 setLanguageExtensions exs = confirmRunning >> syncRun (Hint.set [Hint.languageExtensions := exs])
 
 getSourceDirs :: HPage [FilePath]
-getSourceDirs = confirmRunning >> get >>= return . extraSrcDirs
+getSourceDirs = confirmRunning >>= return . extraSrcDirs
 
 setSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
 setSourceDirs ds =  do
@@ -553,8 +555,7 @@ importModules' newms = do
                             let ms = toList $ importedModules ctx
                                 action = do
                                             liftTraceIO $ "importing': " ++ show newms
-                                            Hint.setImports $ ms ++ newms 
-                                            Hint.getLoadedModules >>= Hint.setTopLevelModules . (newms ++)
+                                            Hint.setImports $ ms ++ newms
                             res <- asyncRun action
                             modify (\ctx -> ctx{running = Just $ ImportModules (fromList newms) action})
                             return res
@@ -571,6 +572,9 @@ reloadModules' = do
 getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [Hint.ModuleName]))
 getLoadedModules' = confirmRunning >> asyncRun Hint.getLoadedModules
 
+getImportedModules' :: HPage (MVar [Hint.ModuleName])
+getImportedModules' = confirmRunning >>= liftIO . newMVar . toList . importedModules
+
 getLanguageExtensions' :: HPage (MVar (Either Hint.InterpreterError [Hint.Extension]))
 getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExtensions)
 
@@ -578,7 +582,7 @@ setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.Interpret
 setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
 
 getSourceDirs' :: HPage (MVar [FilePath])
-getSourceDirs' = confirmRunning >> get >>= liftIO . newMVar . extraSrcDirs
+getSourceDirs' = confirmRunning >>= liftIO . newMVar . extraSrcDirs
 
 setSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
 setSourceDirs' ds = do
