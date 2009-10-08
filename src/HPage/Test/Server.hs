@@ -31,6 +31,14 @@ instance Arbitrary ModuleName where
                     return . MN $ "Test" ++ map toLower s
     coarbitrary _ = undefined
 
+newtype KnownModuleName = KMN {kmnString :: String}
+    deriving (Eq, Show)
+
+instance Arbitrary KnownModuleName where
+    arbitrary = elements $ map KMN ["Data.List", "Control.Monad", "System.Directory", "Control.Monad.Loops"]
+    coarbitrary _ = undefined
+    
+
 newtype ClassName = CN {cnString :: String}
     deriving (Eq, Show)
 
@@ -38,9 +46,11 @@ instance Arbitrary ClassName where
     arbitrary = elements $ map CN ["HPage", "IO", "IO a", "Int", "String"]
     coarbitrary _ = undefined
 
+
 instance Arbitrary HP.Extension where
     arbitrary = elements HP.availableExtensions
     coarbitrary _ = undefined
+
 
 data WorkingExtension = WEX {wexExts :: [HP.Extension],
                              wexModule :: String}
@@ -78,6 +88,7 @@ main =
         createDirectoryIfMissing True testDir
         hps <- HPS.start
         hs <- HS.start
+        quickCheck $ prop_add_module hps hs
         runTests "Editing" options
                  [  run $ prop_setget_text hps
                  ,  run $ prop_setget_expr hps
@@ -129,6 +140,7 @@ main =
                  ,  run $ prop_typeOf hps hs
                  ,  run $ prop_kindOf hps hs
                  ,  run $ prop_load_module hps hs
+                 ,  run $ prop_add_module hps hs
                  ,  run $ prop_reload_modules hps hs
                  ,  run $ prop_get_loaded_modules hps hs
                  ]
@@ -188,6 +200,28 @@ prop_fail hps hs txt =
                         Left hsr <- HS.runIn hs $ Hint.eval expr
                         return $ hsr == hpsr
     
+prop_add_module :: HPS.ServerHandle -> HS.ServerHandle -> KnownModuleName -> Bool
+prop_add_module hps hs kmn =
+        unsafePerformIO $ do
+                            let mn = kmnString kmn
+                            hpsr <- HPS.runIn hps $ do
+                                                        Right r0 <- HP.getLoadedModules
+                                                        HP.importModules [mn]
+                                                        Right r1 <- HP.getLoadedModules
+                                                        HP.importModules [mn]
+                                                        Right r2 <- HP.getLoadedModules
+                                                        return (r0, r1, r2)
+                            Right hsr <- HS.runIn hs $ do
+                                                        r0 <- Hint.getLoadedModules
+                                                        Hint.setTopLevelModules $ mn:r0
+                                                        r1 <- Hint.getLoadedModules
+                                                        Hint.setTopLevelModules $ mn:r1
+                                                        r2 <- Hint.getLoadedModules
+                                                        return (r0, r1, r2)
+                            liftDebugIO [hpsr, hsr]
+                            return $ hpsr == hsr
+
+
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
 prop_load_module hps hs mn =
     (show mn /= "Test") ==>

@@ -4,7 +4,6 @@
              FunctionalDependencies,
              TypeSynonymInstances,
              UndecidableInstances #-} 
-
 module HPage.Control (
     -- MONAD CONTROLS --
     HPage, evalHPage,
@@ -31,13 +30,13 @@ module HPage.Control (
     undo, redo,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModules, reloadModules, getLoadedModules,
+    loadModules, reloadModules, getLoadedModules, importModules,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
     loadPrefsFromCabal,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModules', reloadModules', getLoadedModules',
+    loadModules', reloadModules', getLoadedModules', importModules',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
     getGhcOpts', setGhcOpts',
@@ -87,7 +86,10 @@ newtype Expression = Exp {exprText :: String}
 
 data InFlightData = LoadModules { loadingModules :: Set String,
                                   runningAction :: Hint.InterpreterT IO ()
-                                  } | 
+                                  } |
+                    ImportModules { importingModules :: Set String,
+                                    runningAction :: Hint.InterpreterT IO ()
+                                    } | 
                     SetSourceDirs { settingSrcDirs :: [FilePath],
                                     runningAction :: Hint.InterpreterT IO ()
                                     } |
@@ -119,6 +121,7 @@ data Context = Context { -- Pages --
                          currentPage :: Int,
                          -- Hint --
                          loadedModules :: Set String,
+                         importedModules :: Set String,
                          extraSrcDirs :: [FilePath],
                          ghcOptions :: String,
                          server :: HS.ServerHandle,
@@ -154,7 +157,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyContext = Context [emptyPage] 0 empty [] "" hs Nothing nop
+                    let emptyContext = Context [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -405,6 +408,23 @@ loadModules ms = do
                             liftErrorIO $ ("Error loading modules", ms, e)
                     return res
 
+importModules :: [String] -> HPage (Either Hint.InterpreterError ())
+importModules newms = do
+                            ctx <- confirmRunning
+                            let ms = toList $ importedModules ctx
+                                action = do
+                                            liftTraceIO $ "importing: " ++ show newms
+                                            Hint.setImports $ ms ++ newms
+                                            Hint.getLoadedModules >>= Hint.setTopLevelModules . (newms ++)
+                            res <- syncRun action
+                            case res of
+                                Right _ ->
+                                    modify (\ctx -> ctx{importedModules = union (fromList newms) (importedModules ctx),
+                                                        recoveryLog = recoveryLog ctx >> action >> return ()})
+                                Left e ->
+                                    liftErrorIO $ ("Error importing modules", ms, e)
+                            return res
+
 reloadModules :: HPage (Either Hint.InterpreterError ())
 reloadModules = do
                     ctx <- confirmRunning
@@ -498,6 +518,7 @@ reset = do
             case res of
                 Right _ ->
                     modify (\ctx -> ctx{loadedModules = empty,
+                                        importedModules = fromList ["Prelude"],
                                         extraSrcDirs = [],
                                         ghcOptions = "",
                                         running = Nothing,
@@ -526,11 +547,22 @@ loadModules' ms = do
                     modify (\ctx -> ctx{running = Just $ LoadModules (fromList ms) action})
                     return res
                             
+importModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
+importModules' newms = do
+                            ctx <- confirmRunning
+                            let ms = toList $ importedModules ctx
+                                action = do
+                                            liftTraceIO $ "importing': " ++ show newms
+                                            Hint.setImports $ ms ++ newms 
+                                            Hint.getLoadedModules >>= Hint.setTopLevelModules . (newms ++)
+                            res <- asyncRun action
+                            modify (\ctx -> ctx{running = Just $ ImportModules (fromList newms) action})
+                            return res
 
 reloadModules' :: HPage (MVar (Either Hint.InterpreterError ()))
 reloadModules' = do
-                    page <- confirmRunning
-                    let ms = toList $ loadedModules page
+                    ctx <- confirmRunning
+                    let ms = toList $ loadedModules ctx
                     asyncRun $ do
                                     liftTraceIO $ "reloading': " ++ (show ms)
                                     Hint.loadModules ms
@@ -704,6 +736,7 @@ confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
 apply :: Maybe InFlightData -> Context -> Context
 apply Nothing      c = c
 apply (Just Reset) c = c{loadedModules = empty,
+                         importedModules = fromList ["Prelude"],
                          extraSrcDirs = [],
                          ghcOptions = "",
                          recoveryLog = return (),
@@ -711,6 +744,9 @@ apply (Just Reset) c = c{loadedModules = empty,
 apply (Just LoadModules{loadingModules = lms, runningAction = ra}) c =
     c{loadedModules = union lms (loadedModules c),
       recoveryLog   = (recoveryLog c) >> ra}
+apply (Just ImportModules{importingModules = ims, runningAction = ra}) c =
+    c{importedModules = union ims (importedModules c),
+      recoveryLog     = (recoveryLog c) >> ra}
 apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
     c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
 apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =

@@ -146,6 +146,7 @@ gui =
         mnuHask <- menuPane [text := "Haskell"]
         menuAppend mnuHask wxID_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
         menuAppend mnuHask wxID_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
+        menuAppend mnuHask wxID_HASK_ADD "Import modules...\tCtrl-Shift-l" "Import Packaged Modules by Name" False
         menuAppend mnuHask wxID_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxID_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
@@ -173,6 +174,7 @@ gui =
         evtHandlerOnMenuCommand win wxID_BACKWARD $ onCmd "findPrev" justFindPrev
         evtHandlerOnMenuCommand win wxID_REPLACE $ onCmd "findReplace" findReplace
         evtHandlerOnMenuCommand win wxID_HASK_LOAD $ onCmd "loadModules" loadModules
+        evtHandlerOnMenuCommand win wxID_HASK_ADD $ onCmd "importModules" importModules
         evtHandlerOnMenuCommand win wxID_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
         evtHandlerOnMenuCommand win wxID_HASK_RELOAD $ onCmd "reloadModules" reloadModules
         evtHandlerOnMenuCommand win wxID_PREFERENCES $ onCmd "preferences" configure
@@ -232,7 +234,7 @@ refreshPage, savePageAs, savePage, openPage,
     justFind, justFindNext, justFindPrev, findReplace,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModules, loadModulesByName, reloadModules,
+    loadModules, importModules, loadModulesByName, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
@@ -334,6 +336,17 @@ loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                 do
                     set status [text := "loading..."]
                     runHP (HP.loadModules $ words mns) model guiCtx
+
+importModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
+    do
+        moduleNames <- textDialog win "Enter the module names, separated by spaces" "Import Packaged Modules..." ""
+        case moduleNames of
+            "" ->
+                return ()
+            mns ->
+                do
+                    set status [text := "loading..."]
+                    runHP (HP.importModules $ words mns) model guiCtx
 
 configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
