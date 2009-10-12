@@ -25,5 +25,6 @@ fact x = foldl (*) 1 [1..x]
 
 fact 20
 
+-- If you don't want to use the whole page content in an evaluation, you can mark the exact page zone you want to evaluate
 
 -- That's just to start up... you can do some serious stuff with this application, just surf the different menues

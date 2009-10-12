@@ -32,4 +32,7 @@ Now if you place your cursor on something like...
 fact 20
 
 ... you can ask for its value or type
+
+Also, instead of just placing your cursor on a expression, you can mark an area and hpage will evaluate just that area
+
 That's just to start up... you can do some serious stuff with this application, just check out the different menues
