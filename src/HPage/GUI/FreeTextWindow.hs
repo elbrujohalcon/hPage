@@ -113,6 +113,7 @@ gui =
                      on mouse :=  \e -> case e of
                                             MouseLeftUp _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
+                                            MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
         
         -- Menu bar...
@@ -232,10 +233,33 @@ gui =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
+    textContextMenu,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, importModules, loadModulesByName, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
+
+textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
+    do
+        contextMenu <- menuPane []
+        sel <- textCtrlGetStringSelection txtCode
+        case sel of
+                "" ->
+                        return ()
+                _ ->
+                    do
+                        menuAppend contextMenu wxID_CUT "C&ut\tCtrl-x" "Cut" False
+                        menuAppend contextMenu wxID_COPY "&Copy\tCtrl-c" "Copy" False
+                        menuAppend contextMenu wxID_PASTE "&Paste\tCtrl-v" "Paste" False
+                        menuAppendSeparator contextMenu
+        menuAppend contextMenu wxID_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
+        menuAppend contextMenu wxID_HASK_TYPE "&Type\tCtrl-t" "Get the Type of the Current Expression" False
+        menuAppend contextMenu wxID_HASK_KIND "&Kind\tCtrl-k" "Get the Kind of the Current Expression" False
+        
+        propagateEvent
+        pointWithinWindow <- windowGetMousePosition win
+        menuPopup contextMenu pointWithinWindow win
+        objectDelete contextMenu
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
