@@ -257,16 +257,28 @@ browseModule model guiCtx@GUICtx{guiWin = win, guiModules = lstModules, guiCode 
                                 propagateEvent >> warningDialog win "Error" err
                             Right mes ->
                                 do
-                                    flip mapM_ mes $ \me -> menuAppend contextMenu wxId_HASK_MENUELEM "" (meToString me) False
+                                    flip mapM_ mes $ createMenuItem contextMenu
                                     propagateEvent
                                     pointWithinWindow <- windowGetMousePosition win
                                     menuPopup contextMenu pointWithinWindow win
                                     objectDelete contextMenu
-    where meToString (HP.Fun fname) = "function " ++ fname
-          meToString (HP.Class cname cfuns) = "class " ++ cname ++ " where " ++
-                                                foldl (\f a -> a ++ if a == "" then "" else ", " ++ f) "" cfuns
-          meToString (HP.Data dname dcons) = "data " ++ dname ++ " = " ++
-                                                foldl (\f a -> a ++ if a == "" then "" else " | " ++ f) "" dcons
+    where createMenuItem m fn@(HP.MEFun _ _) =
+            do
+                item <- menuItemCreate
+                menuItemSetCheckable item False
+                menuItemSetText item $ show fn
+                menuItemSetId item wxId_HASK_MENUELEM
+                menuAppendItem m item 
+          createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = cfs} =
+            do
+                subMenu <- menuPane []
+                flip mapM_ cfs $ createMenuItem subMenu
+                menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
+          createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = dcs} =
+            do
+                subMenu <- menuPane []
+                flip mapM_ dcs $ createMenuItem subMenu
+                menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) subMenu ""
 
 textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
     do
@@ -526,6 +538,7 @@ runTxtHPSelection s hpacc model guiCtx@GUICtx{guiWin = win,
         refreshExpr model guiCtx False
         debugIO ("evaluating selection", s)
         let newacc = do
+                        cp <- HP.getPageIndex
                         HP.addPage
                         HP.setPageText s $ length s
                         hpacc

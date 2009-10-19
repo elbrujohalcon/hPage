@@ -218,9 +218,13 @@ prop_get_module_exports :: HPS.ServerHandle -> HS.ServerHandle -> KnownModuleNam
 prop_get_module_exports hps hs kmn =
         unsafePerformIO $ do
                             let mn = kmnString kmn
-                            hpsr <- HPS.runIn hps $ HP.getModuleExports mn
-                            hsr  <- HS.runIn hs $ Hint.getModuleExports mn
-                            return $ hpsr == hsr
+                            Right hpsr <- HPS.runIn hps $ HP.importModules [mn] >> HP.getModuleExports mn
+                            Right hsr  <- HS.runIn hs $ Hint.setImports ["Prelude", mn] >> Hint.getModuleExports mn
+                            liftDebugIO (hpsr, hsr)
+                            return $ all match  $ zip hpsr hsr
+    where match ((HP.MEFun fn _), (Hint.Fun fn2)) = fn == fn2
+          match ((HP.MEClass cn cfs), (Hint.Class cn2 cfs2)) = cn == cn2 && all match (zip cfs (map Hint.Fun cfs2))
+          match ((HP.MEData dn dcs), (Hint.Data dn2 dcs2)) = dn == dn2 && all match (zip dcs (map Hint.Fun dcs2))
 
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
 prop_load_module hps hs mn =

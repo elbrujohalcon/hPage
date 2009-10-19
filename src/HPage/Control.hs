@@ -47,7 +47,7 @@ module HPage.Control (
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
     Hint.availableExtensions, Hint.Extension(..),
-    Hint.ModuleElem(..),
+    ModuleElemDesc(..),
     -- DEBUG --
     ctxString
  ) where
@@ -78,6 +78,22 @@ import Distribution.Simple.LocalBuildInfo
 import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.Compiler
+
+data ModuleElemDesc = MEFun {funName :: String,
+                             funType :: String} |
+                      MEClass {clsName :: String,
+                               clsFuns :: [ModuleElemDesc]} |
+                      MEData {datName :: String,
+                              datCtors :: [ModuleElemDesc]}
+    deriving (Eq)
+
+instance Show ModuleElemDesc where
+    show MEFun{funName = fn, funType = []} = fn
+    show MEFun{funName = fn, funType = ft} = fn ++ " :: " ++ ft
+    show MEClass{clsName = cn, clsFuns = []} = "class " ++ cn
+    show MEClass{clsName = cn, clsFuns = cfs} = "class " ++ cn ++ " where " ++ joinWith "\n" (map show cfs)
+    show MEData{datName = dn, datCtors = []} = "data " ++ dn
+    show MEData{datName = dn, datCtors = dcs} = "data " ++ dn ++ " = " ++ joinWith " | " (map show dcs)
 
 data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
@@ -442,8 +458,13 @@ getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
 getImportedModules :: HPage [Hint.ModuleName]
 getImportedModules = confirmRunning >>= return . toList . importedModules 
 
-getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [Hint.ModuleElem])
-getModuleExports mn = confirmRunning >> syncRun (Hint.getModuleExports mn)
+getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [ModuleElemDesc])
+getModuleExports mn = do
+                            confirmRunning
+                            let action = do
+                                            exs <- Hint.getModuleExports mn
+                                            mapM moduleElemDesc exs
+                            syncRun action
 
 getLanguageExtensions :: HPage (Either Hint.InterpreterError [Hint.Extension])
 getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensions)
@@ -826,3 +847,15 @@ emptyPage = Page [] (-1) [] [] [] Nothing
 letsToString :: [Expression] -> String
 letsToString [] = ""
 letsToString exs = "let " ++ joinWith "; " (map exprText exs) ++ " in "
+
+moduleElemDesc :: Hint.ModuleElem -> Hint.InterpreterT IO ModuleElemDesc
+moduleElemDesc (Hint.Fun fn) = do
+                                    t <- (Hint.typeOf fn) `catchError` (\e -> return [])
+                                    return MEFun{funName = fn, funType = t}
+moduleElemDesc (Hint.Class cn cfs) = do
+                                        mcfs <- flip mapM cfs $ moduleElemDesc . Hint.Fun
+                                        return MEClass{clsName = cn, clsFuns = mcfs}
+moduleElemDesc (Hint.Data dn dcs) = do
+                                        mdcs <- flip mapM dcs $ moduleElemDesc . Hint.Fun
+                                        return MEData{datName = dn, datCtors = mdcs}
+                                    
