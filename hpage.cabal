@@ -1,5 +1,5 @@
 name: hpage
-version: 0.2.2
+version: 0.2.3
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -59,7 +59,7 @@ Executable hpage
     install-includes:
     hs-source-dirs: src
     other-modules:  Control.Concurrent.Process,
-                    Graphics.UI.WXCore.WxcDefs.ExtraIdentities
+                    HPage.GUI.IDs,
                     HPage.GUI.FreeTextWindow,
                     HPage.GUI.Dialogs,
                     HPage.Control,

@@ -7,6 +7,7 @@ import Control.Monad.Error
 import Graphics.UI.WX
 import Graphics.UI.WXCore
 import Graphics.UI.WXCore.WxcClasses
+import HPage.GUI.IDs
 import qualified HPage.Control as HP
 
 data Preferences = Prefs {languageExtensions :: [HP.Extension],
@@ -21,10 +22,10 @@ preferencesDialog win caption currentPrefs =
     do
         let availExts = sort HP.availableExtensions
         dlg <- dialog win [text := caption]
-        btnok <- button dlg [text := "Ok", identity := wxID_OK]
+        btnok <- button dlg [text := "Ok", identity := wxId_OK]
         buttonSetDefault btnok
-        btnimport <- button dlg [text := "Import", identity := wxID_OPEN, tooltip := "Import settings from a setup-config file"]
-        btnnok <- button dlg [text := "Cancel", identity := wxID_CANCEL]
+        btnimport <- button dlg [text := "Import", identity := wxId_OPEN, tooltip := "Import settings from a setup-config file"]
+        btnnok <- button dlg [text := "Cancel", identity := wxId_CANCEL]
         
         lstExts <- multiListBox dlg [items := map show availExts]
         let selIndexes = foldr (\option acc ->
