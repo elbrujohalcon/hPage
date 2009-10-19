@@ -115,6 +115,7 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
+        set lstModules [on select :=  onCmd "browseModule" browseModule >> propagateEvent]
         
         -- Menu bar...
         -- menuBar win []
@@ -233,11 +234,39 @@ gui =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu,
+    textContextMenu, browseModule,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadModules, importModules, loadModulesByName, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
+
+browseModule model guiCtx@GUICtx{guiWin = win, guiModules = lstModules, guiCode = txtCode} =
+    do
+        contextMenu <- menuPane []
+        i <- get lstModules selection
+        case i of
+            (-1) -> propagateEvent
+            _    -> do
+                        mnText <- listBoxGetString lstModules i
+                        let mn = case mnText of
+                                       '*':rest -> rest
+                                       fullname -> fullname
+                        hpsRes <- tryIn model $ HP.getModuleExports mn
+                        case hpsRes of
+                            Left err ->
+                                propagateEvent >> warningDialog win "Error" err
+                            Right mes ->
+                                do
+                                    flip mapM_ mes $ \me -> menuAppend contextMenu wxId_HASK_MENUELEM "" (meToString me) False
+                                    propagateEvent
+                                    pointWithinWindow <- windowGetMousePosition win
+                                    menuPopup contextMenu pointWithinWindow win
+                                    objectDelete contextMenu
+    where meToString (HP.Fun fname) = "function " ++ fname
+          meToString (HP.Class cname cfuns) = "class " ++ cname ++ " where " ++
+                                                foldl (\f a -> a ++ if a == "" then "" else ", " ++ f) "" cfuns
+          meToString (HP.Data dname dcons) = "data " ++ dname ++ " = " ++
+                                                foldl (\f a -> a ++ if a == "" then "" else " | " ++ f) "" dcons
 
 textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
     do
