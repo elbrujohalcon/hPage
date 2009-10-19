@@ -31,12 +31,14 @@ module HPage.Control (
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules, reloadModules, getLoadedModules, importModules, getImportedModules,
+    getModuleExports,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
     loadPrefsFromCabal,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules', importModules', getImportedModules',
+    getModuleExports',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
     getGhcOpts', setGhcOpts',
@@ -45,6 +47,7 @@ module HPage.Control (
     cancel,
     Hint.InterpreterError, Hint.prettyPrintError,
     Hint.availableExtensions, Hint.Extension(..),
+    Hint.ModuleElem(..),
     -- DEBUG --
     ctxString
  ) where
@@ -439,6 +442,9 @@ getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
 getImportedModules :: HPage [Hint.ModuleName]
 getImportedModules = confirmRunning >>= return . toList . importedModules 
 
+getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [Hint.ModuleElem])
+getModuleExports mn = confirmRunning >> syncRun (Hint.getModuleExports mn)
+
 getLanguageExtensions :: HPage (Either Hint.InterpreterError [Hint.Extension])
 getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensions)
 
@@ -574,6 +580,9 @@ getLoadedModules' = confirmRunning >> asyncRun Hint.getLoadedModules
 
 getImportedModules' :: HPage (MVar [Hint.ModuleName])
 getImportedModules' = confirmRunning >>= liftIO . newMVar . toList . importedModules
+
+getModuleExports' :: Hint.ModuleName -> HPage (MVar (Either Hint.InterpreterError [Hint.ModuleElem]))
+getModuleExports' mn = confirmRunning >> asyncRun (Hint.getModuleExports mn)
 
 getLanguageExtensions' :: HPage (MVar (Either Hint.InterpreterError [Hint.Extension]))
 getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExtensions)

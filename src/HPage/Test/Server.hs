@@ -142,6 +142,7 @@ main =
                  ,  run $ prop_import_module hps
                  ,  run $ prop_reload_modules hps hs
                  ,  run $ prop_get_loaded_modules hps hs
+                 ,  run $ prop_get_module_exports hps hs
                  ]
         runTests "Cancelation" options
                  [  run $ prop_sequential hps
@@ -213,6 +214,13 @@ prop_import_module hps kmn =
                                                          mn `elem` r2 &&
                                                          mn `elem` r4
 
+prop_get_module_exports :: HPS.ServerHandle -> HS.ServerHandle -> KnownModuleName -> Bool
+prop_get_module_exports hps hs kmn =
+        unsafePerformIO $ do
+                            let mn = kmnString kmn
+                            hpsr <- HPS.runIn hps $ HP.getModuleExports mn
+                            hsr  <- HS.runIn hs $ Hint.getModuleExports mn
+                            return $ hpsr == hsr
 
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
 prop_load_module hps hs mn =
