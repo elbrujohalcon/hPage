@@ -537,13 +537,16 @@ runTxtHPSelection s hpacc model guiCtx@GUICtx{guiWin = win,
     do
         refreshExpr model guiCtx False
         debugIO ("evaluating selection", s)
-        let newacc = do
-                        cp <- HP.getPageIndex
+        piRes <- tryIn' model HP.getPageIndex
+        let cpi = case piRes of
+                        Left err -> 0
+                        Right cp -> cp
+            newacc = do
                         HP.addPage
                         HP.setPageText s $ length s
                         hpacc
         res <- tryIn' model newacc
-        tryIn' model HP.closePage
+        tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
         case res of
             Left err -> warningDialog win "Error" err
             Right var -> do
