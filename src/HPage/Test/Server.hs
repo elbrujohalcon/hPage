@@ -12,7 +12,7 @@ import qualified Language.Haskell.Interpreter.Server as HS
 import System.Directory
 import Control.Monad.Loops
 import qualified Data.ByteString.Char8 as Str
-import Utils.Log
+import HPage.Utils.Log
 -- import Data.Set (fromList)
 
 instance Arbitrary Char where

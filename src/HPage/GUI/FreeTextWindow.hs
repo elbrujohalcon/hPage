@@ -28,7 +28,7 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import HPage.GUI.Dialogs
 import HPage.GUI.IDs
-import Utils.Log
+import HPage.Utils.Log
 
 import Paths_hpage -- cabal locations of data files
 

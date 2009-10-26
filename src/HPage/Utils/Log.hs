@@ -1,5 +1,5 @@
 
-module Utils.Log where
+module HPage.Utils.Log where
 
 import Control.Monad.Trans
 

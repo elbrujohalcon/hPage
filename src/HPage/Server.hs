@@ -8,7 +8,7 @@ import Control.Monad.Trans
 import Control.Monad.Loops
 import Control.Concurrent.Process
 import HPage.Control
-import Utils.Log
+import HPage.Utils.Log
 
 newtype ServerHandle = SH {handle :: Handle (Either Stop (HPage ()))}
 

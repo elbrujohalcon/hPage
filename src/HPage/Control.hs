@@ -45,7 +45,7 @@ module HPage.Control (
     loadPrefsFromCabal',
     reset, reset',
     cancel,
-    Hint.InterpreterError, Hint.prettyPrintError,
+    Hint.InterpreterError, prettyPrintError,
     Hint.availableExtensions, Hint.Extension(..),
     ModuleElemDesc(..),
     -- DEBUG --
@@ -65,9 +65,8 @@ import Control.Concurrent.MVar
 import Language.Haskell.Interpreter (OptionVal((:=)))
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Unsafe as Hint
-import qualified Language.Haskell.Interpreter.Utils as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
-import Utils.Log
+import HPage.Utils.Log
 import Data.List (isPrefixOf)
 import Data.List.Utils
 import qualified Data.List as List
@@ -679,7 +678,12 @@ cancel = do
             liftIO $ HS.runIn hs $ recoveryLog ctx
             modify (\c -> c{server = hs,
                             running = Nothing})
-            
+
+prettyPrintError :: Hint.InterpreterError -> String
+prettyPrintError (Hint.WontCompile ghcerr)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerr)
+prettyPrintError (Hint.UnknownError errStr) = "Unknown Error: " ++ errStr
+prettyPrintError (Hint.NotAllowed errStr)   = "Not Allowed Action: " ++ errStr
+prettyPrintError (Hint.GhcException errStr) = errStr
 
 -- PRIVATE FUNCTIONS -----------------------------------------------------------
 modifyPage :: (Page -> Page) -> HPage ()
@@ -858,4 +862,3 @@ moduleElemDesc (Hint.Class cn cfs) = do
 moduleElemDesc (Hint.Data dn dcs) = do
                                         mdcs <- flip mapM dcs $ moduleElemDesc . Hint.Fun
                                         return MEData{datName = dn, datCtors = mdcs}
-                                    
