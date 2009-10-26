@@ -1,5 +1,5 @@
 name: hpage
-version: 0.3.0
+version: 0.3.1
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -11,7 +11,7 @@ homepage: http://elbrujohalcon.github.com/hPage/
 package-url: http://code.haskell.org/hpage
 bug-reports: http://github.com/elbrujohalcon/hPage/issues
 synopsis: A scrapbook for Haskell developers
-description: hPage is targeted at those haskell developers which also like to work with dynamic GUIs and wish to have something like Smalltalk's Workbook or jPage for Java. Using hPage developers can write haskell expressions, evaluate and test them, load, unload and (of course) reload modules and then, re-evaluate the same expressions (ghci anyone?). Developed over wxWidgets, hPage is multi-platform by nature and works in every scenario where ghc and wxWidgets work.
+description: hPage is targeted at those haskell developers which also like to work with dynamic GUIs and wish to have something like Smalltalk's Workspace or jPage for Java. Using hPage developers can write haskell expressions, evaluate and test them, load, unload and (of course) reload modules and then, re-evaluate the same expressions (ghci anyone?). Developed over wxWidgets, hPage is multi-platform by nature and works in every scenario where ghc and wxWidgets work.
 category: Development, IDE, Editor
 author: Fernando "Brujo" Benavides
 tested-with: GHC ==6.10.3, GHC ==6.10.4
@@ -45,7 +45,8 @@ Executable hpage
                    wx >=0.11.1,                 wx < 0.12,
                    filepath >=1.1.0,            filepath < 1.2,
                    Cabal >= 1.6,				Cabal < 1.7,
-                   MissingH >= 1.1,				MissingH < 1.2
+                   MissingH >= 1.1,				MissingH < 1.2,
+                   eprocess >= 1.0.0,           eprocess < 2
     main-is: Main.hs
     buildable: True
     build-tools:
@@ -58,8 +59,7 @@ Executable hpage
     extensions: CPP
     install-includes:
     hs-source-dirs: src
-    other-modules:  Control.Concurrent.Process,
-                    HPage.GUI.IDs,
+    other-modules:  HPage.GUI.IDs,
                     HPage.GUI.FreeTextWindow,
                     HPage.GUI.Dialogs,
                     HPage.Control,
