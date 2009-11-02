@@ -60,7 +60,8 @@ Executable hpage
     extensions: CPP
     install-includes:
     hs-source-dirs: src
-    other-modules:  HPage.GUI.IDs,
+    other-modules:  
+                    HPage.GUI.IDs,
                     HPage.GUI.FreeTextWindow,
                     HPage.GUI.Dialogs,
                     HPage.Control,

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <haskellProject>
-  <sourcePath path=""/>
-  <outputPath path=""/>
-  <targetBinary name=""/>
-<compiler></compiler></haskellProject>
+  <sourcePath path="src"/>
+  <outputPath path="out"/>
+  <targetBinary name="bin/theResult"/>
+<compiler>ghcCompiler</compiler></haskellProject>
