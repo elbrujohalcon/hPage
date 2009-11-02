@@ -47,7 +47,8 @@ data GUIResults = GUIRes { resValue :: GUIResultRow,
 
 data GUIContext  = GUICtx { guiWin :: Frame (),
                             guiPages :: SingleListBox (),
-                            guiModules :: SingleListBox (),
+                            guiPkgModules :: SingleListBox (),
+                            guiLoadedModules :: SingleListBox (),
                             guiCode :: TextCtrl (),
                             guiResults :: GUIResults,
                             guiStatus :: StatusField,
@@ -66,23 +67,24 @@ gui =
         set win [on closing := HPS.stop model >> propagateEvent]
 
         -- Containers
-        pnl <- panel win []
-        splLR <- splitterWindow pnl []
-        pnlL <- panel splLR [clientSize := sz 200 600]
-        pnlR <- panel splLR []
+        ntbkL <- notebook win []
+        pnlPs <- panel ntbkL []
+        pnlPMs <- panel ntbkL []
+        pnlLMs <- panel ntbkL []
         
         -- Text page...
     --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrl pnlR [font := fontFixed, text := ""]
+        txtCode <- textCtrl win [font := fontFixed, text := ""]
         
         -- Document Selector
-        lstModules <- singleListBox pnlL [style := wxLB_NEEDED_SB]
-        lstPages <- singleListBox pnlL [style := wxLB_NEEDED_SB]
+        lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
+        lstLoadedModules <- singleListBox pnlLMs [style := wxLB_NEEDED_SB]
+        lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
 
         -- Results list
-        txtValue <- textEntry pnlR [style := wxTE_READONLY]
-        txtType <- textEntry pnlR [style := wxTE_READONLY]
-        txtKind <- textEntry pnlR [style := wxTE_READONLY]
+        txtValue <- textEntry win [style := wxTE_READONLY]
+        txtType <- textEntry win [style := wxTE_READONLY]
+        txtKind <- textEntry win [style := wxTE_READONLY]
         
         -- Status bar...
         status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
@@ -90,9 +92,9 @@ gui =
         varTimer <- varCreate refreshTimer
         set win [statusBar := [status]]
         
-        btnGetValue <- button pnlR [text := "Value"]
-        btnGetType <- button pnlR [text := "Type"]
-        btnGetKind <- button pnlR [text := "Kind"]
+        btnGetValue <- button win [text := "Value"]
+        btnGetType <- button win [text := "Type"]
+        btnGetKind <- button win [text := "Kind"]
         
         search <- findReplaceDataCreate wxFR_DOWN
         
@@ -100,7 +102,7 @@ gui =
         let grrType = GUIRRow btnGetType txtType
         let grrKind = GUIRRow btnGetKind txtKind
         let guiRes = GUIRes grrValue grrType grrKind
-        let guiCtx = GUICtx win lstPages lstModules txtCode guiRes status varTimer search 
+        let guiCtx = GUICtx win lstPages lstPkgModules lstLoadedModules txtCode guiRes status varTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
         set btnGetValue [on command := onCmd "getValue" getValue]
@@ -115,7 +117,7 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
-        set lstModules [on select :=  onCmd "browseModule" browseModule >> propagateEvent]
+        set lstLoadedModules [on select :=  onCmd "browseModule" browseModule >> propagateEvent]
         
         -- Menu bar...
         -- menuBar win []
@@ -214,15 +216,16 @@ gui =
 
         -- Layout settings
         let txtCodeL    = fill $ widget txtCode
-            lstPagesL   = fill $ boxed "Pages" $ fill $ widget lstPages
-            lstModulesL = fill $ boxed "Modules" $ fill $ widget lstModules
+            pagesTabL   = tab "Pages" $ container pnlPs $ fill $ widget lstPages
+            pkgModsTabL = tab "Package" $ container pnlPMs $ fill $ widget lstPkgModules
+            lddModsTabL = tab "Modules" $ container pnlLMs $ fill $ widget lstLoadedModules
             valueRowL   = [widget btnGetValue, hfill $ widget txtValue]
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
-            leftL       = container pnlL $ hfill $ column 5 [lstPagesL, lstModulesL]
-            rightL      = container pnlR $ column 5 [txtCodeL, resultsGridL]
-        set win [layout := container pnl $ fill $ vsplit splLR 7 400 leftL rightL,
+            leftL       = tabs ntbkL [pagesTabL, pkgModsTabL, lddModsTabL]
+            rightL      = minsize (sz 500 100) $ column 5 [txtCodeL, resultsGridL]
+        set win [layout := fill $ row 10 [leftL, rightL],
                  clientSize := sz 800 600]
 
         -- ...and RUN!
@@ -240,14 +243,14 @@ refreshPage, savePageAs, savePage, openPage,
     loadModules, importModules, loadModulesByName, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
-browseModule model guiCtx@GUICtx{guiWin = win, guiModules = lstModules, guiCode = txtCode} =
+browseModule model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModules, guiCode = txtCode} =
     do
         contextMenu <- menuPane []
-        i <- get lstModules selection
+        i <- get lstLoadedModules selection
         case i of
             (-1) -> propagateEvent
             _    -> do
-                        mnText <- listBoxGetString lstModules i
+                        mnText <- listBoxGetString lstLoadedModules i
                         let mn = case mnText of
                                        '*':rest -> rest
                                        fullname -> fullname
@@ -464,7 +467,7 @@ openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
-                                guiModules = lstModules,
+                                guiLoadedModules = lstLoadedModules,
                                 guiCode = txtCode,
                                 guiStatus = status} =
     do
@@ -496,9 +499,9 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                          in itemAppend lstPages $ prefix ++ name
                     set lstPages [selection := i]
                     -- Refresh the modules list
-                    itemsDelete lstModules
-                    (flip mapM) ims $ itemAppend lstModules . ('*':)
-                    (flip mapM) ms $ itemAppend lstModules
+                    itemsDelete lstLoadedModules
+                    (flip mapM) ims $ itemAppend lstLoadedModules . ('*':)
+                    (flip mapM) ms $ itemAppend lstLoadedModules
                     -- Refresh the current text
                     set txtCode [text := t]
                     set status [text := ""]
