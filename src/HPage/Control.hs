@@ -30,19 +30,21 @@ module HPage.Control (
     undo, redo,
     -- HINT CONTROLS --
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModules, reloadModules, getLoadedModules, importModules, getImportedModules,
+    loadModules,
+    reloadModules, getLoadedModules,
+    importModules, getImportedModules,
+    getPackageModules,
     getModuleExports,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
-    loadPrefsFromCabal,
+    loadPackage,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', reloadModules', getLoadedModules', importModules', getImportedModules',
     getModuleExports',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
     getGhcOpts', setGhcOpts',
-    loadPrefsFromCabal',
     reset, reset',
     cancel,
     Hint.InterpreterError, prettyPrintError,
@@ -76,6 +78,7 @@ import Distribution.Simple.Configure
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Package
 import Distribution.PackageDescription
+import Distribution.ModuleName
 import Distribution.Compiler
 
 data ModuleElemDesc = MEFun {funName :: String,
@@ -114,9 +117,6 @@ data InFlightData = LoadModules { loadingModules :: Set String,
                     SetGhcOpts { settingGhcOpts :: String,
                                  runningAction :: Hint.InterpreterT IO ()
                                  } |
-                    LoadingCabal { settingSrcDirs :: [FilePath],
-                                   settingGhcOpts :: String,
-                                   runningAction :: Hint.InterpreterT IO () } |
                     Reset
 
 data Page = Page { -- Display --
@@ -134,7 +134,10 @@ instance Show Page where
            "\nFile: " ++ show (filePath p)
         where showExpressions pg = showWithCurrent (expressions pg) (currentExpr pg) "\n\n" $ ("["++) . (++"]")
 
-data Context = Context { -- Pages --
+data Context = Context { -- Package --
+                         activePackage :: Maybe PackageIdentifier,
+                         pkgModules :: [Hint.ModuleName],
+                         -- Pages --
                          pages :: [Page],
                          currentPage :: Int,
                          -- Hint --
@@ -175,7 +178,7 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     let nop = return ()
-                    let emptyContext = Context [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop
+                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -457,6 +460,9 @@ getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
 getImportedModules :: HPage [Hint.ModuleName]
 getImportedModules = confirmRunning >>= return . toList . importedModules 
 
+getPackageModules :: HPage [Hint.ModuleName]
+getPackageModules = confirmRunning >>= return . pkgModules
+
 getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [ModuleElemDesc])
 getModuleExports mn = do
                             confirmRunning
@@ -507,33 +513,37 @@ setGhcOpts opts =  do
                                 liftErrorIO $ ("Error setting ghc opts dirs", opts, e)
                         return res
 
-loadPrefsFromCabal :: FilePath -> HPage (Either Hint.InterpreterError PackageIdentifier)
-loadPrefsFromCabal file = do
-                                let dir = dropFileName file
-                                lbinfo <- liftIO $ getPersistBuildConfig dir
-                                let pkgdesc = localPkgDescr lbinfo
-                                    pkgname = package pkgdesc
-                                    bldinfos= allBuildInfo pkgdesc
-                                    dirs = uniq $ concatMap hsSourceDirs bldinfos
-                                    exts = uniq . map (read . show) $ concatMap extensions bldinfos
-                                    opts = uniq $ concatMap (hcOptions GHC) bldinfos
-                                    action = do
-                                                liftTraceIO $ "loading package: " ++ show pkgname
-                                                Hint.unsafeSetGhcOption "-i"
-                                                Hint.unsafeSetGhcOption "-i."
-                                                forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
-                                                Hint.set [Hint.languageExtensions := exts]
-                                                forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
-                                                return pkgname
-                                res <- syncRun action
-                                case res of
-                                    Right _ ->
-                                        modify (\ctx -> ctx{extraSrcDirs = dirs,
-                                                            ghcOptions = (ghcOptions ctx) ++ " " ++ (joinWith " " opts),
-                                                            recoveryLog = recoveryLog ctx >> action >> return ()})
-                                    Left e ->
-                                        liftErrorIO $ ("Error loading package", pkgname, e)
-                                return res
+loadPackage :: FilePath -> HPage (Either Hint.InterpreterError PackageIdentifier)
+loadPackage file = do
+                        let dir = dropFileName file
+                        lbinfo <- liftIO $ getPersistBuildConfig dir
+                        let pkgdesc = localPkgDescr lbinfo
+                            pkgname = package pkgdesc
+                            bldinfos= allBuildInfo pkgdesc
+                            dirs = uniq $ concatMap hsSourceDirs bldinfos
+                            exts = uniq . map (read . show) $ concatMap extensions bldinfos
+                            opts = uniq $ concatMap (hcOptions GHC) bldinfos
+                            mods = uniq . map (joinWith "." . components) $ exeModules pkgdesc ++ (libModules pkgdesc)
+                            action = do
+                                        liftTraceIO $ "loading package: " ++ show pkgname
+                                        Hint.unsafeSetGhcOption "-i"
+                                        Hint.unsafeSetGhcOption "-i."
+                                        forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
+                                        Hint.set [Hint.languageExtensions := exts]
+                                        forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
+                                        return pkgname
+                        liftDebugIO mods
+                        res <- syncRun action
+                        case res of
+                            Right _ ->
+                                modify (\ctx -> ctx{activePackage       = Just pkgname,
+                                                    pkgModules          = mods,
+                                                    extraSrcDirs        = dirs,
+                                                    ghcOptions          = (ghcOptions ctx) ++ " " ++ (joinWith " " opts),
+                                                    recoveryLog         = recoveryLog ctx >> action >> return ()})
+                            Left e ->
+                                liftErrorIO $ ("Error loading package", pkgname, e)
+                        return res
 
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do
@@ -635,28 +645,6 @@ setGhcOpts' opts =  do
                         res <- asyncRun action
                         modify $ \ctx -> ctx{running = Just $ SetGhcOpts opts action}
                         return res
-
-loadPrefsFromCabal' :: FilePath -> HPage (MVar (Either Hint.InterpreterError PackageIdentifier))
-loadPrefsFromCabal' file = do
-                                let dir = dropFileName file
-                                lbinfo <- liftIO $ getPersistBuildConfig dir
-                                let pkgdesc = localPkgDescr lbinfo
-                                    pkgname = package pkgdesc
-                                    bldinfos= allBuildInfo pkgdesc
-                                    dirs = uniq $ concatMap hsSourceDirs bldinfos
-                                    exts = uniq . map (read . show) $ concatMap extensions bldinfos
-                                    opts = joinWith " " . uniq $ concatMap (hcOptions GHC) bldinfos
-                                    action = do
-                                                liftTraceIO $ "loading package: " ++ show pkgname
-                                                Hint.unsafeSetGhcOption "-i"
-                                                Hint.unsafeSetGhcOption "-i."
-                                                forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
-                                                Hint.set [Hint.languageExtensions := exts]
-                                                Hint.unsafeSetGhcOption opts
-                                                return pkgname
-                                res <- asyncRun action
-                                modify $ \ctx -> ctx{running = Just $ LoadingCabal dirs opts $ action >> return ()}
-                                return res
                                 
 reset' :: HPage (MVar (Either Hint.InterpreterError ()))
 reset' = do
@@ -789,8 +777,6 @@ apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
     c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
 apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =
     c{ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
-apply (Just LoadingCabal{settingSrcDirs = ssds, settingGhcOpts = opts, runningAction = ra}) c =
-    c{extraSrcDirs = ssds, ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
 
 fromString :: String -> [Expression]
 fromString s = map Exp $ splitOn "\n\n" s

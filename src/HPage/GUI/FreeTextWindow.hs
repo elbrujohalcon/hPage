@@ -118,7 +118,12 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
-        set lstLoadedModules [on select :=  onCmd "browseModule" browseModule >> propagateEvent]
+        set lstLoadedModules [on mouse := \e -> case e of
+                                                MouseLeftUp _ _ -> onCmd "browseModule" browseModule >> propagateEvent
+                                                _ -> propagateEvent]
+        set lstPkgModules [on mouse := \e -> case e of
+                                                MouseRightUp _ _ -> onCmd "pkgModuleContextMenu" pkgModuleContextMenu >> propagateEvent
+                                                _ -> propagateEvent]
         
         -- Menu bar...
         -- menuBar win []
@@ -184,6 +189,7 @@ gui =
         evtHandlerOnMenuCommand win wxId_HASK_LOAD $ onCmd "loadModules" loadModules
         evtHandlerOnMenuCommand win wxId_HASK_ADD $ onCmd "importModules" importModules
         evtHandlerOnMenuCommand win wxId_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
+        evtHandlerOnMenuCommand win wxId_HASK_LOAD_FAST $ onCmd "loadModulesByNameFast" loadModulesByNameFast
         evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
         evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
         evtHandlerOnMenuCommand win wxId_HASK_VALUE $ onCmd "getValue" getValue
@@ -231,7 +237,7 @@ gui =
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
-            leftL       = tabs ntbkL [pagesTabL, pkgModsTabL, lddModsTabL]
+            leftL       = tabs ntbkL [lddModsTabL, pkgModsTabL, pagesTabL]
             rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsGridL]
         set win [layout := fill $ row 10 [leftL, rightL],
                  clientSize := sz 800 600]
@@ -245,10 +251,10 @@ gui =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu, browseModule,
+    textContextMenu, pkgModuleContextMenu, browseModule,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadPackage, loadModules, importModules, loadModulesByName, reloadModules,
+    loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
 browseModule model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModules, guiCode = txtCode} =
@@ -312,6 +318,21 @@ textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
         pointWithinWindow <- windowGetMousePosition win
         menuPopup contextMenu pointWithinWindow win
         objectDelete contextMenu
+
+pkgModuleContextMenu model guiCtx@GUICtx{guiWin = win, guiPkgModules = lstPkgModules} =
+    do
+        contextMenu <- menuPane []
+        i <- get lstPkgModules selection
+        case i of
+            (-1) -> return ()
+            i ->
+                do
+                    mnText <- listBoxGetString lstPkgModules i
+                    menuAppend contextMenu wxId_HASK_LOAD_FAST "&Load" "Load Module" False
+                    propagateEvent
+                    pointWithinWindow <- windowGetMousePosition win
+                    menuPopup contextMenu pointWithinWindow win
+                    objectDelete contextMenu
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
     runTxtHP HP.valueOf' model guiCtx grrValue
@@ -402,7 +423,7 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
                     return ()
                 Just setupConfig ->
                     do
-                        loadres <- tryIn model (HP.loadPrefsFromCabal setupConfig)
+                        loadres <- tryIn model (HP.loadPackage setupConfig)
                         case loadres of
                             Left err ->
                                 warningDialog win "Error" err
@@ -438,6 +459,18 @@ loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                 do
                     set status [text := "loading..."]
                     runHP (HP.loadModules $ words mns) model guiCtx
+
+loadModulesByNameFast model guiCtx@GUICtx{guiWin = win, guiPkgModules = lstPkgModules, guiStatus = status} =
+    do
+        i <- get lstPkgModules selection
+        case i of
+            (-1) -> return ()
+            i ->
+                do
+                    mnText <- listBoxGetString lstPkgModules i
+                    let mns = [mnText]
+                    set status [text := "loading..."]
+                    runHP (HP.loadModules mns) model guiCtx
 
 importModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
@@ -489,6 +522,7 @@ openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
+                                guiPkgModules = lstPkgModules,
                                 guiLoadedModules = lstLoadedModules,
                                 guiCode = txtCode,
                                 guiStatus = status} =
@@ -500,14 +534,15 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                 txt <- HP.getPageText
                                 lmsRes <- HP.getLoadedModules
                                 ims <- HP.getImportedModules
+                                pms <- HP.getPackageModules
                                 let lms = case lmsRes of
                                             Left  _ -> []
                                             Right x -> x
-                                return (ims, lms, pages, ind, txt)
+                                return (pms, ims, lms, pages, ind, txt)
         case res of
             Left err ->
                 warningDialog win "Error" err
-            Right (ims, ms, ps, i, t) ->
+            Right (pms, ims, ms, ps, i, t) ->
                 do
                     -- Refresh the pages list
                     itemsDelete lstPages
@@ -520,10 +555,12 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                                          Just fn -> takeFileName $ dropExtension fn
                                          in itemAppend lstPages $ prefix ++ name
                     set lstPages [selection := i]
-                    -- Refresh the modules list
+                    -- Refresh the modules lists
                     itemsDelete lstLoadedModules
-                    (flip mapM) ims $ itemAppend lstLoadedModules . ('*':)
-                    (flip mapM) ms $ itemAppend lstLoadedModules
+                    (flip mapM) ims $ itemAppend lstLoadedModules
+                    (flip mapM) ms $ itemAppend lstLoadedModules . ('*':)
+                    itemsDelete lstPkgModules
+                    (flip mapM) pms $ \pm -> itemAppend lstPkgModules (if pm `elem` ms then ('*':pm) else pm)
                     -- Refresh the current text
                     set txtCode [text := t]
                     set status [text := ""]
