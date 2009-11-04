@@ -62,7 +62,7 @@ gui =
         -- Server context
         model <- HPS.start
         
-        win <- frame [text := "hPage"]
+        win <- frame [text := "λPage"]
         imageFile "icon/hpage.tif" >>= topLevelWindowSetIconFromFile win 
         
         set win [on closing := HPS.stop model >> propagateEvent]
@@ -88,7 +88,7 @@ gui =
         txtKind <- textEntry win [style := wxTE_READONLY]
         
         -- Status bar...
-        status <- statusField [text := "hello... this is hPage! type in your instructions :)"]
+        status <- statusField [text := "hello... this is λPage! type in your instructions :)"]
         refreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
         varTimer <- varCreate refreshTimer
         set win [statusBar := [status]]
@@ -162,7 +162,7 @@ gui =
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
-        menuAbout mnuHelp [on command := infoDialog win "About hPage" "Author: Fernando Brujo Benavides"]
+        menuAbout mnuHelp [on command := infoDialog win "About λPage" "Author: Fernando Brujo Benavides"]
         
         set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
         evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
@@ -411,7 +411,7 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
                                     absPath <- canonicalizePath setupConfig
                                     let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
                                     setCurrentDirectory dir
-                                    frameSetTitle win $ "hPage - " ++ prettyShow pkg
+                                    frameSetTitle win $ "λPage - " ++ prettyShow pkg
                         refreshPage model guiCtx
   where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
                                      pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
