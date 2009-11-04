@@ -1,5 +1,5 @@
 name: hpage
-version: 0.3.2
+version: 0.3.3
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -7,7 +7,7 @@ license-file: LICENSE
 copyright: 2009 Fernando "Brujo" Benavides
 maintainer: greenmellon@gmail.com
 stability: provisional
-homepage: http://elbrujohalcon.github.com/hPage/
+homepage: http://haskell.hpage.com
 package-url: http://code.haskell.org/hpage
 bug-reports: http://github.com/elbrujohalcon/hPage/issues
 synopsis: A scrapbook for Haskell developers
@@ -17,10 +17,7 @@ author: Fernando "Brujo" Benavides
 tested-with: GHC ==6.10.3, GHC ==6.10.4
 data-files: LICENSE README
             res/images/*.png
-            res/images/icon/hpage.gif
             res/images/icon/hPage.icns
-            res/images/icon/hpage.jpg
-            res/images/icon/hpage.png
             res/images/icon/hpage.tif
             res/help/helpPage.hs
 data-dir: ""

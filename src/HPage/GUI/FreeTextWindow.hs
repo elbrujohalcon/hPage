@@ -148,6 +148,8 @@ gui =
         menuAppend mnuEdit wxId_PREFERENCES "&Preferences...\tCtrl-," "Preferences" False
 
         mnuHask <- menuPane [text := "Haskell"]
+        menuAppend mnuHask wxId_HASK_LOAD_PKG "Load &package...\tCtrl-Shift-l" "Load Cabal Package" False
+        menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
         menuAppend mnuHask wxId_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
         menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-l" "Import Packaged Modules by Name" False
@@ -189,6 +191,7 @@ gui =
         
         -- Tool bar...
         tbMain <- toolBarEx win True True []
+        mitLoadPkg <- menuFindItem mnuHask wxId_HASK_LOAD_PKG
         mitNew <- menuFindItem mnuPage wxId_NEW
         mitOpen <- menuFindItem mnuPage wxId_OPEN
         mitSave <- menuFindItem mnuPage wxId_SAVE
@@ -196,6 +199,7 @@ gui =
         mitCopy <- menuFindItem mnuEdit wxId_COPY
         mitPaste <- menuFindItem mnuEdit wxId_PASTE
         mitReload <- menuFindItem mnuHask wxId_HASK_RELOAD
+        loadPath <- imageFile "load.png"
         newPath <- imageFile "new.png"
         openPath <- imageFile "open.png"
         savePath <- imageFile "save.png"
@@ -203,9 +207,11 @@ gui =
         copyPath <- imageFile "copy.png"
         pastePath <- imageFile "paste.png"
         reloadPath <- imageFile "reload.png"
-        toolMenu tbMain mitNew "New" newPath [tooltip := "New"]
-        toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open"]
-        toolMenu tbMain mitSave "Save" savePath [tooltip := "Save"]
+        toolMenu tbMain mitLoadPkg "Load Package" loadPath [tooltip := "Load Cabal Package"]
+        toolBarAddSeparator tbMain
+        toolMenu tbMain mitNew "New" newPath [tooltip := "New Page"]
+        toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open Page"]
+        toolMenu tbMain mitSave "Save" savePath [tooltip := "Save Page"]
         toolBarAddSeparator tbMain
         toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
         toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
@@ -224,7 +230,7 @@ gui =
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
             resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
             leftL       = tabs ntbkL [pagesTabL, pkgModsTabL, lddModsTabL]
-            rightL      = minsize (sz 500 100) $ column 5 [txtCodeL, resultsGridL]
+            rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsGridL]
         set win [layout := fill $ row 10 [leftL, rightL],
                  clientSize := sz 800 600]
 
