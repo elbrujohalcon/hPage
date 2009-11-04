@@ -15,16 +15,13 @@ data Preferences = Prefs {languageExtensions :: [HP.Extension],
                           ghcOptions :: String}
     deriving (Eq, Show)
 
-data Result = SetPrefs Preferences | LoadPrefs FilePath
-
-preferencesDialog :: Window a -> String -> Preferences -> IO (Maybe Result)
+preferencesDialog :: Window a -> String -> Preferences -> IO (Maybe Preferences)
 preferencesDialog win caption currentPrefs =
     do
         let availExts = sort HP.availableExtensions
         dlg <- dialog win [text := caption]
         btnok <- button dlg [text := "Ok", identity := wxId_OK]
         buttonSetDefault btnok
-        btnimport <- button dlg [text := "Import", identity := wxId_OPEN, tooltip := "Import settings from a setup-config file"]
         btnnok <- button dlg [text := "Cancel", identity := wxId_CANCEL]
         
         lstExts <- multiListBox dlg [items := map show availExts]
@@ -46,13 +43,12 @@ preferencesDialog win caption currentPrefs =
                                                               column 5 [widget btnadd, expand $ widget btndel]]
             gosL = fill $ boxed "Ghc Options" $ fill $ grid 5 5 [[label "Applied", fill $ widget txtGhcOld],
                                                                  [label "New", fill $ widget txtGhcNew]]
-            btnsL = margin 5 $ floatRight $ row 5 [widget btnimport, widget btnnok, widget btnok]  
+            btnsL = margin 5 $ floatRight $ row 5 [widget btnnok, widget btnok]  
         set dlg [layout := fill $ column 5 [lesL, sdsL, gosL, btnsL],
                  clientSize := sz 500 300] 
         showModal dlg $ \stopFun -> do
                                         focusOn lstExts
-                                        buttonOnCommand btnimport $ openSetupFile dlg >>= stopFun 
-                                        buttonOnCommand btnok $ getCurrentPrefs lstExts lstDirs txtGhcNew >>= stopFun . Just . SetPrefs
+                                        buttonOnCommand btnok $ getCurrentPrefs lstExts lstDirs txtGhcNew >>= stopFun . Just
                                         buttonOnCommand btnnok $ stopFun Nothing
     where getCurrentPrefs e d g = do
                                     let availExts = sort HP.availableExtensions
@@ -61,14 +57,6 @@ preferencesDialog win caption currentPrefs =
                                     sds <- get d items
                                     gos <- get g text
                                     return $ Prefs les sds gos
-          openSetupFile dlg = do
-                            res <- fileOpenDialog dlg True True "Select the setup-config file for your project..."
-                                                  [("setup-config",["setup-config"])] "dist" "setup-config"
-                            case res of
-                                Nothing ->
-                                    return Nothing
-                                Just setupConfig ->
-                                    return . Just $ LoadPrefs setupConfig
           addDir w lstDirs = do
                                 res <- dirOpenDialog w False "Choose directory to add" ""
                                 case res of

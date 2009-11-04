@@ -10,6 +10,7 @@ module HPage.GUI.FreeTextWindow ( gui ) where
 import Control.Concurrent.Process
 import Control.Concurrent.MVar
 import System.FilePath
+import System.Directory
 import System.IO.Error hiding (try)
 import Data.List
 import Data.Bits
@@ -130,7 +131,7 @@ gui =
         menuAppend mnuPage wxId_SAVE "&Save\tCtrl-s" "Save Page" False
         menuAppend mnuPage wxId_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
         menuAppendSeparator mnuPage
-        menuQuit mnuPage []
+        menuQuit mnuPage [on command := close win]
         
         mnuEdit <- menuPane [text := "Edit"]
         menuAppend mnuEdit wxId_UNDO "&Undo\tCtrl-z" "Undo" False
@@ -152,7 +153,7 @@ gui =
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
         menuAppend mnuHask wxId_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
-        menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-l" "Import Packaged Modules by Name" False
+        menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-i" "Import Packaged Modules by Name" False
         menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
@@ -179,6 +180,7 @@ gui =
         evtHandlerOnMenuCommand win wxId_FORWARD $ onCmd "findNext" justFindNext
         evtHandlerOnMenuCommand win wxId_BACKWARD $ onCmd "findPrev" justFindPrev
         evtHandlerOnMenuCommand win wxId_REPLACE $ onCmd "findReplace" findReplace
+        evtHandlerOnMenuCommand win wxId_HASK_LOAD_PKG $ onCmd "loadPackage" loadPackage
         evtHandlerOnMenuCommand win wxId_HASK_LOAD $ onCmd "loadModules" loadModules
         evtHandlerOnMenuCommand win wxId_HASK_ADD $ onCmd "importModules" importModules
         evtHandlerOnMenuCommand win wxId_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
@@ -246,7 +248,7 @@ refreshPage, savePageAs, savePage, openPage,
     textContextMenu, browseModule,
     restartTimer, killTimer,
     getValue, getType, getKind,
-    loadModules, importModules, loadModulesByName, reloadModules,
+    loadPackage, loadModules, importModules, loadModulesByName, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
 browseModule model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModules, guiCode = txtCode} =
@@ -389,6 +391,32 @@ findReplace model guiCtx = openFindDialog model guiCtx "Find and Replace..." $ d
         
 reloadModules = runHP HP.reloadModules
 
+loadPackage model guiCtx@GUICtx{guiWin = win} =
+    do
+        distExists <- doesDirectoryExist "dist"
+        let startDir = if distExists then "dist" else ""
+        res <- fileOpenDialog win True True "Select the setup-config file for your project..."
+                              [("setup-config",["setup-config"])] startDir "setup-config"
+        case res of
+                Nothing ->
+                    return ()
+                Just setupConfig ->
+                    do
+                        loadres <- tryIn model (HP.loadPrefsFromCabal setupConfig)
+                        case loadres of
+                            Left err ->
+                                warningDialog win "Error" err
+                            Right pkg ->
+                                do
+                                    absPath <- canonicalizePath setupConfig
+                                    let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
+                                    setCurrentDirectory dir
+                                    frameSetTitle win $ "hPage - " ++ prettyShow pkg
+                        refreshPage model guiCtx
+  where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
+                                     pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
+
+
 loadModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
         fileNames <- filesOpenDialog win True True "Load Module..." [("Haskell Modules",["*.hs"])] "" ""
@@ -440,17 +468,7 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     case res of
                         Nothing ->
                             return ()
-                        Just (LoadPrefs file) ->
-                            do
-                                set status [text := "setting..."]
-                                loadres <- tryIn model (HP.loadPrefsFromCabal file)
-                                case loadres of
-                                    Left err ->
-                                        warningDialog win "Error" err
-                                    Right pkg ->
-                                        infoDialog win "hPage" $ "Settings from package " ++ prettyShow pkg ++ " succesfully loaded"
-				refreshPage model guiCtx
-                        Just (SetPrefs newps) ->
+                        Just newps ->
                             do
                                 set status [text := "setting..."]
                                 runHP (do
@@ -460,8 +478,6 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                                                 "" -> return $ Right ()
                                                 newopts -> HP.setGhcOpts newopts
                                             ) model guiCtx
-  where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
-				     pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
 
 openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
     do
