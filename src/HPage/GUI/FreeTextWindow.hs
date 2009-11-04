@@ -49,7 +49,7 @@ data GUIResults = GUIRes { resValue :: GUIResultRow,
 data GUIContext  = GUICtx { guiWin :: Frame (),
                             guiPages :: SingleListBox (),
                             guiPkgModules :: SingleListBox (),
-                            guiLoadedModules :: SingleListBox (),
+                            guiLoadedModules :: ListCtrl (),
                             guiCode :: TextCtrl (),
                             guiResults :: GUIResults,
                             guiStatus :: StatusField,
@@ -79,7 +79,7 @@ gui =
         
         -- Document Selector
         lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
-        lstLoadedModules <- singleListBox pnlLMs [style := wxLB_NEEDED_SB]
+        lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL) []
         lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
 
         -- Results list
@@ -118,11 +118,12 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
-        set lstLoadedModules [on mouse := \e -> case e of
-                                                MouseLeftUp _ _ -> onCmd "browseModule" browseModule >> propagateEvent
-                                                _ -> propagateEvent]
+        set lstLoadedModules [on listEvent := \e -> case e of
+                                                        ListItemSelected idx -> onCmd "browseModule" (browseModule idx)
+                                                        _ -> propagateEvent]
         set lstPkgModules [on mouse := \e -> case e of
                                                 MouseRightUp _ _ -> onCmd "pkgModuleContextMenu" pkgModuleContextMenu >> propagateEvent
+                                                MouseLeftDClick _ _ -> onCmd "loadModulesByNameFast" loadModulesByNameFast
                                                 _ -> propagateEvent]
         
         -- Menu bar...
@@ -230,9 +231,9 @@ gui =
 
         -- Layout settings
         let txtCodeL    = fill $ widget txtCode
-            pagesTabL   = tab "Pages" $ container pnlPs $ fill $ widget lstPages
-            pkgModsTabL = tab "Package" $ container pnlPMs $ fill $ widget lstPkgModules
-            lddModsTabL = tab "Modules" $ container pnlLMs $ fill $ widget lstLoadedModules
+            pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
+            pkgModsTabL = tab "Package" $ container pnlPMs $ fill $ margin 5 $ widget lstPkgModules
+            lddModsTabL = tab "Modules" $ container pnlLMs $ fill $ margin 5 $ widget lstLoadedModules
             valueRowL   = [widget btnGetValue, hfill $ widget txtValue]
             typeRowL    = [widget btnGetType, hfill $ widget txtType]
             kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
@@ -251,34 +252,29 @@ gui =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu, pkgModuleContextMenu, browseModule,
+    textContextMenu, pkgModuleContextMenu,
     restartTimer, killTimer,
     getValue, getType, getKind,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
-browseModule model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModules, guiCode = txtCode} =
+browseModule :: Int -> HPS.ServerHandle -> GUIContext -> IO ()
+
+browseModule i model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModules, guiCode = txtCode} =
     do
         contextMenu <- menuPane []
-        i <- get lstLoadedModules selection
-        case i of
-            (-1) -> propagateEvent
-            _    -> do
-                        mnText <- listBoxGetString lstLoadedModules i
-                        let mn = case mnText of
-                                       '*':rest -> rest
-                                       fullname -> fullname
-                        hpsRes <- tryIn model $ HP.getModuleExports mn
-                        case hpsRes of
-                            Left err ->
-                                propagateEvent >> warningDialog win "Error" err
-                            Right mes ->
-                                do
-                                    flip mapM_ mes $ createMenuItem contextMenu
-                                    propagateEvent
-                                    pointWithinWindow <- windowGetMousePosition win
-                                    menuPopup contextMenu pointWithinWindow win
-                                    objectDelete contextMenu
+        mn <- listCtrlGetItemText lstLoadedModules i
+        hpsRes <- tryIn model $ HP.getModuleExports mn
+        case hpsRes of
+            Left err ->
+                propagateEvent >> warningDialog win "Error" err
+            Right mes ->
+                do
+                    flip mapM_ mes $ createMenuItem contextMenu
+                    propagateEvent
+                    pointWithinWindow <- windowGetMousePosition win
+                    menuPopup contextMenu pointWithinWindow win
+                    objectDelete contextMenu
     where createMenuItem m fn@(HP.MEFun _ _) =
             do
                 item <- menuItemCreate
@@ -286,11 +282,25 @@ browseModule model guiCtx@GUICtx{guiWin = win, guiLoadedModules = lstLoadedModul
                 menuItemSetText item $ show fn
                 menuItemSetId item wxId_HASK_MENUELEM
                 menuAppendItem m item 
+          createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = []} =
+            do
+                item <- menuItemCreate
+                menuItemSetCheckable item False
+                menuItemSetText item $ "class " ++ cn
+                menuItemSetId item wxId_HASK_MENUELEM
+                menuAppendItem m item
           createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = cfs} =
             do
                 subMenu <- menuPane []
                 flip mapM_ cfs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
+          createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = []} =
+            do
+                item <- menuItemCreate
+                menuItemSetCheckable item False
+                menuItemSetText item $ "data " ++ dn
+                menuItemSetId item wxId_HASK_MENUELEM
+                menuAppendItem m item
           createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = dcs} =
             do
                 subMenu <- menuPane []
@@ -556,9 +566,17 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                          in itemAppend lstPages $ prefix ++ name
                     set lstPages [selection := i]
                     -- Refresh the modules lists
-                    itemsDelete lstLoadedModules
-                    (flip mapM) ims $ itemAppend lstLoadedModules
-                    (flip mapM) ms $ itemAppend lstLoadedModules . ('*':)
+                    listCtrlDeleteAllItems lstLoadedModules
+                    (flip mapM) ms $ \m -> do
+                                                newItem <- listItemCreate
+                                                listItemSetText newItem m
+                                                listItemSetTextColour newItem (rgb 0 128 255)
+                                                listCtrlInsertItem lstLoadedModules newItem                                               
+                    (flip mapM) ims $ \m -> do
+                                                newItem <- listItemCreate
+                                                listItemSetText newItem m
+                                                listItemSetTextColour newItem (rgb 128 128 128)
+                                                listCtrlInsertItem lstLoadedModules newItem                                                
                     itemsDelete lstPkgModules
                     (flip mapM) pms $ \pm -> itemAppend lstPkgModules (if pm `elem` ms then ('*':pm) else pm)
                     -- Refresh the current text
