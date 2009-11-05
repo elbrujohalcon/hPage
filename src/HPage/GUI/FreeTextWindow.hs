@@ -34,7 +34,13 @@ import HPage.Utils.Log
 import Paths_hpage -- cabal locations of data files
 
 imageFile :: FilePath -> IO FilePath
-imageFile = getDataFileName . ("res/images/"++)
+imageFile fp = do
+                path <- getDataFileName $ "res/images/" ++ fp
+                real <- doesFileExist path
+                if real then return path
+                        else do
+                                errorIO ("file not found", path)
+                                fail (path ++ " does not exist")
 
 helpFile :: IO FilePath
 helpFile = getDataFileName "res/help/helpPage.hs"
@@ -78,10 +84,18 @@ gui =
         txtCode <- textCtrl win [font := fontFixed, text := ""]
         
         -- Document Selector
-        lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
-        lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL) [columns := [("Module", AlignLeft, 200)]]
         lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
+        
+        -- Modules Lists
+        imageFiles <- mapM imageFile ["imported.png", "interpreted.png", "compiled.png"]
+        imagePaths <- mapM getAbsoluteFilePath imageFiles
+        images     <- imageListFromFiles (sz 16 16) imagePaths
+        lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL)
+                                       [columns := [("Module", AlignLeft, 200)]]
+        listCtrlSetImageList lstLoadedModules images wxIMAGE_LIST_SMALL
 
+        lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
+        
         -- Results list
         txtValue <- textEntry win [style := wxTE_READONLY]
         txtType <- textEntry win [style := wxTE_READONLY]
@@ -565,23 +579,27 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                                          Just fn -> takeFileName $ dropExtension fn
                                          in itemAppend lstPages $ prefix ++ name
                     set lstPages [selection := i]
+                    
                     -- Refresh the modules lists
-                    listCtrlDeleteAllItems lstLoadedModules
-                    (flip mapM) ms $ \m -> do
-                                                newItem <- listItemCreate
-                                                listItemSetText newItem m
-                                                listItemSetTextColour newItem (rgb 0 128 255)
-                                                listCtrlInsertItem lstLoadedModules newItem                                               
-                    (flip mapM) ims $ \m -> do
-                                                newItem <- listItemCreate
-                                                listItemSetText newItem m
-                                                listItemSetTextColour newItem (rgb 128 128 128)
-                                                listCtrlInsertItem lstLoadedModules newItem                                                
+                    --NOTE: we know 0 == "imported" / 1 == "interpreted" / 2 == "compiled" images
+                    --TODO: move that to some kind of constants or so
+                    let ims' = map (\m -> (0, m)) ims
+                        ms' = map (\m -> (1, m)) ms --TODO: Verify if it is intrepreted
+                        allms = zip [0..] (ims' ++ ms')
+                    itemsDelete lstLoadedModules
+                    (flip mapM) allms $ \(idx, (img, m)) ->
+                                                listCtrlInsertItemWithLabel lstLoadedModules idx m img >>                                                
+                                                set lstLoadedModules [item idx := [m]]
+
                     itemsDelete lstPkgModules
                     (flip mapM) pms $ \pm -> itemAppend lstPkgModules (if pm `elem` ms then ('*':pm) else pm)
+                    
                     -- Refresh the current text
                     set txtCode [text := t]
+                    
+                    -- Clean the status bar
                     set status [text := ""]
+                    
                     -- Refresh the current expression box
                     refreshExpr model guiCtx True
 
