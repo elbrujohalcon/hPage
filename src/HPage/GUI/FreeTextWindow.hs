@@ -79,7 +79,7 @@ gui =
         
         -- Document Selector
         lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
-        lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL) []
+        lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL) [columns := [("Module", AlignLeft, 200)]]
         lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
 
         -- Results list

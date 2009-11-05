@@ -220,7 +220,7 @@ prop_get_module_exports hps hs kmn =
                             let mn = kmnString kmn
                             Right hpsr <- HPS.runIn hps $ HP.importModules [mn] >> HP.getModuleExports mn
                             Right hsr  <- HS.runIn hs $ Hint.setImports ["Prelude", mn] >> Hint.getModuleExports mn
-                            liftDebugIO (hpsr, hsr)
+                            -- liftDebugIO (hpsr, hsr)
                             return $ all match  $ zip hpsr hsr
     where match ((HP.MEFun fn _), (Hint.Fun fn2)) = fn == fn2
           match ((HP.MEClass cn cfs), (Hint.Class cn2 cfs2)) = cn == cn2 && all match (zip cfs (map Hint.Fun cfs2))
