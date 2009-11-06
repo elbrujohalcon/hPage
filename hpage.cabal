@@ -47,15 +47,9 @@ Executable hpage
                    hint-server >= 1.0.0,        hint-server < 2
     main-is: Main.hs
     buildable: True
-    build-tools:
-    cpp-options:
-    cc-options:
-    ld-options:
-    pkgconfig-depends:
-    frameworks:
-    c-sources:
+    if os(windows)
+        cpp-options: -DWIN32
     extensions: CPP
-    install-includes:
     hs-source-dirs: src
     other-modules:  
                     HPage.GUI.IDs,
@@ -71,6 +65,3 @@ Executable hpage
     ghc-prof-options: -auto-all -prof
     ghc-shared-options: -auto-all -prof
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns
-    hugs-options:
-    nhc98-options:
-    jhc-options:
