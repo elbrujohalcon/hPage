@@ -1,0 +1,98 @@
+\documentclass[a4paper]{article}
+\usepackage[spanish,activeacute]{babel}
+\usepackage[ansinew]{inputenc}
+% Anda fen'omeno mientras codifiquemos el archivo como ansi.
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm]{geometry}
+\usepackage{ulem} %Para tachar cosas
+%\usepackage{epigraph}
+\usepackage{listings}
+\parindent = 0 pt
+\parskip = 11 pt
+
+\newcommand{\erf}{\hbox{erf}}
+\newcommand{\real}{\hbox{\bf R}}
+
+
+\begin{document}
+
+	\thispagestyle{empty}
+	\begin{center}
+	\vspace*{\stretch{2}}
+	{\Large Propuesta de Tesis de Licenciatura}\\[1em]
+	{\huge \textbf{$\lambda$Page}}\\[0.5em]
+	{\large \textit{Un bloc de notas para desarrolladores Haskell}}\\[1em]
+	\par\vspace{\stretch{1}}
+	{\large Departamento de Computaci\'on}\\[0.5em]
+	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
+	{\large Universidad de Buenos Aires
+	\begin{figure}[h]
+		\begin{center}
+		\includegraphics[width=80mm]{logoUba}
+		\end{center}
+	\end{figure}}
+	\par\vspace{\stretch{3}}
+	{\Large \textbf{Alumno}}\\[0.8em]
+	{\Large Fernando Benavides} \par
+	{\Large Libreta Universitaria 470/01} \par
+	{\Large greenmellon@gmail.com} \par
+	\par\vspace{\stretch{3}}
+	{\Large \textbf{Directores}}\\[0.8em]
+	{\Large Dr. Diego Garbervetsky} \par
+	{\Large Lic. Daniel Gor'in}
+	\end{center}
+
+\newpage
+\tableofcontents
+
+\newpage
+\section{Motivaci'on}
+
+\paragraph{}Actualmente, gracias al 'exito de varios proyectos desarrollados en Erlang, como CouchDB, ejabberd y el chat de Facebook, los lenguajes del paradigma funcional han ganado un renovado inter'es entre los desarrolladores.
+\subparagraph{}Si bien como lenguajes, tanto Haskell como Erlang son maduros, confiables y presentan abundantes ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo, aquellos desarrolladores que deciden hacer el cambio de paradigma se encuentran generalmente con el problema de la falta de ciertas herramientas a las que ya est'an acostumbrados.
+\subparagraph{}La comunidad Haskell ha generado muchas herramientas (algunas de ellas, incluso, no habituales en los dem'as lenguajes) para ayudar al programador.  Entre ellas podemos encontrar:
+\begin{description}
+\item[Cabal] Un sistema de construcci'on y generaci'on de paquetes de librer'ias y ejecutables hechos en Haskell.  Permite distribuir, catalogar y organizar aplicaciones de manera consistente y portable.
+\item[Cabal-install] Una aplicaci'on que permite instalar paquetes en formato \textsl{Cabal} verificando sus dependencias y realizando las acciones necesarias para su compilaci'on.
+\item[Hackage] Un repositorio centralizado de paquetes haskell.  Cada paquete se encuentra en formato \textsl{Cabal} y puede ser instalado utilizando \textsl{Cabal-install}.
+\item[Darcs] Un sistema de administraci'on de la configuraci'on distribuido.  Muy similar a \textsl{git} pero orientado a proyectos hechos en haskell.
+\item[Haddock] Una herramienta para generar documentaci'on a partir del c'odigo.  Integrada con \textsl{Cabal} y \textsl{Hackage} permite publicar documentaci'on para las librer'ias generadas en la propia p'agina web de \textsl{Hackage}.
+\item[Hayoo!] Un sitio web en el que se puede navegar toda la documentaci'on generada con \textsl{Haddock} sobre los paquetes \textsl{Cabal} subidos a \textsl{Hackage}
+\end{description}
+\subparagraph{}Sin embargo, lenguajes como \textsl{Objective-C}, \textsl{Java}, \textsl{C\#} o \textsl{SmallTalk} proveen otras herramientas con las que los desarrolladores haskell no cuentan a'un, como:
+\begin{itemize}
+\item Entornos de desarrollo de aplicaciones con, por ejemplo, \textsl{IntelliSense} (Por ejemplo: XCode para Objective-C, Eclipse para Java, etc.)
+\item Herramientas para el dise'no de interfaces gr'aficas (Por ejemplo: Interface Builder para Objective-C, Visual Studio para C\#, etc.)
+\item Herramientas para la ejecuci'on y testeo de peque'nas porciones de c'odigo (Por ejemplo: jPage para Java, Workspace para Smalltalk, etc.)
+\end{itemize}
+\paragraph{}En otro orden de cosas, cabe notar que haskell es un lenguaje que requiere un gran nivel de abstracci'on por parte del programador.  Es considerado un lenguaje ``write-only'', en el sentido de que, cuando un programador lee un c'odigo haskell escrito hace suficiente tiempo (a'un si lo escribi'o 'el mismo) es probable que le cueste mucho entender qu'e es lo que ese c'odigo hace y c'omo.  Para descifrarlo, el enfoque usual es recurrir a la consola \textsl{ghci} o \textsl{hugs} e ir realizando peque'nas pruebas sobre distintas porciones del c'odigo que permitan comprender gradualmente el c'odigo completo.
+
+\section{Propuesta de Tesis}
+\subsection{Objetivo}
+\paragraph{}El objetivo de esta tesis es brindar a los desarrolladores haskell una herramienta similar al Workspace de Smalltalk, que les permita trabajar con peque'nas porciones de c'odigo haskell, evaluarlas, observar su tipo y su clase.
+\subparagraph{}En el esp'iritu de las antes mencionadas herramientas provistas por la comunidad de desarrolladores haskell, es nuestra idea que \textsl{$\lambda$Page}, tal es el nombre de la herramienta que nos proponemos crear, sea desarrollada en haskell y se integre con \textsl{Cabal}, \textsl{Hayoo!} y dem'as herramientas ya existentes.
+\subparagraph{}Pretendemos tambi'en que \textsl{$\lambda$Page} se diferencie del Workspace o jPage por estar hecha con y para Haskell.  \textsl{$\lambda$Page} deber'a aprovechar por tanto conceptos claves del lenguaje como la evaluaci'on lazy y la transparencia referencial.
+
+\subsection{Plan de Trabajo}
+\paragraph{B'usqueda y An'alisis de Herramientas} Se buscar'an y analizar'an las herramientas que nos permitan desarrollar \textsl{$\lambda$Page}.  En particular, se requerir'an librer'ias para conexi'on con la VM de haskell, parseo de c'odigo haskell y, sobre todo, desarrollo de interfaces gr'aficas amigables.
+\paragraph{Dise'no y Desarrollo de Prototipo} Se generar'a un prototipo inicial para testear la factibilidad del proyecto.
+\paragraph{Generaci'on de Primera Versi'on usando TDD} Utilizando Test Driven Development, se generar'an sucesivas mejoras sobre el prototipo hasta alcanzar una versi'on estable que provea la funcionalidad b'asica.
+\paragraph{Testeo y Mejoras de Usabilidad} Se subir'a el proyecto a \textsl{Hackage}, se lo testear'a con la ayuda de desarrolladores haskell y, en sucesivas iteraciones, se mejorar'a la aplicaci'on.
+\paragraph{Integraci'on con \textsl{Cabal}} Se integrar'a \textsl{$\lambda$Page} con \textsl{Cabal} permitiendo configurar la aplicaci'on en base a un paquete \textsl{Cabal}.
+
+\appendix
+\section{Referencias}
+\paragraph{} A hint, wxhaskell, etc...
+
+% As'i se pone c'odigo...
+%\lstset{language=C++, frame=single, tabsize=2}
+%\begin{lstlisting}
+%#include <utility>#include <assert.h>#include <iostream>#include "float_T.h"using namespace std;float_T::float_T() {}float_T::float_T(TIPO_DATO x, unsigned int mantisa){	original= x;	mantisaReal = mantisa;	setValor(x);}TIPO_DATO float_T::getValor(){	return deMantisa;}void float_T::setValor(TIPO_DATO numero){	int mantisa = mantisaReal;	assert(! (mantisa > MAX_MANTISA) );	unsigned char	mascara[CANT_BYTES];		for( int k = CANT_BYTES - 1; k >= 0; k-- )		if (CANT_BYTES - k <= BYTES_EXP)			mascara[k] = 0xFF;		else			mascara[k] = 0x00;		int i = CANT_BYTES - BYTES_EXP - 1;	while(mantisa >= 8)	{		mascara[i] = 0xFF;		mantisa	-= 8;		i--;	}	unsigned char quito = 0x80;	while( mantisa > 0 )	{		mascara[i] += quito;		quito = quito / 2;		mantisa--;	}	for(unsigned int j = 0; j < CANT_BYTES; j++ )	{		quito				= ((unsigned char *)&numero)[j];		mascara[j]	&= quito;	}		deMantisa= *((TIPO_DATO *)&mascara);}unsigned int float_T::getMantisa(){	return mantisaReal;}TIPO_DATO float_T::getOriginal(){	return original;}void float_T::setOriginal(TIPO_DATO y){	original= y;	}
+%\end{lstlisting}
+
+% As'i se ponen ep'igrafes...
+%\begin{epigraphs}
+%    \qitem{bla bla bla}{Alguien}
+%    \qitem{jajaja}{Alguien Chistoso}
+%\end{epigraphs}
+\end{document}

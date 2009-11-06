@@ -1,0 +1,116 @@
+% **************************************************************************
+%
+%  Package 'caratula', version 0.2 (para componer caratulas de TPs del DC).
+%
+%  En caso de dudas, problemas o sugerencias sobre este package escribir a
+%  Nico Rosner (nrosner arroba dc.uba.ar).
+%
+% **************************************************************************
+
+
+
+% ----- Informacion sobre el package para el sistema -----------------------
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{caratula}[2003/4/13 v0.1 Para componer caratulas de TPs del DC]
+
+
+% ----- Imprimir un mensajito al procesar un .tex que use este package -----
+
+\typeout{Cargando package 'caratula' v0.2 (21/4/2003)}
+
+
+% ----- Algunas variables --------------------------------------------------
+
+\let\Materia\relax
+\let\Submateria\relax
+\let\Titulo\relax
+\let\Subtitulo\relax
+\let\Grupo\relax
+\let\Abstract\relax
+
+% ----- Comandos para que el usuario defina las variables ------------------
+
+\def\materia#1{\def\Materia{#1}}
+\def\submateria#1{\def\Submateria{#1}}
+\def\titulo#1{\def\Titulo{#1}}
+\def\subtitulo#1{\def\Subtitulo{#1}}
+\def\grupo#1{\def\Grupo{#1}}
+\def\abstract#1{\def\Abstract{#1}}
+
+
+% ----- Token list para los integrantes ------------------------------------
+
+\newtoks\intlist\intlist={}
+
+
+% ----- Comando para que el usuario agregue integrantes
+
+\def\integrante#1#2#3{\intlist=\expandafter{\the\intlist
+	\rule{0pt}{1.2em}#1&#2&\tt #3\\[0.2em]}}
+
+
+% ----- Macro para generar la tabla de integrantes -------------------------
+
+\def\tablaints{%
+	\begin{tabular}{|l@{\hspace{4ex}}c@{\hspace{4ex}}l|}
+		\hline
+		\rule{0pt}{1.2em}Integrante & LU & Correo electr\'onico\\[0.2em]
+		\hline
+		\the\intlist
+		\hline
+		\rule{0pt}{1.2em}Corrector &  & Nota\\[0.2em]
+		\hline
+		\rule{0pt}{1.2em} &  & \\[0.2em]
+		\rule{0pt}{1.2em} &  & \\[0.2em]
+		\rule{0pt}{1.2em} &  & \\[0.2em]
+		\hline
+	\end{tabular}}
+
+
+% ----- Codigo para manejo de errores --------------------------------------
+
+\def\se{\let\ifsetuperror\iftrue}
+\def\ifsetuperror{%
+	\let\ifsetuperror\iffalse
+	\ifx\Materia\relax\se\errhelp={Te olvidaste de proveer una \materia{}.}\fi
+	\ifx\Titulo\relax\se\errhelp={Te olvidaste de proveer un \titulo{}.}\fi
+	\edef\mlist{\the\intlist}\ifx\mlist\empty\se%
+	\errhelp={Tenes que proveer al menos un \integrante{nombre}{lu}{email}.}\fi
+	\expandafter\ifsetuperror}
+
+
+% ----- Reemplazamos el comando \maketitle de LaTeX con el nuestro ---------
+
+\def\maketitle{%
+	\ifsetuperror\errmessage{Faltan datos de la caratula! Ingresar 'h' para mas informacion.}\fi
+	\thispagestyle{empty}
+	\begin{center}
+	\vspace*{\stretch{2}}
+	{\LARGE\textbf{\Materia}}\\[1em]
+	\ifx\Submateria\relax\else{\Large \Submateria}\\[0.5em]\fi
+	\par\vspace{\stretch{1}}
+	{\large Departamento de Computaci\'on}\\[0.5em]
+	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
+	{\large Universidad de Buenos Aires
+	\begin{figure}[h]
+		\begin{center}
+		\includegraphics[width=40mm]{logoUba}
+		\end{center}
+	\end{figure}}
+	\par\vspace{\stretch{3}}
+	{\Large \textbf{\Titulo}}\\[0.8em]
+	{\Large \Subtitulo}
+	\par\vspace{\stretch{3}}
+	\ifx\Grupo\relax\else\textbf{\Grupo}\par\bigskip\fi
+	\tablaints \\ \ \\ \ \\
+	{\Large \textbf{Abstract}}\\[0.5em]
+	\end{center}
+	\ifx\Abstract\relax\else\textbf{\Abstract}\par\bigskip\fi
+	\vspace*{\stretch{3}}
+	\newpage}
+
+
+
+
+

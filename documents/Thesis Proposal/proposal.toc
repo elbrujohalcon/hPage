@@ -1,0 +1,15 @@
+\select@language {spanish}
+\contentsline {section}{\numberline {1}Motivaci'on}{3}
+\contentsline {paragraph}{}{3}
+\contentsline {subparagraph}{}{3}
+\contentsline {subparagraph}{}{3}
+\contentsline {subparagraph}{}{3}
+\contentsline {paragraph}{}{4}
+\contentsline {section}{\numberline {2}Propuesta de Tesis}{4}
+\contentsline {subsection}{\numberline {2.1}Objetivo}{4}
+\contentsline {paragraph}{}{4}
+\contentsline {subparagraph}{}{4}
+\contentsline {subsection}{\numberline {2.2}Plan de Trabajo}{4}
+\contentsline {paragraph}{}{4}
+\contentsline {section}{\numberline {A}Referencias}{4}
+\contentsline {paragraph}{}{4}
