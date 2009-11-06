@@ -12,12 +12,6 @@ import Distribution.Simple.Setup
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
 
-#ifndef WIN32
-import System.Posix.Files (fileMode, getFileStatus, setFileMode,
-                           ownerExecuteMode, groupExecuteMode, otherExecuteMode)
-import Data.Bits ( (.|.) )
-#endif
-
 main :: IO ()
 main = do
             putStrLn $ "Setting up hpage for " ++ os
@@ -26,7 +20,7 @@ main = do
   addMacHook h =
    case os of
     "darwin" -> h { postInst = appBundleHook,
-                    runTests = hPageTestRunner } -- is it OK to treat darwin as synonymous with MacOS X?
+                    runTests = hPageTestRunner }
     _        -> h { runTests = hPageTestRunner }
 
 appBundleHook :: Args -> InstallFlags -> PackageDescription -> LocalBuildInfo -> IO ()
@@ -35,6 +29,7 @@ appBundleHook _ _ pkg localb =
    do createAppBundle theBindir (buildDir localb </> app </> app)
       removeFile (theBindir </> app)
       createAppBundleWrapper theBindir app
+      return ()
  where
   theBindir = bindir $ absoluteInstallDirs pkg localb NoCopyDest
   exes = map exeName $ executables pkg
@@ -59,7 +54,7 @@ createAppBundle dir p =
 
 -- | 'createAppBundleWrapper' @d p@ - creates a script in @d@ that calls
 --   @p@ from the application bundle @d </> takeFileName p <.> "app"@
-createAppBundleWrapper :: FilePath -> FilePath -> IO ()
+createAppBundleWrapper :: FilePath -> FilePath -> IO ExitCode
 createAppBundleWrapper bindir p =
   do writeFile scriptFile scriptTxt
      makeExecutable scriptFile
@@ -74,18 +69,8 @@ appBundlePath dir p = dir </> takeFileName p <.> "app"
 -- utilities
 -- ----------------------------------------------------------------------
 
-makeExecutable :: FilePath -> IO ()
-#ifdef WIN32
-makeExecutable = const (return ())
-#else
-makeExecutable f =
-  do st <- getFileStatus f
-     let m  = fileMode st
-         m2 = m .|. ownerExecuteMode .|. groupExecuteMode .|. otherExecuteMode
-     setFileMode f m2
-#endif
+makeExecutable :: FilePath -> IO ExitCode
+makeExecutable f = system $ "chmod a+x " ++ f 
 
 hPageTestRunner :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
-hPageTestRunner _ _ _ _ = do
-                            system "cd src && runhaskell HPage/Test/Server.hs"
-                            return ()
+hPageTestRunner _ _ _ _ = system "cd src && runhaskell HPage/Test/Server.hs" >> return ()

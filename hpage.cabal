@@ -1,5 +1,5 @@
 name: hpage
-version: 0.3.4
+version: 0.4
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -47,8 +47,6 @@ Executable hpage
                    hint-server >= 1.0.0,        hint-server < 2
     main-is: Main.hs
     buildable: True
-    if os(windows)
-        cpp-options: -DWIN32
     extensions: CPP
     hs-source-dirs: src
     other-modules:  
