@@ -40,7 +40,8 @@ module HPage.Control (
     getGhcOpts, setGhcOpts,
     loadPackage,
     valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
-    loadModules', reloadModules', getLoadedModules', importModules', getImportedModules',
+    loadModules', 
+    reloadModules', getLoadedModules', importModules', getImportedModules',
     getModuleExports',
     getLanguageExtensions', setLanguageExtensions',
     getSourceDirs', setSourceDirs',
@@ -49,7 +50,7 @@ module HPage.Control (
     cancel,
     Hint.InterpreterError, prettyPrintError,
     Hint.availableExtensions, Hint.Extension(..),
-    ModuleElemDesc(..),
+    ModuleDescription(..), ModuleElemDesc(..),
     -- DEBUG --
     ctxString
  ) where
@@ -80,6 +81,13 @@ import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
+
+data ModuleDescription = ModDesc {modName :: String,
+                                  modInterpreted :: Bool}
+    deriving (Eq)
+
+instance Show ModuleDescription where
+    show m = show (modName m, modInterpreted m)
 
 data ModuleElemDesc = MEFun {funName :: String,
                              funType :: String} |
@@ -454,8 +462,13 @@ reloadModules = do
                                 Hint.loadModules ms
                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
 
-getLoadedModules :: HPage (Either Hint.InterpreterError [Hint.ModuleName])
-getLoadedModules = confirmRunning >> syncRun Hint.getLoadedModules
+getLoadedModules :: HPage (Either Hint.InterpreterError [ModuleDescription])
+getLoadedModules = do
+                        confirmRunning
+                        syncRun $ do
+                                    mns <- Hint.getLoadedModules
+                                    mis <- mapM Hint.isModuleInterpreted mns
+                                    return $ zipWith ModDesc mns mis 
 
 getImportedModules :: HPage [Hint.ModuleName]
 getImportedModules = confirmRunning >>= return . toList . importedModules 
@@ -605,9 +618,14 @@ reloadModules' = do
                                     Hint.loadModules ms
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
 
-getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [Hint.ModuleName]))
-getLoadedModules' = confirmRunning >> asyncRun Hint.getLoadedModules
-
+getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [ModuleDescription]))
+getLoadedModules' = do
+                        confirmRunning
+                        asyncRun $ do
+                                        mns <- Hint.getLoadedModules
+                                        mis <- mapM Hint.isModuleInterpreted mns
+                                        return $ zipWith ModDesc mns mis
+                                    
 getImportedModules' :: HPage (MVar [Hint.ModuleName])
 getImportedModules' = confirmRunning >>= liftIO . newMVar . toList . importedModules
 

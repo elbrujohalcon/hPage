@@ -584,7 +584,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     --NOTE: we know 0 == "imported" / 1 == "interpreted" / 2 == "compiled" images
                     --TODO: move that to some kind of constants or so
                     let ims' = map (\m -> (0, m)) ims
-                        ms' = map (\m -> (1, m)) ms --TODO: Verify if it is intrepreted
+                        ms' = map (\m -> (if HP.modInterpreted m then 1 else 2, HP.modName m)) ms
                         allms = zip [0..] (ims' ++ ms')
                     itemsDelete lstLoadedModules
                     (flip mapM) allms $ \(idx, (img, m)) ->
@@ -592,7 +592,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                                 set lstLoadedModules [item idx := [m]]
 
                     itemsDelete lstPkgModules
-                    (flip mapM) pms $ \pm -> itemAppend lstPkgModules (if pm `elem` ms then ('*':pm) else pm)
+                    (flip mapM) pms $ \pm -> itemAppend lstPkgModules (if any (\xm -> HP.modName xm == pm) ms then ('*':pm) else pm)
                     
                     -- Refresh the current text
                     set txtCode [text := t]
