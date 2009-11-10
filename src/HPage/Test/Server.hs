@@ -13,7 +13,7 @@ import System.Directory
 import Control.Monad.Loops
 import qualified Data.ByteString.Char8 as Str
 import HPage.Utils.Log
--- import Data.Set (fromList)
+import Paths_hpage
 
 instance Arbitrary Char where
     arbitrary = elements (['A'..'Z'] ++ ['a' .. 'z'])
@@ -61,14 +61,14 @@ instance Arbitrary WorkingExtension where
     coarbitrary _ = undefined
 
 wexTypeSynonymInstances :: WorkingExtension
-wexTypeSynonymInstances = WEX [HP.TypeSynonymInstances] "HPage/Test/Extensions/TypeSynonymInstances.hs"
+wexTypeSynonymInstances = WEX [HP.TypeSynonymInstances] "TypeSynonymInstances.hs"
 
 wexOverlappingInstances :: WorkingExtension
 wexOverlappingInstances = WEX [HP.TypeSynonymInstances,
-                               HP.OverlappingInstances] "HPage/Test/Extensions/OverlappingInstances.hs"
+                               HP.OverlappingInstances] "OverlappingInstances.hs"
 
 wexFlexibleInstances :: WorkingExtension
-wexFlexibleInstances = WEX [HP.FlexibleInstances] "HPage/Test/Extensions/FlexibleInstances.hs"
+wexFlexibleInstances = WEX [HP.FlexibleInstances] "FlexibleInstances.hs"
 
 shouldFail :: (MonadError e m) => m a -> m Bool
 shouldFail a = (a >> return False) `catchError` (\_ -> return True)
@@ -244,12 +244,12 @@ prop_load_module hps hs mn =
                                                         HP.loadModules [testDir ++ "/test.hs"]
                                                         HP.setPageText "v" 0
                                                         fv <- HP.valueOf
-                                                        fm <- HP.getLoadedModules
+                                                        fm <- HP.getLoadedModules >>= return . mN
                                                         -- Load TestFiles/Test...hs by name
                                                         HP.loadModules [mname]
                                                         HP.setPageText "v" 0
                                                         sv <- HP.valueOf
-                                                        sm <- HP.getLoadedModules
+                                                        sm <- HP.getLoadedModules >>= return . mN
                                                         return (fv, sv, fm, sm)
                             hsr <- HS.runIn hs $ do
                                                     Hint.loadModules [testDir ++ "/test.hs"]
@@ -263,6 +263,9 @@ prop_load_module hps hs mn =
                                                     return (Right fv, Right sv, Right fm, Right sm)
                             -- liftDebugIO (hpsr, hsr)
                             return $ Right hpsr == hsr
+        where mN (Right mns) = Right $ map HP.modName mns
+              mN (Left err) = Left err
+                            
 
 prop_reload_modules :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_reload_modules hps hs txt =
@@ -304,8 +307,10 @@ prop_get_loaded_modules hps hs mn =
                         hpsr3 <- HPS.runIn hps $ HP.loadModules [mnf3] >> HP.getLoadedModules
                         hsr3 <- HS.runIn hs $ Hint.loadModules [mnf3] >> Hint.getLoadedModules
                         --liftDebugIO [(hpsr1, hpsr2, hpsr3), (hsr1, hsr2, hsr3)]
-                        return $ (hpsr1, hpsr2, hpsr3) == (hsr1, hsr2, hsr3)
-    
+                        return $ (mN hpsr1, mN hpsr2, mN hpsr3) == (hsr1, hsr2, hsr3)
+        where mN (Right mns) = Right $ map HP.modName mns
+              mN (Left err) = Left err
+
 prop_sequential :: HPS.ServerHandle -> String -> Bool
 prop_sequential hps txt =
     unsafePerformIO $ do
@@ -993,10 +998,11 @@ prop_get_set_extensions hps exs =
 prop_working_extensions :: HPS.ServerHandle -> WorkingExtension -> Bool
 prop_working_extensions hps (WEX es m) =
     unsafePerformIO $ HPS.runIn hps $ do
+                                        path <- Hint.liftIO . getDataFileName $ "res/test/" ++ m
                                         HP.setLanguageExtensions []
-                                        before <- HP.loadModules [m]
+                                        before <- HP.loadModules [path]
                                         HP.setLanguageExtensions es
-                                        after <- HP.loadModules [m]
+                                        after <- HP.loadModules [path]
                                         let failed = case before of
                                                         Left _ -> True
                                                         _ -> False

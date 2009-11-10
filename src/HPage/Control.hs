@@ -71,7 +71,6 @@ import qualified Language.Haskell.Interpreter.Unsafe as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import HPage.Utils.Log
 import Data.List (isPrefixOf)
-import Data.List.Utils
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
 import qualified Language.Haskell.Exts.Parser as Parser
@@ -866,3 +865,18 @@ moduleElemDesc (Hint.Class cn cfs) = do
 moduleElemDesc (Hint.Data dn dcs) = do
                                         mdcs <- flip mapM dcs $ moduleElemDesc . Hint.Fun
                                         return MEData{datName = dn, datCtors = mdcs}
+                                        
+{- | Given a list, returns a new list with all duplicate elements removed.
+For example:
+
+>uniq "Mississippi" -> "Misp"
+
+You should not rely on this function necessarily preserving order, though
+the current implementation happens to.
+
+This function is not compatible with infinite lists.
+
+TAKEN FROM: http://hackage.haskell.org/packages/archive/MissingH/1.0.0/doc/html/src/Data-List-Utils.html#uniq -}
+uniq :: Eq a => [a] -> [a]
+uniq [] = []
+uniq (x:xs) = x : uniq (filter (/= x) xs)

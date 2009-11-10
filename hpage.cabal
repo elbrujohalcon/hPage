@@ -20,6 +20,7 @@ data-files: LICENSE README
             res/images/icon/hPage.icns
             res/images/icon/hpage.tif
             res/help/helpPage.hs
+            res/test/*.hs
 data-dir: ""
 extra-source-files: Setup.hs
 extra-tmp-files:
@@ -41,25 +42,17 @@ Executable hpage
                    wx >=0.11.1,                 wx < 0.12,
                    filepath >=1.1.0,            filepath < 1.2,
                    Cabal >= 1.6,				Cabal < 1.7,
-                   MissingH >= 1.1,				MissingH < 1.2,
                    hint >=0.3.1,                hint < 0.4,
                    eprocess >= 1.0.0,           eprocess < 2,
                    hint-server >= 1.0.0,        hint-server < 2
     main-is: Main.hs
     buildable: True
-    extensions: CPP
     hs-source-dirs: src
-    other-modules:  
-                    HPage.GUI.IDs,
+    other-modules:  HPage.GUI.IDs,
                     HPage.GUI.FreeTextWindow,
                     HPage.GUI.Dialogs,
                     HPage.Control,
                     HPage.Server,
                     HPage.Test.Server,
-                    HPage.Test.Extensions.FlexibleInstances,
-                    HPage.Test.Extensions.OverlappingInstances,
-                    HPage.Test.Extensions.TypeSynonymInstances,
                     HPage.Utils.Log
-    ghc-prof-options: -auto-all -prof
-    ghc-shared-options: -auto-all -prof
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns
