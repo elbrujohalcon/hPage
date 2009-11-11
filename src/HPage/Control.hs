@@ -39,7 +39,6 @@ module HPage.Control (
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
     loadPackage,
-    valueOf', valueOfNth', kindOf', kindOfNth', typeOf', typeOfNth',
     loadModules', 
     reloadModules', getLoadedModules', importModules', getImportedModules',
     getModuleExports',
@@ -577,16 +576,6 @@ reset = do
                     liftErrorIO $ ("Error resetting", e)
             return res
 
-valueOf', kindOf', typeOf' :: HPage (MVar (Either Hint.InterpreterError String))
-valueOf' = getPage >>= valueOfNth' . currentExpr
-kindOf' = getPage >>= kindOfNth' . currentExpr
-typeOf' = getPage >>= typeOfNth' . currentExpr
-
-valueOfNth', kindOfNth', typeOfNth' :: Int -> HPage (MVar (Either Hint.InterpreterError String))
-valueOfNth' = runInExprNthWithLets' Hint.eval
-kindOfNth' = runInExprNth' Hint.kindOf
-typeOfNth' = runInExprNthWithLets' Hint.typeOf
-
 loadModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModules' ms = do
                     let action = do
@@ -731,16 +720,6 @@ runInExprNth action i = do
                                                                         then return ""
                                                                         else action expr
 
-runInExprNth' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
-runInExprNth' action i = do
-                            page <- getPage
-                            let exprs = expressions page
-                            flip (withIndex i) exprs $ do
-                                                            let expr = exprText $ exprs !! i
-                                                            asyncRun $ if "" == expr
-                                                                        then return ""
-                                                                        else action expr
-
 runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNthWithLets action i = do
                                     page <- getPage
@@ -751,15 +730,6 @@ runInExprNthWithLets action i = do
                                                                 in syncRun $ if "" == exprText item
                                                                                 then return ""
                                                                                 else action expr
-
-runInExprNthWithLets' :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (MVar (Either Hint.InterpreterError String))
-runInExprNthWithLets' action i = do
-                                    page <- getPage
-                                    let exprs = expressions page
-                                    flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
-                                                                   lets = filter isNamedExpr $ b ++ a
-                                                                   expr = letsToString lets ++ exprText item
-                                                                in asyncRun $ action expr
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do

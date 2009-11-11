@@ -359,13 +359,13 @@ pkgModuleContextMenu model guiCtx@GUICtx{guiWin = win, guiPkgModules = lstPkgMod
                     objectDelete contextMenu
 
 getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
-    runTxtHP HP.valueOf' model guiCtx grrValue
+    runTxtHP HP.valueOf model guiCtx grrValue
 
 getType model guiCtx@GUICtx{guiResults = GUIRes{resType = grrType}} =
-    runTxtHP HP.typeOf' model guiCtx grrType
+    runTxtHP HP.typeOf model guiCtx grrType
 
 getKind model guiCtx@GUICtx{guiResults = GUIRes{resKind = grrKind}} =
-    runTxtHP HP.kindOf' model guiCtx grrKind
+    runTxtHP HP.kindOf model guiCtx grrKind
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -616,9 +616,9 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-runTxtHP, runTxtHPPointer :: HP.HPage (MVar (Either HP.InterpreterError String)) -> 
+runTxtHP, runTxtHPPointer :: HP.HPage (Either HP.InterpreterError String) -> 
                              HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
-runTxtHPSelection :: String -> HP.HPage (MVar (Either HP.InterpreterError String)) -> 
+runTxtHPSelection :: String -> HP.HPage (Either HP.InterpreterError String) -> 
                      HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
 runTxtHP hpacc model guiCtx@GUICtx{guiCode = txtCode} guiRow =
     do
@@ -636,47 +636,21 @@ runTxtHPSelection s hpacc model guiCtx@GUICtx{guiWin = win,
         refreshExpr model guiCtx False
         debugIO ("evaluating selection", s)
         piRes <- tryIn' model HP.getPageIndex
-        let cpi = case piRes of
-                        Left err -> 0
-                        Right cp -> cp
-            newacc = do
-                        HP.addPage
-                        HP.setPageText s $ length s
-                        hpacc
-        res <- tryIn' model newacc
-        tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
-        case res of
-            Left err -> warningDialog win "Error" err
-            Right var -> do
-                            cancelled <- varCreate False
-                            prevOnCmd <- get btn $ on command
-                            prevText <- get btn text
-                            let prevAttrs = [text := prevText,
-                                             on command := prevOnCmd]
-                                revert = do
-                                            varSet cancelled True
-                                            tryIn' model HP.cancel
-                                            set txtBox [enabled := True]
-                                            set btn prevAttrs
-                                            set status [text := "cancelled"]
-                            set btn [text := "Cancel", on command := revert]
-                            set txtBox [enabled := False]
-                            set status [text := "processing..."]
-                            spawn . liftIO $ do
-                                                val <- readMVar var
-                                                wasCancelled <- varGet cancelled
-                                                if wasCancelled
-                                                    then
-                                                        return ()
-                                                    else
-                                                        do
-                                                            set status [text := "ready"]
-                                                            case val of
-                                                                Left err -> warningDialog win "Error" $ HP.prettyPrintError err
-                                                                Right txt -> set txtBox [text := txt]
-                                                            set txtBox [enabled := True]
-                                                            set btn prevAttrs
-                            return ()
+        added <- tryIn' model $ HP.addPage
+        case added of
+                Left err ->
+                    warningDialog win "Error" err
+                Right _ ->
+                    do
+                        let cpi = case piRes of
+                                        Left err -> 0
+                                        Right cp -> cp
+                            newacc = HP.setPageText s (length s) >> hpacc
+                        res <- tryIn model newacc
+                        tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
+                        case res of
+                            Left err -> warningDialog win "Error" err
+                            Right val -> set txtBox [text := val]
 
 runTxtHPPointer hpacc model guiCtx@GUICtx{guiWin = win,
                                           guiStatus = status}
@@ -684,39 +658,10 @@ runTxtHPPointer hpacc model guiCtx@GUICtx{guiWin = win,
                                     grrText = txtBox} =
     do
         refreshExpr model guiCtx False
-        res <- tryIn' model hpacc
+        res <- tryIn model hpacc
         case res of
             Left err -> warningDialog win "Error" err
-            Right var -> do
-                            cancelled <- varCreate False
-                            prevOnCmd <- get btn $ on command
-                            prevText <- get btn text
-                            let prevAttrs = [text := prevText,
-                                             on command := prevOnCmd]
-                                revert = do
-                                            varSet cancelled True
-                                            tryIn' model HP.cancel
-                                            set txtBox [enabled := True]
-                                            set btn prevAttrs
-                                            set status [text := "cancelled"]
-                            set btn [text := "Cancel", on command := revert]
-                            set txtBox [enabled := False]
-                            set status [text := "processing..."]
-                            spawn . liftIO $ do
-                                                val <- readMVar var
-                                                wasCancelled <- varGet cancelled
-                                                if wasCancelled
-                                                    then
-                                                        return ()
-                                                    else
-                                                        do
-                                                            set status [text := "ready"]
-                                                            case val of
-                                                                Left err -> warningDialog win "Error" $ HP.prettyPrintError err
-                                                                Right txt -> set txtBox [text := txt]
-                                                            set txtBox [enabled := True]
-                                                            set btn prevAttrs
-                            return ()
+            Right val -> set txtBox [text := val]
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
 refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,

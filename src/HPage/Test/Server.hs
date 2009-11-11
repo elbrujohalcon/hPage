@@ -225,6 +225,7 @@ prop_get_module_exports hps hs kmn =
     where match ((HP.MEFun fn _), (Hint.Fun fn2)) = fn == fn2
           match ((HP.MEClass cn cfs), (Hint.Class cn2 cfs2)) = cn == cn2 && all match (zip cfs (map Hint.Fun cfs2))
           match ((HP.MEData dn dcs), (Hint.Data dn2 dcs2)) = dn == dn2 && all match (zip dcs (map Hint.Fun dcs2))
+          match _ = False
 
 prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
 prop_load_module hps hs mn =
