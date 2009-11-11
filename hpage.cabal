@@ -1,5 +1,5 @@
 name: hpage
-version: 0.4.2
+version: 0.5
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -11,7 +11,7 @@ homepage: http://haskell.hpage.com
 package-url: http://code.haskell.org/hpage
 bug-reports: http://github.com/elbrujohalcon/hPage/issues
 synopsis: A scrapbook for Haskell developers
-description: hPage is targeted at those haskell developers which also like to work with dynamic GUIs and wish to have something like Smalltalk's Workspace or jPage for Java. Using hPage developers can write haskell expressions, evaluate and test them, load, unload and (of course) reload modules and then, re-evaluate the same expressions (ghci anyone?). Developed over wxWidgets, hPage is multi-platform by nature and works in every scenario where ghc and wxWidgets work.
+description: λPage is targeted at those haskell developers which also like to work with dynamic GUIs and wish to have something like Smalltalk's Workspace or jPage for Java. Using λPage developers can write haskell expressions, evaluate and test them, load, unload and (of course) reload modules and then, re-evaluate the same expressions. Developed over wxWidgets, λPage is multi-platform by nature and works in every scenario where ghc and wxWidgets work.
 category: Development, IDE, Editor
 author: Fernando "Brujo" Benavides
 tested-with: GHC ==6.10.3, GHC ==6.10.4
@@ -42,7 +42,7 @@ Executable hpage
                    wx >=0.11.1,                 wx < 0.12,
                    filepath >=1.1.0,            filepath < 1.2,
                    Cabal >= 1.6,				Cabal < 1.7,
-                   hint >=0.3.1,                hint < 0.4,
+                   hint >= 0.3.2,               hint < 0.4,
                    eprocess >= 1.0.0,           eprocess < 2,
                    hint-server >= 1.0.0,        hint-server < 2
     main-is: Main.hs

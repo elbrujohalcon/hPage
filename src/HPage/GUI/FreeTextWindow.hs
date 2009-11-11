@@ -7,8 +7,7 @@
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
-import Control.Concurrent.Process
-import Control.Concurrent.MVar
+import Control.Concurrent
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try)
@@ -616,31 +615,39 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-runTxtHP, runTxtHPPointer :: HP.HPage (Either HP.InterpreterError String) -> 
-                             HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
-runTxtHPSelection :: String -> HP.HPage (Either HP.InterpreterError String) -> 
-                     HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
-runTxtHP hpacc model guiCtx@GUICtx{guiCode = txtCode} guiRow =
+runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
+            HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
+runTxtHP hpacc model guiCtx@GUICtx{guiCode = txtCode, guiWin = win}
+                     guiRow@GUIRRow{grrButton = btn,
+                                    grrText = txtBox} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
-                        "" -> runTxtHPPointer
+                        "" -> tryIn
                         sl -> runTxtHPSelection sl
-        runner hpacc model guiCtx guiRow
-
-runTxtHPSelection s hpacc model guiCtx@GUICtx{guiWin = win,
-                                              guiStatus = status}
-                                GUIRRow{grrButton = btn,
-                                        grrText = txtBox} =
-    do
         refreshExpr model guiCtx False
+        set btn [enabled := False]
+        set txtBox [enabled := False]
+        res <- runner model hpacc
+        case res of
+                Left err ->
+                    warningDialog win "Error" err
+                Right val ->
+                    set txtBox [text := val]
+        set btn [enabled := True]
+        set txtBox [enabled := True]
+ 
+runTxtHPSelection :: String ->  HPS.ServerHandle ->
+                     HP.HPage (Either HP.InterpreterError String) -> IO (Either ErrorString String)
+runTxtHPSelection s model hpacc =
+    do
         debugIO ("evaluating selection", s)
         piRes <- tryIn' model HP.getPageIndex
         added <- tryIn' model $ HP.addPage
         case added of
                 Left err ->
-                    warningDialog win "Error" err
-                Right _ ->
+                    return $ Left err
+                Right () ->
                     do
                         let cpi = case piRes of
                                         Left err -> 0
@@ -648,20 +655,7 @@ runTxtHPSelection s hpacc model guiCtx@GUICtx{guiWin = win,
                             newacc = HP.setPageText s (length s) >> hpacc
                         res <- tryIn model newacc
                         tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
-                        case res of
-                            Left err -> warningDialog win "Error" err
-                            Right val -> set txtBox [text := val]
-
-runTxtHPPointer hpacc model guiCtx@GUICtx{guiWin = win,
-                                          guiStatus = status}
-                            GUIRRow{grrButton = btn,
-                                    grrText = txtBox} =
-    do
-        refreshExpr model guiCtx False
-        res <- tryIn model hpacc
-        case res of
-            Left err -> warningDialog win "Error" err
-            Right val -> set txtBox [text := val]
+                        return res
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
 refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,
