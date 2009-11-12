@@ -7,7 +7,7 @@
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
-import Control.Concurrent
+-- import Control.Concurrent.Process
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try)
@@ -44,12 +44,12 @@ imageFile fp = do
 helpFile :: IO FilePath
 helpFile = getDataFileName "res/help/helpPage.hs"
 
-data GUIResultRow = GUIRRow { grrButton :: Button (),
-                              grrText   :: TextCtrl ()}
-
-data GUIResults = GUIRes { resValue :: GUIResultRow,
-                           resType  :: GUIResultRow,
-                           resKind  :: GUIResultRow }
+data GUIResults = GUIRes { resPanel :: Panel (),
+                           resButton :: Button (),
+                           resLabel :: StaticText (),
+                           resValue :: TextCtrl (),
+                           resType  :: TextCtrl (),
+                           resKind  :: TextCtrl () }
 
 data GUIContext  = GUICtx { guiWin :: Frame (),
                             guiPages :: SingleListBox (),
@@ -95,33 +95,36 @@ gui =
 
         lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
         
-        -- Results list
-        txtValue <- textEntry win [style := wxTE_READONLY]
-        txtType <- textEntry win [style := wxTE_READONLY]
-        txtKind <- textEntry win [style := wxTE_READONLY]
-        
+        -- Results panel
+        pnlRes <- panel win [bgcolor := colorRGB 255 128 10]
+        txtValue <- textEntry pnlRes [style := wxTE_READONLY]
+        txtType <- textEntry pnlRes [style := wxTE_READONLY]
+        txtKind <- textEntry pnlRes [style := wxTE_READONLY, visible := False]
+        btnInterpret <- button pnlRes [text := "Interpret"]
+        lblInterpret <- staticText pnlRes [text := "Value:"]
+        set pnlRes [layout := fill $ 
+                                row 5 [widget btnInterpret,
+                                       centre $ widget lblInterpret,
+                                       fill $ widget txtValue,
+                                       centre $ label " :: ",
+                                       fill $ widget txtType]]
+
         -- Status bar...
         status <- statusField [text := "hello... this is λPage! type in your instructions :)"]
+        set win [statusBar := [status]]
+
+        -- Timer ...
         refreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
         varTimer <- varCreate refreshTimer
-        set win [statusBar := [status]]
         
-        btnGetValue <- button win [text := "Value"]
-        btnGetType <- button win [text := "Type"]
-        btnGetKind <- button win [text := "Kind"]
-        
+        -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
         
-        let grrValue = GUIRRow btnGetValue txtValue
-        let grrType = GUIRRow btnGetType txtType
-        let grrKind = GUIRRow btnGetKind txtKind
-        let guiRes = GUIRes grrValue grrType grrKind
+        let guiRes = GUIRes pnlRes btnInterpret lblInterpret txtValue txtType txtKind
         let guiCtx = GUICtx win lstPages lstPkgModules lstLoadedModules txtCode guiRes status varTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
-        set btnGetValue [on command := onCmd "getValue" getValue]
-        set btnGetType [on command := onCmd "getType" getType]
-        set btnGetKind [on command := onCmd "getKind" getKind]
+        set btnInterpret [on command := onCmd "interpret" interpret]
         
         -- Events
         set lstPages [on select := onCmd "pageChange" pageChange]
@@ -140,7 +143,6 @@ gui =
                                                 _ -> propagateEvent]
         
         -- Menu bar...
-        -- menuBar win []
         mnuPage <- menuPane [text := "Page"]
         menuAppend mnuPage wxId_NEW "&New\tCtrl-n" "New Page" False
         menuAppend mnuPage wxId_CLOSE "&Close\tCtrl-w" "Close Page" False
@@ -175,9 +177,7 @@ gui =
         menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-i" "Import Packaged Modules by Name" False
         menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
-        menuAppend mnuHask wxId_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
-        menuAppend mnuHask wxId_HASK_TYPE "&Type\tCtrl-t" "Get the Type of the Current Expression" False
-        menuAppend mnuHask wxId_HASK_KIND "&Kind\tCtrl-k" "Get the Kind of the Current Expression" False
+        menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
@@ -206,9 +206,7 @@ gui =
         evtHandlerOnMenuCommand win wxId_HASK_LOAD_FAST $ onCmd "loadModulesByNameFast" loadModulesByNameFast
         evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
         evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
-        evtHandlerOnMenuCommand win wxId_HASK_VALUE $ onCmd "getValue" getValue
-        evtHandlerOnMenuCommand win wxId_HASK_TYPE $ onCmd "getType" getType
-        evtHandlerOnMenuCommand win wxId_HASK_KIND $ onCmd "getKind" getKind
+        evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
         evtHandlerOnMenuCommand win wxId_HELP $ onCmd "help" openHelpPage
         
         -- Tool bar...
@@ -247,12 +245,9 @@ gui =
             pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
             pkgModsTabL = tab "Package" $ container pnlPMs $ fill $ margin 5 $ widget lstPkgModules
             lddModsTabL = tab "Modules" $ container pnlLMs $ fill $ margin 5 $ widget lstLoadedModules
-            valueRowL   = [widget btnGetValue, hfill $ widget txtValue]
-            typeRowL    = [widget btnGetType, hfill $ widget txtType]
-            kindRowL    = [widget btnGetKind, hfill $ widget txtKind]
-            resultsGridL= hfill $ boxed "Expression" $ grid 5 0 [valueRowL, typeRowL, kindRowL]
             leftL       = tabs ntbkL [lddModsTabL, pkgModsTabL, pagesTabL]
-            rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsGridL]
+            resultsL    = hfill $ boxed "Expression" $ widget pnlRes
+            rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsL]
         set win [layout := fill $ row 10 [leftL, rightL],
                  clientSize := sz 800 600]
 
@@ -267,7 +262,6 @@ refreshPage, savePageAs, savePage, openPage,
     justFind, justFindNext, justFindPrev, findReplace,
     textContextMenu, pkgModuleContextMenu,
     restartTimer, killTimer,
-    getValue, getType, getKind,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
@@ -333,9 +327,7 @@ textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
                         menuAppend contextMenu wxId_COPY "&Copy\tCtrl-c" "Copy" False
                         menuAppend contextMenu wxId_PASTE "&Paste\tCtrl-v" "Paste" False
                         menuAppendSeparator contextMenu
-        menuAppend contextMenu wxId_HASK_VALUE "&Value\tCtrl-e" "Get the Value of the Current Expression" False
-        menuAppend contextMenu wxId_HASK_TYPE "&Type\tCtrl-t" "Get the Type of the Current Expression" False
-        menuAppend contextMenu wxId_HASK_KIND "&Kind\tCtrl-k" "Get the Kind of the Current Expression" False
+        menuAppend contextMenu wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
         
         propagateEvent
         pointWithinWindow <- windowGetMousePosition win
@@ -356,15 +348,6 @@ pkgModuleContextMenu model guiCtx@GUICtx{guiWin = win, guiPkgModules = lstPkgMod
                     pointWithinWindow <- windowGetMousePosition win
                     menuPopup contextMenu pointWithinWindow win
                     objectDelete contextMenu
-
-getValue model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue}} =
-    runTxtHP HP.valueOf model guiCtx grrValue
-
-getType model guiCtx@GUICtx{guiResults = GUIRes{resType = grrType}} =
-    runTxtHP HP.typeOf model guiCtx grrType
-
-getKind model guiCtx@GUICtx{guiResults = GUIRes{resKind = grrKind}} =
-    runTxtHP HP.kindOf model guiCtx grrKind
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -615,30 +598,53 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-runTxtHP :: HP.HPage (Either HP.InterpreterError String) -> 
-            HPS.ServerHandle -> GUIContext -> GUIResultRow -> IO ()
-runTxtHP hpacc model guiCtx@GUICtx{guiCode = txtCode, guiWin = win}
-                     guiRow@GUIRRow{grrButton = btn,
-                                    grrText = txtBox} =
+interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
+                                                  resLabel = lblInterpret,
+                                                  resButton = btnInterpret,
+                                                  resValue = txtValue,
+                                                  resType = txtType,
+                                                  resKind = txtKind},
+                              guiCode = txtCode, guiWin = win} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
                         "" -> tryIn
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx False
-        set btn [enabled := False]
-        set txtBox [enabled := False]
-        res <- runner model hpacc
+        set btnInterpret [enabled := False]
+        res <- runner model HP.interpret
         case res of
                 Left err ->
-                    warningDialog win "Error" err
-                Right val ->
-                    set txtBox [text := val]
-        set btn [enabled := True]
-        set txtBox [enabled := True]
+                    do
+                        warningDialog win "Error" err
+                        set btnInterpret [enabled := True]
+                Right interp ->
+                    if HP.isIntType interp
+                        then do
+                                set btnInterpret [enabled := True]
+                                set txtValue [visible := False]
+                                set txtType [visible := False]
+                                set txtKind [visible := True, text := HP.intKind interp]
+                                set lblInterpret [text := "Kind:"]
+                                set pnlRes [layout := fill $ centre $
+                                                        row 5 [widget btnInterpret,
+                                                               centre $ widget lblInterpret,
+                                                               hfill $ widget txtKind]]
+                        else do
+                                set btnInterpret [enabled := True]
+                                set txtValue [visible := True, text := HP.intValue interp]
+                                set txtType [visible := True, text := HP.intType interp]
+                                set txtKind [visible := False]
+                                set lblInterpret [text := "Value:"]
+                                set pnlRes [layout := fill $ 
+                                                        row 5 [widget btnInterpret,
+                                                               centre $ widget lblInterpret,
+                                                               hfill $ widget txtValue,
+                                                               centre $ label " :: ",
+                                                               hfill $ widget txtType]]
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
-                     HP.HPage (Either HP.InterpreterError String) -> IO (Either ErrorString String)
+                     HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
 runTxtHPSelection s model hpacc =
     do
         debugIO ("evaluating selection", s)
@@ -658,9 +664,9 @@ runTxtHPSelection s model hpacc =
                         return res
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
-refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,
-                                                    resType = grrType,
-                                                    resKind = grrKind},
+refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
+                                                    resType = txtType,
+                                                    resKind = txtKind},
                                 guiCode = txtCode,
                                 guiWin = win} forceClear =
    do
@@ -674,7 +680,7 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = grrValue,
                 warningDialog win "Error" err
             Right changed ->
                 if changed || forceClear
-                    then mapM_ (flip set [text := ""] . grrText) [grrValue, grrType, grrKind]
+                    then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
                     else debugIO "dummy refreshExpr"
         
         killTimer model guiCtx

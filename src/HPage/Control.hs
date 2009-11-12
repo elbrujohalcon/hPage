@@ -29,6 +29,7 @@ module HPage.Control (
     -- EDITION CONTROLS --
     undo, redo,
     -- HINT CONTROLS --
+    interpret, interpretNth, Interpretation, intKind, intValue, intType, isIntType,
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules,
     reloadModules, getLoadedModules,
@@ -79,6 +80,13 @@ import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
+
+data Interpretation = Type {intKind ::  String} | Expr {intValue :: String, intType :: String}
+    deriving (Eq, Show)
+    
+isIntType :: Interpretation -> Bool
+isIntType Type{} = True
+isIntType Expr{} = False
 
 data ModuleDescription = ModDesc {modName :: String,
                                   modInterpreted :: Bool}
@@ -409,11 +417,32 @@ redo = do
                                                                             currentExpr = currentExpr p})
                                          in page{undoActions = undoAct : undoActions page,
                                                  redoActions = accs})
+
+interpret :: HPage (Either Hint.InterpreterError Interpretation)
+interpret = getPage >>= interpretNth . currentExpr
  
 valueOf, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
 valueOf = getPage >>= valueOfNth . currentExpr
 kindOf = getPage >>= kindOfNth . currentExpr
 typeOf = getPage >>= typeOfNth . currentExpr
+
+interpretNth :: Int -> HPage (Either Hint.InterpreterError Interpretation)
+interpretNth i =
+        do
+            typeRes <- typeOfNth i
+            case typeRes of
+                Left terr ->
+                    do
+                        kindRes <- kindOfNth i
+                        case kindRes of
+                            Left _ -> return $ Left terr
+                            Right k -> return $ Right $ Type{intKind = k}
+                Right t ->
+                    do
+                        valueRes <- valueOfNth i
+                        case valueRes of
+                            Left verr -> return $ Left verr
+                            Right v -> return $ Right $ Expr{intValue = v, intType = t}
 
 valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
 valueOfNth = runInExprNthWithLets Hint.eval
