@@ -96,7 +96,7 @@ gui =
         lstPkgModules <- singleListBox pnlPMs [style := wxLB_NEEDED_SB]
         
         -- Results panel
-        pnlRes <- panel win [bgcolor := colorRGB 255 128 10]
+        pnlRes <- panel win []
         txtValue <- textEntry pnlRes [style := wxTE_READONLY]
         txtType <- textEntry pnlRes [style := wxTE_READONLY]
         txtKind <- textEntry pnlRes [style := wxTE_READONLY, visible := False]
@@ -246,7 +246,7 @@ gui =
             pkgModsTabL = tab "Package" $ container pnlPMs $ fill $ margin 5 $ widget lstPkgModules
             lddModsTabL = tab "Modules" $ container pnlLMs $ fill $ margin 5 $ widget lstLoadedModules
             leftL       = tabs ntbkL [lddModsTabL, pkgModsTabL, pagesTabL]
-            resultsL    = hfill $ boxed "Expression" $ widget pnlRes
+            resultsL    = hfill $ boxed "Expression" $ fill $ widget pnlRes
             rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsL]
         set win [layout := fill $ row 10 [leftL, rightL],
                  clientSize := sz 800 600]
