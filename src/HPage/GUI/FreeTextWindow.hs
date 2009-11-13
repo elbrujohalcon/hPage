@@ -48,6 +48,7 @@ data GUIResults = GUIRes { resPanel :: Panel (),
                            resButton :: Button (),
                            resLabel :: StaticText (),
                            resValue :: TextCtrl (),
+                           res4Dots :: StaticText (),
                            resType  :: TextCtrl (),
                            resKind  :: TextCtrl () }
 
@@ -102,11 +103,12 @@ gui =
         txtKind <- textEntry pnlRes [style := wxTE_READONLY, visible := False]
         btnInterpret <- button pnlRes [text := "Interpret"]
         lblInterpret <- staticText pnlRes [text := "Value:"]
+        lbl4Dots <- staticText pnlRes [text := " :: "]
         set pnlRes [layout := fill $ 
                                 row 5 [widget btnInterpret,
                                        centre $ widget lblInterpret,
                                        fill $ widget txtValue,
-                                       centre $ label " :: ",
+                                       centre $ widget lbl4Dots,
                                        fill $ widget txtType]]
 
         -- Status bar...
@@ -120,7 +122,7 @@ gui =
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
         
-        let guiRes = GUIRes pnlRes btnInterpret lblInterpret txtValue txtType txtKind
+        let guiRes = GUIRes pnlRes btnInterpret lblInterpret txtValue lbl4Dots txtType txtKind
         let guiCtx = GUICtx win lstPages lstPkgModules lstLoadedModules txtCode guiRes status varTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
@@ -602,6 +604,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                                                   resLabel = lblInterpret,
                                                   resButton = btnInterpret,
                                                   resValue = txtValue,
+                                                  res4Dots = lbl4Dots,
                                                   resType = txtType,
                                                   resKind = txtKind},
                               guiCode = txtCode, guiWin = win} =
@@ -623,6 +626,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                         then do
                                 set btnInterpret [enabled := True]
                                 set txtValue [visible := False]
+                                set lbl4Dots [visible := False]
                                 set txtType [visible := False]
                                 set txtKind [visible := True, text := HP.intKind interp]
                                 set lblInterpret [text := "Kind:"]
@@ -630,9 +634,11 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                                                         row 5 [widget btnInterpret,
                                                                centre $ widget lblInterpret,
                                                                hfill $ widget txtKind]]
+                                repaint pnlRes
                         else do
                                 set btnInterpret [enabled := True]
                                 set txtValue [visible := True, text := HP.intValue interp]
+                                set lbl4Dots [visible := True, text := " :: "]
                                 set txtType [visible := True, text := HP.intType interp]
                                 set txtKind [visible := False]
                                 set lblInterpret [text := "Value:"]
@@ -640,8 +646,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                                                         row 5 [widget btnInterpret,
                                                                centre $ widget lblInterpret,
                                                                hfill $ widget txtValue,
-                                                               centre $ label " :: ",
+                                                               centre $ widget lbl4Dots,
                                                                hfill $ widget txtType]]
+                                repaint pnlRes
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
