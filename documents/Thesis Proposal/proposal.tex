@@ -16,11 +16,10 @@
 
 	\thispagestyle{empty}
 	\begin{center}
-	\vspace*{\stretch{2}}
 	{\Large Propuesta de Tesis de Licenciatura}\\[1em]
 	{\huge \textbf{$\lambda$Page}}\\[0.5em]
 	{\large \textit{Un bloc de notas para desarrolladores Haskell}}\\[1em]
-	\par\vspace{\stretch{1}}
+	\par\vspace{\stretch{2}}
 	{\large Departamento de Computaci\'on}\\[0.5em]
 	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
 	{\large Universidad de Buenos Aires}
@@ -37,19 +36,18 @@
 \section{Motivaci'on}
 
 \paragraph{}Actualmente, gracias al 'exito de varios proyectos desarrollados con ellos, como \htmladdnormallinkfoot{CouchDB}{http://couchdb.apache.org}, \htmladdnormallinkfoot{ejabberd}{http://www.ejabberd.im} y el chat de \htmladdnormallinkfoot{Facebook}{http://www.facebook.com}, los lenguajes del paradigma funcional, como \htmladdnormallinkfoot{Haskell}{http://www.haskell.org} o \htmladdnormallinkfoot{Erlang}{http://www.erlang.org}, han ganado un renovado inter'es entre los desarrolladores.
-\subparagraph{}Estos lenguajes son maduros, confiables y presentan abundantes ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, aquellos desarrolladores que deciden hacer el cambio de paradigma se encuentran generalmente con el problema de la falta de herramientas a las que ya est'an acostumbrados por ser habituales al desarrollar en lenguajes orientados a objetos.  En particular, en este proyecto queremos centrar nuestra atenci'on sobre aquellas herramientas que permiten realizar \textsl{debugging} a trav'es del testeo de peque'nas porciones de c'odigo.
-\subparagraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
+\paragraph{}Estos lenguajes son maduros, confiables y presentan abundantes ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, los desarrolladores que deciden hacer el cambio de paradigma se encuentran generalmente con el problema de la falta de herramientas a las que ya est'an acostumbrados por ser habituales al desarrollar en lenguajes orientados a objetos.  En particular, en este proyecto queremos centrar nuestra atenci'on sobre aquellas que permiten realizar \textsl{debugging} y \textsl{entendimiento} de c'odigo a trav'es de \textsl{``micro-testing''}\footnote{Enti'endase ``micro-testing'' como la tarea de realizar tests eventuales para entender o evaluar alg'un aspecto de un programa} .  Dentro de este grupo de herramientas podemos citar a \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estas herramientas, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.
+\paragraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
 \begin{description}
 	\item[\htmladdnormallinkfoot{GHCi}{http://www.haskell.org/ghc/docs/latest/html/users\_guide/ghci.html}]
 		La consola que provee \htmladdnormallinkfoot{GHC}{http://www.haskell.org/ghc} permite a los desarrolladores evaluar expresiones, verificar su tipo o su clase.  Cuenta tambi'en con un \htmladdnormallinkfoot{mecanismo de debugging}{http://www.haskell.org/ghc/docs/6.10-latest/html/users\_guide/ghci-debugger.html} integrado que permite realizar la evaluaci'on de expresiones paso a paso.
 	\item[\htmladdnormallinkfoot{Hat}{http://www.haskell.org/hat}]
 		Un herramienta para realizar seguimiento a nivel de c'odigo fuente.  A trav'es de la generaci'on de trazas de ejecuci'on, \textit{Hat} ayuda a localizar errores en los programas y es 'util para entender su funcionamiento.
 \end{description}
-\subparagraph{}Por otra parte, lenguajes del paradigma imperativo nos proveen ejemplos de herramientas similares, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estas herramientas, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.
 
 \section{Propuesta de Tesis}
 \subsection{Objetivo}
-\paragraph{}El objetivo de esta tesis es brindar a los desarrolladores \textit{Haskell} una herramienta similar al Workspace de Smalltalk que les permita trabajar con peque'nas porciones de c'odigo, dividirlas en expresiones, evaluarlas, observar su tipo y su clase.
+\paragraph{}El objetivo de esta tesis es brindar a los desarrolladores \textit{Haskell} una herramienta similar al Workspace de \textit{Smalltalk} que les permita trabajar con peque'nas porciones de c'odigo, dividirlas en expresiones, evaluarlas, observar su tipo y su clase.
 \subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores Haskell, es nuestra intenci'on que \textsl{$\lambda$Page}, tal es el nombre que hemos elegido, sea desarrollada en \textit{Haskell} y se integre con \htmladdnormallinkfoot{Cabal}{http://www.haskell.org/cabal}, \htmladdnormallinkfoot{Hayoo!}{http://holumbus.fh-wedel.de/hayoo} y otras herramientas ya existentes.
 \subparagraph{} \textsl{$\lambda$Page} presentar'a una interfaz visual e intuitiva y, como su
  objetivo en parte incluye el reemplazo de \textsl{GHCi} como mecanismo de evaluaci'on e  
