@@ -12,10 +12,6 @@
 \parindent = 0 pt
 \parskip = 11 pt
 
-\newcommand{\erf}{\hbox{erf}}
-\newcommand{\real}{\hbox{\bf R}}
-
-
 \begin{document}
 
 	\thispagestyle{empty}
@@ -27,16 +23,10 @@
 	\par\vspace{\stretch{1}}
 	{\large Departamento de Computaci\'on}\\[0.5em]
 	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
-	{\large Universidad de Buenos Aires
-	\begin{figure}[h]
-		\begin{center}
-		\includegraphics[width=80mm]{logoUba}
-		\end{center}
-	\end{figure}}
+	{\large Universidad de Buenos Aires}
 	\par\vspace{\stretch{3}}
 	{\Large \textbf{Alumno}}\\[0.8em]
-	{\Large Fernando Benavides} \par
-	{\Large Libreta Universitaria 470/01} \par
+	{\Large Fernando Benavides (LU 470/01)} \par
 	{\Large greenmellon@gmail.com} \par
 	\par\vspace{\stretch{3}}
 	{\Large \textbf{Directores}}\\[0.8em]
@@ -44,46 +34,34 @@
 	{\Large Lic. Daniel Gor'in}
 	\end{center}
 
-\newpage
-\tableofcontents
-
-\newpage
 \section{Motivaci'on}
 
 \paragraph{}Actualmente, gracias al 'exito de varios proyectos desarrollados con ellos, como \htmladdnormallinkfoot{CouchDB}{http://couchdb.apache.org}, \htmladdnormallinkfoot{ejabberd}{http://www.ejabberd.im} y el chat de \htmladdnormallinkfoot{Facebook}{http://www.facebook.com}, los lenguajes del paradigma funcional, como \htmladdnormallinkfoot{Haskell}{http://www.haskell.org} o \htmladdnormallinkfoot{Erlang}{http://www.erlang.org}, han ganado un renovado inter'es entre los desarrolladores.
-\subparagraph{}Estos lenguajes son maduros, confiables y presentan abundantes ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, aquellos desarrolladores que deciden hacer el cambio de paradigma se encuentran generalmente con el problema de la falta de herramientas a las que ya est'an acostumbrados por ser habituales al desarrollar en lenguajes orientados a objetos.
-\subparagraph{}La comunidad Haskell, por su parte, ha generado muchas herramientas (algunas de ellas, incluso, no habituales en los dem'as lenguajes) para ayudar al programador.  Entre ellas podemos encontrar:
+\subparagraph{}Estos lenguajes son maduros, confiables y presentan abundantes ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, aquellos desarrolladores que deciden hacer el cambio de paradigma se encuentran generalmente con el problema de la falta de herramientas a las que ya est'an acostumbrados por ser habituales al desarrollar en lenguajes orientados a objetos.  En particular, en este proyecto queremos centrar nuestra atenci'on sobre aquellas herramientas que permiten realizar \textsl{debugging} a trav'es del testeo de peque'nas porciones de c'odigo.
+\subparagraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
 \begin{description}
-\item[\htmladdnormallinkfoot{Cabal}{http://www.haskell.org/cabal}] Un sistema de construcci'on y generaci'on de paquetes de librer'ias y ejecutables hechos en \textit{Haskell}.  Permite distribuir, catalogar y organizar aplicaciones de manera consistente y portable.
-\item[\htmladdnormallinkfoot{Cabal-Install}{http://www.haskell.org/cabal/download.html}] Una aplicaci'on que permite instalar paquetes en formato \textsl{Cabal} verificando sus dependencias y realizando las acciones necesarias para su compilaci'on.
-\item[\htmladdnormallinkfoot{HackageDB}{http://hackage.haskell.org}] Un repositorio centralizado de paquetes Haskell.  Cada paquete se encuentra en formato \textsl{Cabal} y puede ser instalado utilizando \textsl{Cabal-install}.
-\item[\htmladdnormallinkfoot{Darcs}{http://darcs.haskell.org}] Un sistema de administraci'on de la configuraci'on distribuido.  Muy similar a \textsl{git} pero orientado a proyectos hechos en \textit{Haskell}.
-\item[\htmladdnormallinkfoot{Haddock}{http://www.haskell.org/haddock}] Una herramienta para generar documentaci'on a partir del c'odigo.  Integrada con \textsl{Cabal} y \textsl{HackageDB} permite publicar documentaci'on online para las librer'ias alojadas en \textsl{HackageDB}.
-\item[\htmladdnormallinkfoot{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}] Un sitio web en el que se puede navegar toda la documentaci'on generada con \textsl{Haddock} sobre los paquetes \textsl{Cabal} subidos a \textsl{HackageDB}
+	\item[\htmladdnormallinkfoot{GHCi}{http://www.haskell.org/ghc/docs/latest/html/users\_guide/ghci.html}]
+		La consola que provee \htmladdnormallinkfoot{GHC}{http://www.haskell.org/ghc} permite a los desarrolladores evaluar expresiones, verificar su tipo o su clase.  Cuenta tambi'en con un \htmladdnormallinkfoot{mecanismo de debugging}{http://www.haskell.org/ghc/docs/6.10-latest/html/users\_guide/ghci-debugger.html} integrado que permite realizar la evaluaci'on de expresiones paso a paso.
+	\item[\htmladdnormallinkfoot{Hat}{http://www.haskell.org/hat}]
+		Un herramienta para realizar seguimiento a nivel de c'odigo fuente.  A trav'es de la generaci'on de trazas de ejecuci'on, \textit{Hat} ayuda a localizar errores en los programas y es 'util para entender su funcionamiento.
 \end{description}
-\subparagraph{}Todas estas herramientas se encuentran desarrolladas en \textit{Haskell} utilizando, para el desarrollo de cada herramienta, a las dem'as.  Sin embargo, lenguajes como \htmladdnormallinkfoot{Objective-C}{http://developer.apple.com/mac/library/documentation/cocoa/Conceptual/ObjectiveC/Introduction/introObjectiveC.html}, \htmladdnormallinkfoot{Java}{www.java.com}, \htmladdnormallinkfoot{C\#}{http://msdn.microsoft.com/en-us/vcsharp/aa336809.aspx} o \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org} proveen otras herramientas con las que los desarrolladores \textit{Haskell} no cuentan a'un, como:
-\begin{itemize}
-\item Entornos de desarrollo de aplicaciones con, por ejemplo, \textsl{IntelliSense} (Por ejemplo: \htmladdnormallinkfoot{XCode}{http://developer.apple.com/tools/xcode} para Objective-C, \htmladdnormallinkfoot{Eclipse}{http://www.eclipse.org} para Java)
-\item Herramientas para el dise'no de interfaces gr'aficas (Por ejemplo: \htmladdnormallinkfoot{Interface Builder}{http://developer.apple.com/tools/interfacebuilder.html} para Objective-C, \htmladdnormallinkfoot{Visual Studio}{http://msdn.microsoft.com/en-us/library/52f3sw5c.aspx} para C\#)
-\item Herramientas para la ejecuci'on, experimentaci'on y testeo de peque'nas porciones de c'odigo (Por ejemplo: \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para Java, \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para Smalltalk)
-\end{itemize}
-\paragraph{}Cabe notar que, a diferencia de varios de estos lenguajes, \textit{Haskell} requiere un gran nivel de abstracci'on por parte del programador.  Es considerado un lenguaje \textsl{``write-only''}, en el sentido de que, cuando un programador lee un c'odigo \textit{Haskell} escrito hace suficiente tiempo (a'un si lo escribi'o 'el mismo) es probable que le cueste mucho entender qu'e es lo que ese c'odigo hace y c'omo.  Para descifrarlo, el enfoque usual es recurrir a la consola \htmladdnormallinkfoot{GHCi}{http://www.haskell.org/ghc} o \htmladdnormallinkfoot{Hugs}{http://www.haskell.org/hugs} e ir realizando peque'nas pruebas sobre distintas porciones del c'odigo que permitan comprender gradualmente el c'odigo completo.  La consola se convierte as'i en una m'as de las herramientas con que cuenta el desarrollador para realizar su tarea.
+\subparagraph{}Por otra parte, lenguajes del paradigma imperativo nos proveen ejemplos de herramientas similares, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estas herramientas, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.
 
 \section{Propuesta de Tesis}
 \subsection{Objetivo}
-\paragraph{}El objetivo de esta tesis es brindar a los desarrolladores \textit{Haskell} una herramienta que, junto con las mencionadas anteriormente, facilite su trabajo.  La herramienta que nos proponemos desarrollar ser'a similar al Workspace de Smalltalk y permitir'a trabajar con peque'nas porciones de c'odigo, dividirlas en expresiones, evaluarlas, observar su tipo y su clase.
-\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores Haskell, es nuestra intenci'on que \textsl{$\lambda$Page}, tal es el nombre de la herramienta que nos proponemos crear, sea desarrollada en \textit{Haskell} y se integre con \textsl{Cabal}, \textsl{Hayoo!} y dem'as herramientas ya existentes.
+\paragraph{}El objetivo de esta tesis es brindar a los desarrolladores \textit{Haskell} una herramienta similar al Workspace de Smalltalk que les permita trabajar con peque'nas porciones de c'odigo, dividirlas en expresiones, evaluarlas, observar su tipo y su clase.
+\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores Haskell, es nuestra intenci'on que \textsl{$\lambda$Page}, tal es el nombre que hemos elegido, sea desarrollada en \textit{Haskell} y se integre con \htmladdnormallinkfoot{Cabal}{http://www.haskell.org/cabal}, \htmladdnormallinkfoot{Hayoo!}{http://holumbus.fh-wedel.de/hayoo} y otras herramientas ya existentes.
 \subparagraph{} \textsl{$\lambda$Page} presentar'a una interfaz visual e intuitiva y, como su
- objetivo en parte incluye el reemplazo de \textsl{ghci} como mecanismo de evaluaci'on e  
+ objetivo en parte incluye el reemplazo de \textsl{GHCi} como mecanismo de evaluaci'on e  
  inspecci'on de expresiones, debe funcionar en las plataformas en las que actualmente funciona 
  esta aplicaci'on: \textsl{OSX}, \textsl{Linux} y \textsl{Windows}, al menos.
 \subparagraph{}Pretendemos tambi'en que \textsl{$\lambda$Page} se diferencie de herramientas similares del mundo de los lenguajes orientados a objetos por estar hecha con y para \textit{Haskell}, un lenguaje funcional.  \textsl{$\lambda$Page} deber'a aprovechar por tanto conceptos claves del lenguaje como la evaluaci'on peresoza y la transparencia referencial.
 
 \subsection{Plan de Trabajo}
-\paragraph{B'usqueda y An'alisis de Herramientas} Se buscar'an y analizar'an las herramientas que nos permitan desarrollar \textsl{$\lambda$Page}.  En particular, se requerir'an librer'ias para conexi'on con la VM de \textit{Haskell}, parseo de c'odigo \textit{Haskell} y, sobre todo, desarrollo de interfaces gr'aficas amigables.
+\paragraph{B'usqueda y An'alisis de Herramientas} Se buscar'an y analizar'an las herramientas que nos permitan desarrollar \textsl{$\lambda$Page}.  En particular, se requerir'an librer'ias para conexi'on con la VM de \textit{Haskell}, parseo de c'odigo y, sobre todo, desarrollo de interfaces gr'aficas amigables.
 \paragraph{Dise'no y Desarrollo de Prototipo} Se generar'a un prototipo inicial para testear la factibilidad del proyecto.
 \paragraph{Generaci'on de Primera Versi'on mediante TDD} Utilizando \htmladdnormallinkfoot{Test Driven Development}{http://www.agiledata.org/essays/tdd.html} como metodolog'ia, se generar'an sucesivas mejoras sobre el prototipo hasta alcanzar una versi'on estable que provea la funcionalidad b'asica esperada.
-\paragraph{Testeo y Mejoras de Usabilidad} Se alojar'a el proyecto en \textsl{HackageDB}, de modo de poder compartirlo con la comunidad de desarrolladores, testearlo y, en sucesivas iteraciones, se mejorar la aplicaci'on.  A partir de este punto esperamos poder \textbf{utilizar \textsl{$\lambda$Page} para desarrollar \textsl{$\lambda$Page}}.
+\paragraph{Testeo y Mejoras de Usabilidad} Se alojar'a el proyecto en \textsl{HackageDB}, de modo de poder compartirlo con la comunidad de desarrolladores, testearlo y, en sucesivas iteraciones, mejorar la aplicaci'on.  A partir de este punto esperamos poder \textbf{utilizar \textsl{$\lambda$Page} para desarrollar \textsl{$\lambda$Page}}.
 \paragraph{Integraci'on con \textsl{Cabal} y \textsl{Hayoo!}} Se integrar'a \textsl{$\lambda$Page} con \textsl{Cabal} permitiendo configurar la aplicaci'on en base a un paquete \textsl{Cabal} y con \textsl{Hayoo!} permitiendo buscar all'i informaci'on sobre funciones o expresiones.
 \paragraph{Experimentaci'on} Se utilizar'a \textsl{$\lambda$Page} con distintos proyectos y escenarios para comprobar su utilidad y funcionamiento.
 \paragraph{Conclusiones} Finalmente, se extraer'an conclusiones tanto sobre el proceso de desarrollo de la aplicaci'on como sobre la aplicaci'on y su uso en particular.
