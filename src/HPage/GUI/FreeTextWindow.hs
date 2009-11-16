@@ -431,7 +431,10 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
                     return ()
                 Just setupConfig ->
                     do
-                        loadres <- tryIn model (HP.loadPackage setupConfig)
+                        loadres <- tryIn model $ do
+                                                    lr <- HP.loadPackage setupConfig
+                                                    HP.addPage
+                                                    return lr
                         case loadres of
                             Left err ->
                                 warningDialog win "Error" err
@@ -634,7 +637,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                                                         row 5 [widget btnInterpret,
                                                                centre $ widget lblInterpret,
                                                                hfill $ widget txtKind]]
-                                repaint pnlRes
+                                repaint win
                         else do
                                 set btnInterpret [enabled := True]
                                 set txtValue [visible := True, text := HP.intValue interp]
@@ -648,7 +651,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                                                                hfill $ widget txtValue,
                                                                centre $ widget lbl4Dots,
                                                                hfill $ widget txtType]]
-                                repaint pnlRes
+                                repaint win
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
