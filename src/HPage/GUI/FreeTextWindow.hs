@@ -87,7 +87,7 @@ gui =
         lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
         
         -- Modules Lists
-        imageFiles <- mapM imageFile ["imported.png", "interpreted.png", "compiled.png"]
+        imageFiles <- mapM imageFile ["m_imported.ico", "m_interpreted.ico", "m_compiled.ico"]
         imagePaths <- mapM getAbsoluteFilePath imageFiles
         images     <- imageListFromFiles (sz 16 16) imagePaths
         lstLoadedModules <- listCtrlEx pnlLMs (wxLC_NO_HEADER + wxLC_SINGLE_SEL)

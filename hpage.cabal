@@ -17,6 +17,7 @@ author: Fernando "Brujo" Benavides
 tested-with: GHC ==6.10.3, GHC ==6.10.4
 data-files: LICENSE README
             res/images/*.png
+            res/images/*.ico
             res/images/icon/hPage.icns
             res/images/icon/hpage.tif
             res/help/helpPage.hs
