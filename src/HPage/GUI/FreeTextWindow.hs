@@ -8,6 +8,8 @@
 module HPage.GUI.FreeTextWindow ( gui ) where
 
 -- import Control.Concurrent.Process
+import Foreign.Ptr
+import Foreign.Storable
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try)
@@ -91,7 +93,7 @@ gui =
         varModsSel <- varCreate $ -1
         lstModules <- listCtrlEx pnlMs (wxLC_REPORT + wxLC_ALIGN_LEFT + wxLC_NO_HEADER + wxLC_SINGLE_SEL)
                                        [columns := [("Module", AlignLeft, 200),
-                                                    ("Origin", AlignLeft, 200)]]
+                                                    ("Origin", AlignLeft, 0)]]
         listCtrlSetImageList lstModules images wxIMAGE_LIST_SMALL
 
         -- Results panel
@@ -134,12 +136,9 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
-        set lstModules [on mouse := \e -> case e of
-                                                MouseRightUp _ _ -> onCmd "moduleContextMenu" moduleContextMenu >> propagateEvent
-                                                MouseLeftDClick _ _ -> onCmd "moduleDblClick" moduleDblClick
-                                                _ -> propagateEvent,
-                        on listEvent := \e -> case e of
+        set lstModules [on listEvent := \e -> case e of
                                                 ListItemSelected idx -> varSet varModsSel idx
+                                                ListItemRightClick idx -> varSet varModsSel idx >> onCmd "moduleContextMenu" moduleContextMenu
                                                 _ -> propagateEvent]
         
         -- Menu bar...
@@ -259,34 +258,27 @@ gui =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu, moduleContextMenu, moduleDblClick,
+    textContextMenu, moduleContextMenu,
     restartTimer, killTimer,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
-moduleDblClick model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, lstModules)} =
-    do
-        pointWithinWindow <- windowGetMousePosition win
-        i <- listCtrlHitTest lstModules pointWithinWindow 0
-        varSet varModsSel i
-        loadModulesByNameFast model guiCtx
-        
 moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, lstModules)} =
     do
-        contextMenu <- menuPane []
         pointWithinWindow <- windowGetMousePosition win
-        i <- listCtrlHitTest lstModules pointWithinWindow 0
+        i <- varGet varModsSel
+        contextMenu <- menuPane []
         case i of
-            (-1) -> return ()
+            (-1) ->
+                do
+                    return ()
             i ->
                 do
                     itm <- get lstModules $ item i
                     debugIO ("the item", itm)
                     case itm of
                         [_, "Package"] ->
-                            do
-                                varSet varModsSel i
-                                menuAppend contextMenu wxId_HASK_LOAD_FAST "&Load" "Load Module" False
+                            menuAppend contextMenu wxId_HASK_LOAD_FAST "&Load" "Load Module" False
                         [modname, _] ->
                             appendBrowseMenu contextMenu modname
                         other ->
@@ -573,14 +565,19 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     -- Refresh the modules lists
                     --NOTE: we know 0 == "imported" / 1 == "interpreted" / 2 == "compiled" / 3 == "package" images
                     --TODO: move that to some kind of constants or so
-                    let ims' = map (\m -> (0, m)) ims
-                        ms' = map (\m -> (if HP.modInterpreted m then 1 else 2, HP.modName m)) ms
-                        pms' = map (\m -> (3, m)) $ flip filter pms $ \pm -> any (\xm -> HP.modName xm == pm) ms
+                    let ims' = map (\m -> (0, [m, "Imported"])) ims
+                        ms' = map (\m -> if HP.modInterpreted m
+                                            then (1, [HP.modName m, "Interpred"])
+                                            else (2, [HP.modName m, "Compiled"])) ms
+                        pms' = map (\m -> (3, [m, "Package"])) $
+                                        flip filter pms $ \pm -> all (\xm -> HP.modName xm /= pm) ms
                         allms = zip [0..] (ims' ++ ms' ++ pms')
+                    debugIO ("allms", allms)
                     itemsDelete lstModules
-                    (flip mapM) allms $ \(idx, (img, m)) ->
-                                                listCtrlInsertItemWithLabel lstModules idx m img >>                                                
-                                                set lstModules [item idx := [m]]
+                    (flip mapM) allms $ \(idx, (img, m@(mn:_))) ->
+                                                listCtrlInsertItemWithLabel lstModules idx mn img >>                                                
+                                                set lstModules [item idx := m]
+                    varSet varModsSel $ -1
                     
                     -- Refresh the current text
                     set txtCode [text := t]
