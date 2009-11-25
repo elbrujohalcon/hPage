@@ -8,8 +8,6 @@
 module HPage.GUI.FreeTextWindow ( gui ) where
 
 -- import Control.Concurrent.Process
-import Foreign.Ptr
-import Foreign.Storable
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try)
