@@ -66,7 +66,13 @@
 \paragraph{Dise'no y Desarrollo de Prototipo} Se generar'a un prototipo inicial para testear la factibilidad del proyecto.
 \paragraph{Generaci'on de Primera Versi'on mediante TDD} Utilizando \htmladdnormallinkfoot{Test Driven Development}{http://www.agiledata.org/essays/tdd.html} como metodolog'ia, se generar'an sucesivas mejoras sobre el prototipo hasta alcanzar una versi'on estable que provea la funcionalidad b'asica esperada.
 \paragraph{Testeo y Mejoras de Usabilidad} Se alojar'a el proyecto en \textsl{HackageDB}, de modo de poder compartirlo con la comunidad de desarrolladores, testearlo y, en sucesivas iteraciones, mejorar la aplicaci'on.  A partir de este punto esperamos poder \textbf{utilizar \hpage para desarrollar \hpage}.
-\paragraph{Integraci'on con \textsl{Cabal} y \textsl{Hayoo!}} Se integrar'a \hpage con \textsl{Cabal} permitiendo configurar la aplicaci'on en base a un paquete \textsl{Cabal} y con \textsl{Hayoo!} permitiendo buscar all'i informaci'on sobre funciones o expresiones.
+\paragraph{Desaf'ios Adicionales} Se buscar'a que \hpage:
+\begin{itemize}
+	\item pueda leer e incorporar toda la informaci'on contenida en un paquete \textsl{Cabal} (incluyendo carpetas de archivos de c'odigo fuente y compilado, extensiones, opciones del compilador, m'odulos inclu'idos en el paquete, etc.) de manera autom'atica
+	\item permita c'omputos con resultados de longitud infinita, permitiendo al usuario ir visualizando sus resultados de manera incremental
+	\item contemple la posibilidad de que parte de un resultado tenga error o est'e indefinida, permitiendo al usuario conocer el error y a su vez, visualizar el resto del resultado
+	\item maneje correctamente c'omputos de larga duraci'on sin afectar la interacci'on del usuario y presentando, de ser posible, los resultados de forma incremental
+\end{itemize}
 \paragraph{Experimentaci'on} Se utilizar'a \hpage con distintos proyectos y escenarios para comprobar su utilidad y funcionamiento.
 \paragraph{Conclusiones} Finalmente, se extraer'an conclusiones tanto sobre el proceso de desarrollo de la aplicaci'on como sobre la aplicaci'on y su uso en particular.
 
