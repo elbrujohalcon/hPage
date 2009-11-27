@@ -44,13 +44,11 @@ imageFile fp = do
 helpFile :: IO FilePath
 helpFile = getDataFileName "res/help/helpPage.hs"
 
-data GUIResults = GUIRes { resPanel :: Panel (),
-                           resButton :: Button (),
+data GUIResults = GUIRes { resButton :: Button (),
                            resLabel :: StaticText (),
                            resValue :: TextCtrl (),
                            res4Dots :: StaticText (),
-                           resType  :: TextCtrl (),
-                           resKind  :: TextCtrl () }
+                           resType  :: TextCtrl () }
 
 data GUIContext  = GUICtx { guiWin :: Frame (),
                             guiPages :: SingleListBox (),
@@ -91,14 +89,13 @@ gui =
         varModsSel <- varCreate $ -1
         lstModules <- listCtrlEx pnlMs (wxLC_REPORT + wxLC_ALIGN_LEFT + wxLC_NO_HEADER + wxLC_SINGLE_SEL)
                                        [columns := [("Module", AlignLeft, 200),
-                                                    ("Origin", AlignLeft, 0)]]
+                                                    ("Origin", AlignLeft, 1)]]
         listCtrlSetImageList lstModules images wxIMAGE_LIST_SMALL
 
         -- Results panel
         pnlRes <- panel win []
         txtValue <- textEntry pnlRes [style := wxTE_READONLY]
         txtType <- textEntry pnlRes [style := wxTE_READONLY]
-        txtKind <- textEntry pnlRes [style := wxTE_READONLY, visible := False]
         btnInterpret <- button pnlRes [text := "Interpret"]
         lblInterpret <- staticText pnlRes [text := "Value:"]
         lbl4Dots <- staticText pnlRes [text := " :: "]
@@ -120,7 +117,7 @@ gui =
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
         
-        let guiRes = GUIRes pnlRes btnInterpret lblInterpret txtValue lbl4Dots txtType txtKind
+        let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType
         let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status varTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
@@ -599,13 +596,11 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
-                                                  resLabel = lblInterpret,
+interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                                                   resButton = btnInterpret,
                                                   resValue = txtValue,
                                                   res4Dots = lbl4Dots,
-                                                  resType = txtType,
-                                                  resKind = txtKind},
+                                                  resType = txtType},
                               guiCode = txtCode, guiWin = win} =
     do
         sel <- textCtrlGetStringSelection txtCode
@@ -624,30 +619,16 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resPanel = pnlRes,
                     if HP.isIntType interp
                         then do
                                 set btnInterpret [enabled := True]
-                                set txtValue [visible := False]
+                                set txtValue [text := HP.intKind interp]
                                 set lbl4Dots [visible := False]
                                 set txtType [visible := False]
-                                set txtKind [visible := True, text := HP.intKind interp]
                                 set lblInterpret [text := "Kind:"]
-                                set pnlRes [layout := fill $ centre $
-                                                        row 5 [widget btnInterpret,
-                                                               centre $ widget lblInterpret,
-                                                               hfill $ widget txtKind]]
-                                repaint win
                         else do
                                 set btnInterpret [enabled := True]
-                                set txtValue [visible := True, text := HP.intValue interp]
-                                set lbl4Dots [visible := True, text := " :: "]
+                                set txtValue [text := HP.intValue interp]
+                                set lbl4Dots [visible := True]
                                 set txtType [visible := True, text := HP.intType interp]
-                                set txtKind [visible := False]
                                 set lblInterpret [text := "Value:"]
-                                set pnlRes [layout := fill $ 
-                                                        row 5 [widget btnInterpret,
-                                                               centre $ widget lblInterpret,
-                                                               hfill $ widget txtValue,
-                                                               centre $ widget lbl4Dots,
-                                                               hfill $ widget txtType]]
-                                repaint win
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
@@ -671,8 +652,7 @@ runTxtHPSelection s model hpacc =
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
 refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
-                                                    resType = txtType,
-                                                    resKind = txtKind},
+                                                    resType = txtType},
                                 guiCode = txtCode,
                                 guiWin = win} forceClear =
    do
@@ -686,7 +666,7 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
                 warningDialog win "Error" err
             Right changed ->
                 if changed || forceClear
-                    then mapM_ (flip set [text := ""]) [txtValue, txtType, txtKind]
+                    then mapM_ (flip set [text := ""]) [txtValue, txtType]
                     else debugIO "dummy refreshExpr"
         
         killTimer model guiCtx
