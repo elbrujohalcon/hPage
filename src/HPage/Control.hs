@@ -81,7 +81,8 @@ import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
 
-data Interpretation = Type {intKind ::  String} | Expr {intValue :: String, intType :: String}
+data Interpretation = Type {intKind ::  String} |
+                      Expr {intValue :: String, intType :: String}
     deriving (Eq, Show)
     
 isIntType :: Interpretation -> Bool
@@ -441,9 +442,17 @@ interpretNth i =
                     do
                         valueRes <- valueOfNth i
                         case valueRes of
-                            Left verr -> return $ Left verr
+                            Left verr ->
+                                let verrStr = show verr
+                                in if isNotShowable verr
+                                        then return $ Right $ Expr{intValue = "", intType = t}
+                                        else return $ Left verr
                             Right v -> return $ Right $ Expr{intValue = v, intType = t}
-
+        where isNotShowable (Hint.WontCompile ghcerrs) = any complainsAboutShow ghcerrs
+              isNotShowable _ = False
+              complainsAboutShow err = let errMsg = Hint.errMsg err
+                                        in "No instance for (GHC.Show" `isPrefixOf` errMsg
+              
 valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
 valueOfNth = runInExprNthWithLets Hint.eval
 kindOfNth = runInExprNth Hint.kindOf
@@ -703,7 +712,7 @@ cancel = do
                             running = Nothing})
 
 prettyPrintError :: Hint.InterpreterError -> String
-prettyPrintError (Hint.WontCompile ghcerr)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerr)
+prettyPrintError (Hint.WontCompile ghcerrs)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerrs)
 prettyPrintError (Hint.UnknownError errStr) = "Unknown Error: " ++ errStr
 prettyPrintError (Hint.NotAllowed errStr)   = "Not Allowed Action: " ++ errStr
 prettyPrintError (Hint.GhcException errStr) = errStr

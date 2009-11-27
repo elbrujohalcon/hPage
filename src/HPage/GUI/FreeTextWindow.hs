@@ -235,13 +235,12 @@ gui =
         toolBarSetToolBitmapSize tbMain $ sz 32 32
 
         -- Layout settings
-        let txtCodeL    = fill $ widget txtCode
-            pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
+        let pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
             modsTabL    = tab "Modules" $ container pnlMs $ fill $ margin 5 $ widget lstModules
             leftL       = tabs ntbkL [modsTabL, pagesTabL]
             resultsL    = hfill $ boxed "Expression" $ fill $ widget pnlRes
-            rightL      = minsize (sz 485 100) $ column 5 [txtCodeL, resultsL]
-        set win [layout := fill $ row 10 [leftL, rightL],
+            rightL      = minsize (sz 485 100) $ fill $ widget txtCode
+        set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
                  clientSize := sz 800 600]
 
         -- ...and RUN!
@@ -611,24 +610,26 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
         set btnInterpret [enabled := False]
         res <- runner model HP.interpret
         case res of
-                Left err ->
-                    do
-                        warningDialog win "Error" err
+            Left err ->
+                do
+                    warningDialog win "Error" err
+                    set btnInterpret [enabled := True]
+            Right interp ->
+                if HP.isIntType interp
+                    then do
                         set btnInterpret [enabled := True]
-                Right interp ->
-                    if HP.isIntType interp
-                        then do
-                                set btnInterpret [enabled := True]
-                                set txtValue [text := HP.intKind interp]
-                                set lbl4Dots [visible := False]
-                                set txtType [visible := False]
-                                set lblInterpret [text := "Kind:"]
-                        else do
-                                set btnInterpret [enabled := True]
-                                set txtValue [text := HP.intValue interp]
-                                set lbl4Dots [visible := True]
-                                set txtType [visible := True, text := HP.intType interp]
-                                set lblInterpret [text := "Value:"]
+                        set txtValue [text := HP.intKind interp]
+                        set lbl4Dots [visible := False]
+                        set txtType [visible := False]
+                        set lblInterpret [text := "Kind:"]
+                    else do
+                        prevOnCmd <- get btnInterpret $ on command
+                        prevText  <- get btnInterpret text
+                        set btnInterpret [enabled := True]
+                        set txtValue [text := HP.intValue interp]
+                        set lbl4Dots [visible := True]
+                        set txtType [visible := True, text := HP.intType interp]
+                        set lblInterpret [text := "Value:"]
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
