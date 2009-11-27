@@ -7,10 +7,13 @@
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
--- import Control.Concurrent.Process
+import Prelude hiding (catch)
+import Control.Exception
+import Control.Concurrent.Process
+import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
-import System.IO.Error hiding (try)
+import System.IO.Error hiding (try, catch)
 import Data.List
 import Data.Bits
 import Data.Char (toLower)
@@ -607,7 +610,6 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                         "" -> tryIn
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx False
-        set btnInterpret [enabled := False]
         res <- runner model HP.interpret
         case res of
             Left err ->
@@ -617,19 +619,48 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
             Right interp ->
                 if HP.isIntType interp
                     then do
-                        set btnInterpret [enabled := True]
                         set txtValue [text := HP.intKind interp]
                         set lbl4Dots [visible := False]
                         set txtType [visible := False]
                         set lblInterpret [text := "Kind:"]
                     else do
-                        prevOnCmd <- get btnInterpret $ on command
-                        prevText  <- get btnInterpret text
-                        set btnInterpret [enabled := True]
-                        set txtValue [text := HP.intValue interp]
                         set lbl4Dots [visible := True]
                         set txtType [visible := True, text := HP.intType interp]
                         set lblInterpret [text := "Value:"]
+                        -- now we fill the textbox --
+                        set txtValue [text := ""]
+                        prevOnCmd <- get btnInterpret $ on command
+                        prevText  <- get btnInterpret text
+                        let prevAttrs = [on command := prevOnCmd,
+                                         text := prevText]
+                        cancelVar <- newEmptyMVar
+                        spawn $ valueFiller (set btnInterpret prevAttrs) cancelVar $ HP.intValue interp
+                        set btnInterpret [text := "Cancel",
+                                          on command := putMVar cancelVar ()]
+    where valueFiller :: IO () -> MVar () -> String -> Control.Concurrent.Process.Process () ()
+          valueFiller lastAcc cv val =
+            do
+                let bottomString = "_|_"
+                    bottomChar   = "_i_"
+                continue <- liftIO $ isEmptyMVar cv
+                if not continue
+                    then liftIO $ lastAcc
+                    else do
+                            h <- liftIO $ try (return $ case val of
+                                                                [] -> []
+                                                                (c:_) -> [c])
+                            case h of
+                                Left (ErrorCall _desc) ->
+                                    liftIO $ addText bottomString >> lastAcc
+                                Right [] ->
+                                    liftIO $ lastAcc
+                                Right t ->
+                                    do
+                                        liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
+                                        valueFiller lastAcc cv $ tail val
+          addText t = do
+                        orig <- get txtValue text
+                        set txtValue [text := orig ++ t]
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
