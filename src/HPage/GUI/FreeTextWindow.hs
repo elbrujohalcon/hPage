@@ -10,7 +10,6 @@ module HPage.GUI.FreeTextWindow ( gui ) where
 import Prelude hiding (catch)
 import Control.Exception
 import Control.Concurrent.Process
-import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
@@ -22,11 +21,11 @@ import Distribution.Package
 import Control.Monad.Error
 import Control.Monad.Loops
 import Graphics.UI.WX
-import Graphics.UI.WXCore
+import Graphics.UI.WXCore hiding (kill, Process)
 import Graphics.UI.WXCore.Types
 import Graphics.UI.WXCore.Dialogs
 import Graphics.UI.WXCore.Events
-import Graphics.UI.WXCore.WxcClasses
+--import Graphics.UI.WXCore.WxcClasses hiding (Process, kill)
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import HPage.GUI.Dialogs
@@ -633,32 +632,33 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                         prevText  <- get btnInterpret text
                         let prevAttrs = [on command := prevOnCmd,
                                          text := prevText]
-                        cancelVar <- newEmptyMVar
-                        spawn $ valueFiller (set btnInterpret prevAttrs) cancelVar $ HP.intValue interp
+                        debugIO "++> Spawning the value filler..."
+                        vfHandle <- spawn . valueFiller $ HP.intValue interp
+                        debugIO "++> Value filler spawned"
                         set btnInterpret [text := "Cancel",
-                                          on command := putMVar cancelVar ()]
-    where valueFiller :: IO () -> MVar () -> String -> Control.Concurrent.Process.Process () ()
-          valueFiller lastAcc cv val =
-            do
-                let bottomString = "_|_"
-                    bottomChar   = "_i_"
-                continue <- liftIO $ isEmptyMVar cv
-                if not continue
-                    then liftIO $ lastAcc
-                    else do
-                            h <- liftIO $ try (return $ case val of
-                                                                [] -> []
-                                                                (c:_) -> [c])
-                            case h of
-                                Left (ErrorCall _desc) ->
-                                    liftIO $ addText bottomString >> lastAcc
-                                Right [] ->
-                                    liftIO $ lastAcc
-                                Right t ->
-                                    do
-                                        liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
-                                        valueFiller lastAcc cv $ tail val
+                                          on command := kill vfHandle >> set btnInterpret prevAttrs]
+    where valueFiller :: String -> Process a ()
+          valueFiller val =
+              do
+                    let bottomString = "_|_"
+                        bottomChar   = "_i_"
+                    liftDebugIO "++> starting loop..."
+                    h <- liftIO $ try (case val of
+                                            [] -> return []
+                                            (c:_) -> return [c])
+                    --liftDebugIO ("++> h =", h)
+                    case h of
+                        Left (ErrorCall desc) ->
+                            liftIO $ debugIO ("++> Left", desc) >> addText bottomString >> return ()
+                        Right [] ->
+                            liftIO $ debugIO "++> done" >> return ()
+                        Right t ->
+                            do
+                                liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
+                                liftDebugIO "++> restarting"
+                                valueFiller $ tail val
           addText t = do
+                        debugIO ("Adding", t)
                         orig <- get txtValue text
                         set txtValue [text := orig ++ t]
  
