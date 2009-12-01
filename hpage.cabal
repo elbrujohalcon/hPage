@@ -1,5 +1,5 @@
 name: hpage
-version: 0.4.7
+version: 0.4.8
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -42,10 +42,10 @@ Executable hpage
                    wxcore >=0.11.1,             wxcore < 0.12,
                    wx >=0.11.1,                 wx < 0.12,
                    filepath >=1.1.0,            filepath < 1.2,
-                   Cabal >= 1.6,				Cabal < 1.7,
+                   Cabal >= 1.6,        	 			Cabal < 1.7,
                    hint >= 0.3.2,               hint < 0.4,
-                   eprocess >= 1.0.0,           eprocess < 2,
-                   hint-server >= 1.0.0,        hint-server < 2
+                   eprocess >= 1.1.0,           eprocess < 2,
+                   hint-server >= 1.1.0,        hint-server < 2
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
