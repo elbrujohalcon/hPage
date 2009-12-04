@@ -67,7 +67,7 @@ gui =
         -- Server context
         model <- HPS.start
         
-        win <- frame [text := "λPage"]
+        win <- frame [text := "\955Page"]
         imageFile "icon/hpage.tif" >>= topLevelWindowSetIconFromFile win 
         
         set win [on closing := HPS.stop model >> propagateEvent]
@@ -109,7 +109,7 @@ gui =
                                        fill $ widget txtType]]
 
         -- Status bar...
-        status <- statusField [text := "hello... this is λPage! type in your instructions :)"]
+        status <- statusField [text := "hello... this is \955Page! type in your instructions :)"]
         set win [statusBar := [status]]
 
         -- Timer ...
@@ -177,7 +177,7 @@ gui =
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
-        menuAbout mnuHelp [on command := infoDialog win "About λPage" "Author: Fernando Brujo Benavides"]
+        menuAbout mnuHelp [on command := infoDialog win "About \955Page" "Author: Fernando Brujo Benavides\nWebsite: http://haskell.hpage.com"]
         
         set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
         evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
@@ -391,9 +391,9 @@ savePage model guiCtx@GUICtx{guiWin = win} =
 
 copy _model GUICtx{guiCode = txtCode} = textCtrlCopy txtCode
 
-cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshPage model guiCtx
+cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshExpr model guiCtx False
 
-paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshPage model guiCtx
+paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshExpr model guiCtx False
 
 justFind model guiCtx = openFindDialog model guiCtx "Find..." dialogDefaultStyle
 
@@ -436,7 +436,7 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
                                     absPath <- canonicalizePath setupConfig
                                     let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
                                     setCurrentDirectory dir
-                                    frameSetTitle win $ "λPage - " ++ prettyShow pkg
+                                    frameSetTitle win $ "\955Page - " ++ prettyShow pkg
                         refreshPage model guiCtx
   where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
                                      pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
@@ -640,8 +640,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
     where valueFiller :: String -> Process a ()
           valueFiller val =
               do
-                    let bottomString = "⟘"
-                        bottomChar   = "˔"
+                    let bottomString = "\10200"
+                        bottomChar   = "\724"
                     liftDebugIO "++> starting loop..."
                     h <- liftIO $ try (case val of
                                             [] -> return []
