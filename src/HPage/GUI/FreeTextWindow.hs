@@ -640,8 +640,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
     where valueFiller :: String -> Process a ()
           valueFiller val =
               do
-                    let bottomString = "_|_"
-                        bottomChar   = "_i_"
+                    let bottomString = "⟘"
+                        bottomChar   = "˔"
                     liftDebugIO "++> starting loop..."
                     h <- liftIO $ try (case val of
                                             [] -> return []
