@@ -391,9 +391,9 @@ savePage model guiCtx@GUICtx{guiWin = win} =
 
 copy _model GUICtx{guiCode = txtCode} = textCtrlCopy txtCode
 
-cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshExpr model guiCtx False
+cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshExpr model guiCtx
 
-paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshExpr model guiCtx False
+paste model guiCtx@GUICtx{guiCode = txtCode} = textCtrlPaste txtCode >> refreshExpr model guiCtx
 
 justFind model guiCtx = openFindDialog model guiCtx "Find..." dialogDefaultStyle
 
@@ -521,7 +521,7 @@ openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
         txt <- readFile f
         set txtCode [text := txt]
         -- Refresh the current expression box
-        refreshExpr model guiCtx True
+        refreshExpr model guiCtx
 
 refreshPage model guiCtx@GUICtx{guiWin = win,
                                 guiPages = lstPages,
@@ -582,7 +582,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     set status [text := ""]
                     
                     -- Refresh the current expression box
-                    refreshExpr model guiCtx True
+                    refreshExpr model guiCtx
 
 runHP' ::  HP.HPage () -> HPS.ServerHandle -> GUIContext -> IO ()
 runHP' a = runHP $ a >>= return . Right
@@ -608,13 +608,12 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
         let runner = case sel of
                         "" -> tryIn
                         sl -> runTxtHPSelection sl
-        refreshExpr model guiCtx False
+        refreshExpr model guiCtx
         res <- runner model HP.interpret
         case res of
             Left err ->
                 do
                     warningDialog win "Error" err
-                    set btnInterpret [enabled := True]
             Right interp ->
                 if HP.isIntType interp
                     then do
@@ -628,20 +627,24 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                         set lblInterpret [text := "Value:"]
                         -- now we fill the textbox --
                         set txtValue [text := ""]
-                        prevOnCmd <- get btnInterpret $ on command
-                        prevText  <- get btnInterpret text
-                        let prevAttrs = [on command := prevOnCmd,
-                                         text := prevText]
                         debugIO "++> Spawning the value filler..."
                         vfHandle <- spawn . valueFiller $ HP.intValue interp
                         debugIO "++> Value filler spawned"
-                        set btnInterpret [text := "Cancel",
-                                          on command := kill vfHandle >> set btnInterpret prevAttrs]
     where valueFiller :: String -> Process a ()
           valueFiller val =
               do
+                    prevOnCmd <- liftIO $ get btnInterpret $ on command
+                    myself <- self
                     let bottomString = "\10200"
                         bottomChar   = "\724"
+                        revert       = set btnInterpret [text := "Cancel",
+                                                         on command := do
+                                                                debugIO "++> loop cancelling..."
+                                                                set btnInterpret [on command := prevOnCmd,
+                                                                                  text := "Interpret"]
+                                                                kill myself
+                                                                debugIO "++> loop cancelled"]
+                    liftIO $ revert 
                     liftDebugIO "++> starting loop..."
                     h <- liftIO $ try (case val of
                                             [] -> return []
@@ -649,9 +652,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                     --liftDebugIO ("++> h =", h)
                     case h of
                         Left (ErrorCall desc) ->
-                            liftIO $ debugIO ("++> Left", desc) >> addText bottomString >> return ()
+                            liftIO $ debugIO ("++> Left", desc) >> revert >> addText bottomString >> debugIO "++> done"
                         Right [] ->
-                            liftIO $ debugIO "++> done" >> return ()
+                            liftIO $ revert >> debugIO "++> done"
                         Right t ->
                             do
                                 liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
@@ -682,11 +685,9 @@ runTxtHPSelection s model hpacc =
                         tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
                         return res
 
-refreshExpr :: HPS.ServerHandle -> GUIContext -> Bool -> IO ()
-refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
-                                                    resType = txtType},
-                                guiCode = txtCode,
-                                guiWin = win} forceClear =
+refreshExpr :: HPS.ServerHandle -> GUIContext -> IO ()
+refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
+                                guiWin = win} =
    do
         txt <- get txtCode text
         ip <- textCtrlGetInsertionPoint txtCode
@@ -696,10 +697,8 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
         case res of
             Left err ->
                 warningDialog win "Error" err
-            Right changed ->
-                if changed || forceClear
-                    then mapM_ (flip set [text := ""]) [txtValue, txtType]
-                    else debugIO "dummy refreshExpr"
+            Right _ ->
+                debugIO "refreshExpr done"
         
         killTimer model guiCtx
 
@@ -708,7 +707,7 @@ refreshExpr model guiCtx@GUICtx{guiResults = GUIRes{resValue = txtValue,
 restartTimer model guiCtx@GUICtx{guiWin = win, guiTimer = varTimer} =
     do
         newRefreshTimer <- timer win [interval := 1000,
-                                      on command := refreshExpr model guiCtx False]
+                                      on command := refreshExpr model guiCtx]
         refreshTimer <- varSwap varTimer newRefreshTimer
         timerOnCommand refreshTimer $ return ()
 
@@ -778,7 +777,7 @@ findNextButton model guiCtx@GUICtx{guiCode = txtCode,
             Just ip ->
                 do
                     textCtrlSetSelection txtCode (length s + ip) ip
-                    refreshExpr model guiCtx False 
+                    refreshExpr model guiCtx 
 
 findReplaceButton model guiCtx@GUICtx{guiCode = txtCode,
                                       guiWin = win,
@@ -796,7 +795,7 @@ findReplaceButton model guiCtx@GUICtx{guiCode = txtCode,
                 do
                     textCtrlReplace txtCode ip (length s + ip) r
                     textCtrlSetSelection txtCode (length r + ip) ip
-                    refreshExpr model guiCtx False
+                    refreshExpr model guiCtx
         
 findReplaceAllButton _model GUICtx{guiCode = txtCode,
                                    guiSearch = search} =
