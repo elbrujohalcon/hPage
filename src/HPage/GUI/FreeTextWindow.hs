@@ -30,6 +30,7 @@ import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import HPage.GUI.Dialogs
 import HPage.GUI.IDs
+import HPage.GUI.Constants
 import HPage.Utils.Log
 
 import Paths_hpage -- cabal locations of data files
@@ -133,6 +134,9 @@ gui =
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
                                             _ -> propagateEvent]
+        set txtValue [on mouse := \e -> case e of
+                                            MouseRightDown _ _ -> onCmd "valueContextMenu" valueContextMenu
+                                            _ -> propagateEvent]
         set lstModules [on listEvent := \e -> case e of
                                                 ListItemSelected idx -> varSet varModsSel idx
                                                 ListItemRightClick idx -> varSet varModsSel idx >> onCmd "moduleContextMenu" moduleContextMenu
@@ -174,6 +178,7 @@ gui =
         menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
+        menuAppend mnuHask wxId_HASK_COPY "&Copy Result to Clipboard\tCtrl-Shift-c" "Copy the Current Result to the Clipboard" False
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
@@ -203,6 +208,8 @@ gui =
         evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
         evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
         evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
+        evtHandlerOnMenuCommand win wxId_HASK_COPY $ onCmd "copyResult" copyResult
+        evtHandlerOnMenuCommand win wxId_HASK_EXPLAIN $ onCmd "explain" explain
         evtHandlerOnMenuCommand win wxId_HELP $ onCmd "help" openHelpPage
         
         -- Tool bar...
@@ -252,10 +259,10 @@ gui =
 
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
-    pageChange, copy, cut, paste,
+    pageChange, copy, copyResult, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu, moduleContextMenu,
-    restartTimer, killTimer,
+    textContextMenu, moduleContextMenu, valueContextMenu,
+    restartTimer, killTimer, interpret, explain,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
@@ -338,11 +345,31 @@ textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
                         menuAppend contextMenu wxId_PASTE "&Paste\tCtrl-v" "Paste" False
                         menuAppendSeparator contextMenu
         menuAppend contextMenu wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
-        
         propagateEvent
         pointWithinWindow <- windowGetMousePosition win
         menuPopup contextMenu pointWithinWindow win
         objectDelete contextMenu
+
+valueContextMenu model guiCtx@GUICtx{guiWin = win,
+                                     guiResults = GUIRes{resValue = txtValue}} =
+    do
+        contextMenu <- menuPane []
+        sel <- textCtrlGetStringSelection txtValue
+        case sel of
+                "" ->
+                        return ()
+                _ ->
+                        menuAppend contextMenu wxId_HASK_COPY "Copy" "Copy" False
+        if sel == bottomChar
+            then menuAppend contextMenu wxId_HASK_EXPLAIN "Explain" "Explain" False
+            else if sel == bottomString
+                    then menuAppend contextMenu wxId_HASK_EXPLAIN "Explain" "Explain" False
+                    else return ()
+        propagateEvent
+        pointWithinWindow <- windowGetMousePosition win
+        menuPopup contextMenu pointWithinWindow win
+        objectDelete contextMenu
+        
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -390,6 +417,8 @@ savePage model guiCtx@GUICtx{guiWin = win} =
                     runHP' HP.savePage model guiCtx
 
 copy _model GUICtx{guiCode = txtCode} = textCtrlCopy txtCode
+
+copyResult _model GUICtx{guiResults = GUIRes{resValue = txtValue}} = textCtrlCopy txtValue
 
 cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshExpr model guiCtx
 
@@ -597,6 +626,16 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
+explain model guiCtx@GUICtx{guiWin = win,
+                            guiResults = GUIRes{resValue = txtValue}} =
+    do
+        sel <- textCtrlGetStringSelection txtValue
+        if sel == bottomChar
+            then infoDialog win "Bottom Char" sel
+            else if sel == bottomString
+                    then infoDialog win "Bottom String" sel
+                    else return ()
+
 interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                                                   resButton = btnInterpret,
                                                   resValue = txtValue,
@@ -628,23 +667,23 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                         -- now we fill the textbox --
                         set txtValue [text := ""]
                         debugIO "++> Spawning the value filler..."
-                        vfHandle <- spawn . valueFiller $ HP.intValue interp
+                        spawn . valueFiller $ HP.intValue interp
                         debugIO "++> Value filler spawned"
     where valueFiller :: String -> Process a ()
           valueFiller val =
               do
                     prevOnCmd <- liftIO $ get btnInterpret $ on command
                     myself <- self
-                    let bottomString = "\10200"
-                        bottomChar   = "\724"
-                        revert       = set btnInterpret [text := "Cancel",
-                                                         on command := do
-                                                                debugIO "++> loop cancelling..."
-                                                                set btnInterpret [on command := prevOnCmd,
-                                                                                  text := "Interpret"]
-                                                                kill myself
-                                                                debugIO "++> loop cancelled"]
-                    liftIO $ revert 
+                    let revert = do
+                                     debugIO "++> reverting..."
+                                     set btnInterpret [on command := prevOnCmd,
+                                                      text := "Interpret"]
+                                     debugIO "++> reverted"
+                    liftIO $ set btnInterpret [text := "Cancel",
+                                                   on command := do
+                                                                     debugIO "++> cancelling..."
+                                                                     spawn $ liftIO revert >> kill myself
+                                                                     debugIO "++> cancelled"]
                     liftDebugIO "++> starting loop..."
                     h <- liftIO $ try (case val of
                                             [] -> return []
@@ -652,9 +691,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                     --liftDebugIO ("++> h =", h)
                     case h of
                         Left (ErrorCall desc) ->
-                            liftIO $ debugIO ("++> Left", desc) >> revert >> addText bottomString >> debugIO "++> done"
+                            liftIO $ debugIO ("++> Left", desc) >> addText bottomString >> revert
                         Right [] ->
-                            liftIO $ revert >> debugIO "++> done"
+                            liftIO revert
                         Right t ->
                             do
                                 liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
