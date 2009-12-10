@@ -9,6 +9,7 @@ module HPage.GUI.FreeTextWindow ( gui ) where
 
 import Prelude hiding (catch)
 import Control.Exception
+import Control.Concurrent.MVar
 import Control.Concurrent.Process
 import System.FilePath
 import System.Directory
@@ -47,20 +48,24 @@ imageFile fp = do
 helpFile :: IO FilePath
 helpFile = getDataFileName "res/help/helpPage.hs"
 
+data GUIBottom = GUIBtm { bottomDesc :: String,
+                          bottomSource :: String }
+
 data GUIResults = GUIRes { resButton :: Button (),
                            resLabel :: StaticText (),
                            resValue :: TextCtrl (),
                            res4Dots :: StaticText (),
-                           resType  :: TextCtrl () }
+                           resType  :: TextCtrl (),
+                           resErrors :: Var [GUIBottom] }
 
-data GUIContext  = GUICtx { guiWin :: Frame (),
-                            guiPages :: SingleListBox (),
-                            guiModules :: (Var Int, ListCtrl ()),
-                            guiCode :: TextCtrl (),
-                            guiResults :: GUIResults,
-                            guiStatus :: StatusField,
-                            guiTimer :: Var (TimerEx ()),
-                            guiSearch :: FindReplaceData ()} 
+data GUIContext = GUICtx { guiWin :: Frame (),
+                           guiPages :: SingleListBox (),
+                           guiModules :: (Var Int, ListCtrl ()),
+                           guiCode :: TextCtrl (),
+                           guiResults :: GUIResults,
+                           guiStatus :: StatusField,
+                           guiTimer :: Var (TimerEx ()),
+                           guiSearch :: FindReplaceData ()} 
 
 gui :: IO ()
 gui =
@@ -98,6 +103,7 @@ gui =
         -- Results panel
         pnlRes <- panel win []
         txtValue <- textEntry pnlRes [style := wxTE_READONLY]
+        varErrors <- varCreate []
         txtType <- textEntry pnlRes [style := wxTE_READONLY]
         btnInterpret <- button pnlRes [text := "Interpret"]
         lblInterpret <- staticText pnlRes [text := "Value:"]
@@ -120,7 +126,7 @@ gui =
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
         
-        let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType
+        let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
         let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status varTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
@@ -170,7 +176,7 @@ gui =
         menuAppend mnuEdit wxId_PREFERENCES "&Preferences...\tCtrl-," "Preferences" False
 
         mnuHask <- menuPane [text := "Haskell"]
-        menuAppend mnuHask wxId_HASK_LOAD_PKG "Load &package...\tCtrl-Shift-l" "Load Cabal Package" False
+        menuAppend mnuHask wxId_HASK_LOAD_PKG "Load &package...\tCtrl-Alt-l" "Load Cabal Package" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
         menuAppend mnuHask wxId_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
@@ -360,11 +366,9 @@ valueContextMenu model guiCtx@GUICtx{guiWin = win,
                         return ()
                 _ ->
                         menuAppend contextMenu wxId_HASK_COPY "Copy" "Copy" False
-        if sel == bottomChar
+        if sel == bottomChar || sel == bottomString
             then menuAppend contextMenu wxId_HASK_EXPLAIN "Explain" "Explain" False
-            else if sel == bottomString
-                    then menuAppend contextMenu wxId_HASK_EXPLAIN "Explain" "Explain" False
-                    else return ()
+            else return ()
         propagateEvent
         pointWithinWindow <- windowGetMousePosition win
         menuPopup contextMenu pointWithinWindow win
@@ -627,20 +631,32 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
                 refreshPage model guiCtx
 
 explain model guiCtx@GUICtx{guiWin = win,
-                            guiResults = GUIRes{resValue = txtValue}} =
+                            guiResults = GUIRes{resValue = txtValue,
+                                                resErrors = varErrors}} =
     do
         sel <- textCtrlGetStringSelection txtValue
-        if sel == bottomChar
-            then infoDialog win "Bottom Char" sel
-            else if sel == bottomString
-                    then infoDialog win "Bottom String" sel
-                    else return ()
+        if sel == bottomChar || sel == bottomString
+            then do
+                    txt <- get txtValue text
+                    ip <- textCtrlGetInsertionPoint txtValue
+                    errs <- varGet varErrors
+                    let prevTxt = take ip txt
+                        isBottom c = [c] == bottomChar || [c] == bottomString
+                        errNo = length $ filter isBottom prevTxt
+                        err = if length errs > errNo
+                                then bottomDesc $ errs !! errNo
+                                else "Unknown"
+                    if sel == bottomChar
+                        then infoDialog win "Bottom Char" err
+                        else infoDialog win "Bottom String" err
+            else return ()
 
-interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
+interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resButton = btnInterpret,
-                                                  resValue = txtValue,
-                                                  res4Dots = lbl4Dots,
-                                                  resType = txtType},
+                                                  resValue  = txtValue,
+                                                  res4Dots  = lbl4Dots,
+                                                  resType   = txtType,
+                                                  resErrors = varErrors},
                               guiCode = txtCode, guiWin = win} =
     do
         sel <- textCtrlGetStringSelection txtCode
@@ -665,6 +681,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                         set txtType [visible := True, text := HP.intType interp]
                         set lblInterpret [text := "Value:"]
                         -- now we fill the textbox --
+                        varSet varErrors []
                         set txtValue [text := ""]
                         debugIO "++> Spawning the value filler..."
                         spawn . valueFiller $ HP.intValue interp
@@ -691,14 +708,43 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel = lblInterpret,
                     --liftDebugIO ("++> h =", h)
                     case h of
                         Left (ErrorCall desc) ->
-                            liftIO $ debugIO ("++> Left", desc) >> addText bottomString >> revert
+                            liftIO $ do
+                                        debugIO ("++> Left", desc)
+                                        varUpdate varErrors (++ [GUIBtm desc val])
+                                        addText bottomString
+                                        revert
                         Right [] ->
                             liftIO revert
                         Right t ->
                             do
-                                liftIO $ catch (addText t) $ \(ErrorCall _desc) -> addText bottomChar
-                                liftDebugIO "++> restarting"
+                                ready <- liftIO newEmptyMVar
+                                cfh <- liftIO . spawn $ charFiller t ready
+                                let killCmd =
+                                        do
+                                            stillRunning <- isEmptyMVar ready
+                                            if stillRunning
+                                                then do
+                                                        debugIO "++> killing char filler"
+                                                        kill cfh
+                                                        varUpdate varErrors (++ [GUIBtm "Timed Out" t])
+                                                        addText bottomChar
+                                                        tryPutMVar ready ()
+                                                        return ()
+                                                else
+                                                    return ()
+                                timeKiller <- liftIO $ timer win [interval := charTimeout,
+                                                                  on command := killCmd]
+                                liftIO $ readMVar ready
+                                liftIO $ timerOnCommand timeKiller $ return ()
+                                liftDebugIO "++> continuing"
                                 valueFiller $ tail val
+          charFiller :: String -> MVar () -> Process a ()
+          charFiller t r = liftIO $ do
+                                     catch (addText t) $ \(ErrorCall desc) ->
+                                                            debugIO "++> Catched!" >>
+                                                            varUpdate varErrors (++ [GUIBtm desc t]) >>
+                                                            addText bottomChar
+                                     putMVar r ()
           addText t = do
                         debugIO ("Adding", t)
                         orig <- get txtValue text
