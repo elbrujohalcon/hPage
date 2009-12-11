@@ -143,6 +143,9 @@ gui =
         set txtValue [on mouse := \e -> case e of
                                             MouseRightDown _ _ -> onCmd "valueContextMenu" valueContextMenu
                                             _ -> propagateEvent]
+        set txtType [on mouse := \e -> case e of
+                                            MouseRightDown _ _ -> onCmd "typeContextMenu" typeContextMenu
+                                            _ -> propagateEvent]
         set lstModules [on listEvent := \e -> case e of
                                                 ListItemSelected idx -> varSet varModsSel idx
                                                 ListItemRightClick idx -> varSet varModsSel idx >> onCmd "moduleContextMenu" moduleContextMenu
@@ -184,7 +187,6 @@ gui =
         menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
-        menuAppend mnuHask wxId_HASK_COPY "&Copy Result to Clipboard\tCtrl-Shift-c" "Copy the Current Result to the Clipboard" False
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
@@ -215,6 +217,7 @@ gui =
         evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
         evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
         evtHandlerOnMenuCommand win wxId_HASK_COPY $ onCmd "copyResult" copyResult
+        evtHandlerOnMenuCommand win wxId_HASK_COPY_TYPE $ onCmd "copyType" copyType
         evtHandlerOnMenuCommand win wxId_HASK_EXPLAIN $ onCmd "explain" explain
         evtHandlerOnMenuCommand win wxId_HELP $ onCmd "help" openHelpPage
         
@@ -265,7 +268,7 @@ gui =
 
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
-    pageChange, copy, copyResult, cut, paste,
+    pageChange, copy, copyResult, copyType, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
     textContextMenu, moduleContextMenu, valueContextMenu,
     restartTimer, killTimer, interpret, explain,
@@ -362,10 +365,10 @@ valueContextMenu model guiCtx@GUICtx{guiWin = win,
         contextMenu <- menuPane []
         sel <- textCtrlGetStringSelection txtValue
         case sel of
-                "" ->
-                        return ()
-                _ ->
-                        menuAppend contextMenu wxId_HASK_COPY "Copy" "Copy" False
+            "" ->
+                return ()
+            _ ->
+                menuAppend contextMenu wxId_HASK_COPY "Copy" "Copy" False
         if sel == bottomChar || sel == bottomString
             then menuAppend contextMenu wxId_HASK_EXPLAIN "Explain" "Explain" False
             else return ()
@@ -374,6 +377,24 @@ valueContextMenu model guiCtx@GUICtx{guiWin = win,
         menuPopup contextMenu pointWithinWindow win
         objectDelete contextMenu
         
+typeContextMenu model guiCtx@GUICtx{guiWin = win,
+                                    guiResults = GUIRes{resType = txtType}} =
+    do
+        contextMenu <- menuPane []
+        sel <- textCtrlGetStringSelection txtType
+        case sel of
+            "" ->
+                do
+                    propagateEvent
+                    objectDelete contextMenu
+            _ ->
+                do
+                    menuAppend contextMenu wxId_HASK_COPY_TYPE "Copy" "Copy" False
+                    propagateEvent
+                    pointWithinWindow <- windowGetMousePosition win
+                    menuPopup contextMenu pointWithinWindow win
+                    objectDelete contextMenu
+
 
 pageChange model guiCtx@GUICtx{guiPages = lstPages} =
     do
@@ -423,6 +444,8 @@ savePage model guiCtx@GUICtx{guiWin = win} =
 copy _model GUICtx{guiCode = txtCode} = textCtrlCopy txtCode
 
 copyResult _model GUICtx{guiResults = GUIRes{resValue = txtValue}} = textCtrlCopy txtValue
+
+copyType _model GUICtx{guiResults = GUIRes{resType = txtType}} = textCtrlCopy txtType
 
 cut model guiCtx@GUICtx{guiCode = txtCode} = textCtrlCut txtCode >> refreshExpr model guiCtx
 
