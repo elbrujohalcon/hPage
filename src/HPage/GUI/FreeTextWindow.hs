@@ -287,7 +287,6 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
             i ->
                 do
                     itm <- get lstModules $ item i
-                    debugIO ("the item", itm)
                     case itm of
                         [_, "Package"] ->
                             menuAppend contextMenu wxId_HASK_LOAD_FAST "&Load" "Load Module" False
@@ -307,38 +306,61 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                         menuAppend browseMenu idAny err "Error" False
                     Right mes ->
                         flip mapM_ mes $ createMenuItem browseMenu
+                menuItem contextMenu [text := "To Clipboard",
+                                      on command := addToClipboard mn]
+                menuAppendSeparator contextMenu
                 menuAppendSub contextMenu wxId_HASK_BROWSE "&Browse" browseMenu ""
-          createMenuItem m fn@(HP.MEFun _ _) =
+          addToClipboard txt =
             do
-                item <- menuItemCreate
-                menuItemSetCheckable item False
-                menuItemSetText item $ show fn
-                menuItemSetId item wxId_HASK_MENUELEM
-                menuAppendItem m item 
+                tdo <- textDataObjectCreate txt
+                cb <- clipboardCreate
+                opened <- clipboardOpen cb
+                if opened
+                    then do
+                        r <- clipboardSetData cb tdo
+                        if r
+                            then return ()
+                            else errorDialog win "Error" "Clipboard operation failed"
+                        clipboardClose cb
+                    else
+                        errorDialog win "Error" "Clipboard not ready"
+          createMenuItem m fn@HP.MEFun{HP.funName = fname} =
+            do
+                itemMenu <- createBasicMenuItem fname
+                menuAppendSub m wxId_HASK_MENUELEM (show fn) itemMenu ""
           createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = []} =
             do
-                item <- menuItemCreate
-                menuItemSetCheckable item False
-                menuItemSetText item $ "class " ++ cn
-                menuItemSetId item wxId_HASK_MENUELEM
-                menuAppendItem m item
+                itemMenu <- createBasicMenuItem cn
+                menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) itemMenu ""
           createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = cfs} =
             do
                 subMenu <- menuPane []
+                menuItem subMenu [text := "To Clipboard",
+                                  on command := addToClipboard cn]
+                menuAppendSeparator subMenu
                 flip mapM_ cfs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
           createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = []} =
             do
-                item <- menuItemCreate
-                menuItemSetCheckable item False
-                menuItemSetText item $ "data " ++ dn
-                menuItemSetId item wxId_HASK_MENUELEM
-                menuAppendItem m item
+                itemMenu <- createBasicMenuItem dn
+                menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) itemMenu ""
           createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = dcs} =
             do
                 subMenu <- menuPane []
+                menuItem subMenu [text := "To Clipboard",
+                                  on command := addToClipboard dn]
+                menuAppendSeparator subMenu
                 flip mapM_ dcs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) subMenu ""
+          createBasicMenuItem name =
+            do
+                itemMenu <- menuPane []
+                menuItem itemMenu [text := "To Clipboard",
+                                   on command := addToClipboard name]
+                menuItem itemMenu [text := "Search on Hayoo!",
+                                   on command := hayooDialog win ("Hayoo! - " ++ name) name]
+                return itemMenu
+
 
 textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
     do
@@ -624,7 +646,6 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                         pms' = map (\m -> (3, [m, "Package"])) $
                                         flip filter pms $ \pm -> all (\xm -> HP.modName xm /= pm) ms
                         allms = zip [0..] (ims' ++ ms' ++ pms')
-                    debugIO ("allms", allms)
                     itemsDelete lstModules
                     (flip mapM) allms $ \(idx, (img, m@(mn:_))) ->
                                                 listCtrlInsertItemWithLabel lstModules idx mn img >>                                                
@@ -670,8 +691,8 @@ explain model guiCtx@GUICtx{guiWin = win,
                                 then bottomDesc $ errs !! errNo
                                 else "Unknown"
                     if sel == bottomChar
-                        then infoDialog win "Bottom Char" err
-                        else infoDialog win "Bottom String" err
+                        then errorDialog win "Bottom Char" err
+                        else errorDialog win "Bottom String" err
             else return ()
 
 interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
@@ -706,33 +727,25 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         -- now we fill the textbox --
                         varSet varErrors []
                         set txtValue [text := ""]
-                        debugIO "++> Spawning the value filler..."
                         spawn . valueFiller $ HP.intValue interp
-                        debugIO "++> Value filler spawned"
+                        return ()
     where valueFiller :: String -> Process a ()
           valueFiller val =
               do
                     prevOnCmd <- liftIO $ get btnInterpret $ on command
                     myself <- self
-                    let revert = do
-                                     debugIO "++> reverting..."
-                                     set btnInterpret [on command := prevOnCmd,
-                                                      text := "Interpret"]
-                                     debugIO "++> reverted"
+                    let revert = set btnInterpret [on command := prevOnCmd,
+                                                   text := "Interpret"]
                     liftIO $ set btnInterpret [text := "Cancel",
-                                                   on command := do
-                                                                     debugIO "++> cancelling..."
-                                                                     spawn $ liftIO revert >> kill myself
-                                                                     debugIO "++> cancelled"]
-                    liftDebugIO "++> starting loop..."
+                                               on command := do
+                                                                spawn $ liftIO revert >> kill myself
+                                                                return ()]
                     h <- liftIO $ try (case val of
                                             [] -> return []
                                             (c:_) -> return [c])
-                    --liftDebugIO ("++> h =", h)
                     case h of
                         Left (ErrorCall desc) ->
                             liftIO $ do
-                                        debugIO ("++> Left", desc)
                                         varUpdate varErrors (++ [GUIBtm desc val])
                                         addText bottomString
                                         revert
@@ -747,7 +760,6 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                             stillRunning <- isEmptyMVar ready
                                             if stillRunning
                                                 then do
-                                                        debugIO "++> killing char filler"
                                                         kill cfh
                                                         varUpdate varErrors (++ [GUIBtm "Timed Out" t])
                                                         addText bottomChar
@@ -759,17 +771,14 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                                   on command := killCmd]
                                 liftIO $ readMVar ready
                                 liftIO $ timerOnCommand timeKiller $ return ()
-                                liftDebugIO "++> continuing"
                                 valueFiller $ tail val
           charFiller :: String -> MVar () -> Process a ()
           charFiller t r = liftIO $ do
                                      catch (addText t) $ \(ErrorCall desc) ->
-                                                            debugIO "++> Catched!" >>
                                                             varUpdate varErrors (++ [GUIBtm desc t]) >>
                                                             addText bottomChar
                                      putMVar r ()
           addText t = do
-                        debugIO ("Adding", t)
                         orig <- get txtValue text
                         set txtValue [text := orig ++ t]
  
@@ -777,7 +786,6 @@ runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
 runTxtHPSelection s model hpacc =
     do
-        debugIO ("evaluating selection", s)
         piRes <- tryIn' model HP.getPageIndex
         added <- tryIn' model $ HP.addPage
         case added of

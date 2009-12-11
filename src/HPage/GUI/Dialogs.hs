@@ -15,6 +15,11 @@ data Preferences = Prefs {languageExtensions :: [HP.Extension],
                           ghcOptions :: String}
     deriving (Eq, Show)
 
+hayooDialog :: Window a -> String -> String -> IO ()
+hayooDialog win caption query =
+    do
+        warningDialog win caption query
+
 preferencesDialog :: Window a -> String -> Preferences -> IO (Maybe Preferences)
 preferencesDialog win caption currentPrefs =
     do
