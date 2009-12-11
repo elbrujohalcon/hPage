@@ -187,6 +187,7 @@ gui =
         menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
         menuAppendSeparator mnuHask
         menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
+        menuAppend mnuHask wxId_HASK_NAVIGATE "Search on Ha&yoo!\tCtrl-y" "Search the Current Selection on Hayoo!" False
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
@@ -216,6 +217,7 @@ gui =
         evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
         evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
         evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
+        evtHandlerOnMenuCommand win wxId_HASK_NAVIGATE $ onCmd "hayoo" hayoo
         evtHandlerOnMenuCommand win wxId_HASK_COPY $ onCmd "copyResult" copyResult
         evtHandlerOnMenuCommand win wxId_HASK_COPY_TYPE $ onCmd "copyType" copyType
         evtHandlerOnMenuCommand win wxId_HASK_EXPLAIN $ onCmd "explain" explain
@@ -271,7 +273,7 @@ refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, copyResult, copyType, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
     textContextMenu, moduleContextMenu, valueContextMenu,
-    restartTimer, killTimer, interpret, explain,
+    restartTimer, killTimer, interpret, hayoo, explain,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
@@ -308,6 +310,8 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                         flip mapM_ mes $ createMenuItem browseMenu
                 menuItem contextMenu [text := "To Clipboard",
                                       on command := addToClipboard mn]
+                menuItem contextMenu [text := "Search on Hayoo!",
+                                      on command := hayooDialog win mn]
                 menuAppendSeparator contextMenu
                 menuAppendSub contextMenu wxId_HASK_BROWSE "&Browse" browseMenu ""
           addToClipboard txt =
@@ -334,9 +338,7 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) itemMenu ""
           createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = cfs} =
             do
-                subMenu <- menuPane []
-                menuItem subMenu [text := "To Clipboard",
-                                  on command := addToClipboard cn]
+                subMenu <- createBasicMenuItem cn
                 menuAppendSeparator subMenu
                 flip mapM_ cfs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
@@ -346,9 +348,7 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                 menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) itemMenu ""
           createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = dcs} =
             do
-                subMenu <- menuPane []
-                menuItem subMenu [text := "To Clipboard",
-                                  on command := addToClipboard dn]
+                subMenu <- createBasicMenuItem dn
                 menuAppendSeparator subMenu
                 flip mapM_ dcs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) subMenu ""
@@ -358,7 +358,7 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                 menuItem itemMenu [text := "To Clipboard",
                                    on command := addToClipboard name]
                 menuItem itemMenu [text := "Search on Hayoo!",
-                                   on command := hayooDialog win ("Hayoo! - " ++ name) name]
+                                   on command := hayooDialog win name]
                 return itemMenu
 
 
@@ -375,6 +375,7 @@ textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
                         menuAppend contextMenu wxId_COPY "&Copy\tCtrl-c" "Copy" False
                         menuAppend contextMenu wxId_PASTE "&Paste\tCtrl-v" "Paste" False
                         menuAppendSeparator contextMenu
+                        menuAppend contextMenu wxId_HASK_NAVIGATE "Search on Ha&yoo!\tCtrl-y" "Search the Current Selection on Hayoo!" False
         menuAppend contextMenu wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
         propagateEvent
         pointWithinWindow <- windowGetMousePosition win
@@ -694,6 +695,9 @@ explain model guiCtx@GUICtx{guiWin = win,
                         then errorDialog win "Bottom Char" err
                         else errorDialog win "Bottom String" err
             else return ()
+
+hayoo model guiCtx@GUICtx{guiCode = txtCode, guiWin = win} =
+    textCtrlGetStringSelection txtCode >>= hayooDialog win
 
 interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resButton = btnInterpret,
