@@ -17,19 +17,7 @@ data Preferences = Prefs {languageExtensions :: [HP.Extension],
 
 hayooDialog :: Window a -> String -> IO ()
 hayooDialog win query =
-    do
-        dlg <- dialog win [text := "Hayoo! - work in progress"]
-        htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) (sz 640 480)) 0 ""
-        htmlWindowSetPage htmlw $ "<body>Waiting for Timo & Sebastian to integrate" ++
-                                  " \955Page and <a target=\"_blank\"" ++
-                                  " href=\"http://holumbus.fh-wedel.de/hayoo/hayoo.html\">Hayoo!</a> :)" ++
-                                  "</body>"
-        set dlg [layout := fill $ widget htmlw,
-                 visible := True,
-                 clientSize := sz 640 480]
-        return ()
---TODO: Use this or something similar:
---    htmlDialog win "Hayoo!" $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html#0:" ++ query
+    htmlDialog win "Hayoo!" $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html?query=" ++ query
 
 htmlDialog :: Window a -> String -> String -> IO ()
 htmlDialog win caption url =
