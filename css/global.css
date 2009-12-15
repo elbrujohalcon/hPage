@@ -228,3 +228,15 @@ body {
 #footer p {
 	margin-bottom: 4px;
 }
+
+/* Screenshots */
+#screenshots a {
+	color: white;
+}
+.screenshotsP {
+	width: 100%;
+	text-align: center;
+}
+#screenshot {
+	height: 480px;
+}

@@ -23,6 +23,46 @@ $(function()
 		onShow: animateModal
 	});
 
+	// Inicializamos Screenshots
+	$('#screenshots').jqm({
+		modal: true,
+		trigger: 'a.screenshots',
+		onShow: animateModal
+	});
+	$('#screenshot')[0].alt = "hPage on OSX";
+	$('#screenshot')[0].src = "images/screenshots/hpage-0.5.2-OSX.png"
+	$('#screenshot').hover(function()
+	{
+		$(this)[0].src = "images/screenshots/hpage-0.5.2-OSX-explained.png"
+	}, function()
+	{
+		$(this)[0].src = "images/screenshots/hpage-0.5.2-OSX.png"
+	});
+	$('#screenshotOSX').click(function()
+	{
+		$('#screenshot')[0].alt = "hPage on OSX";
+		$('#screenshot')[0].src = "images/screenshots/hpage-0.5.2-OSX.png"
+		$('#screenshot').hover(function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-OSX-explained.png"
+		}, function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-OSX.png"
+		});
+	});
+	$('#screenshotLinux').click(function()
+	{
+		$('#screenshot')[0].alt = "hPage on Linux";
+		$('#screenshot')[0].src = "images/screenshots/hpage-0.5.2-Linux.png"
+		$('#screenshot').hover(function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-Linux-explained.png"
+		}, function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-Linux.png"
+		});
+	});
+
 	// Movemos los cartelitos sociales
 	$("#header .social a").hover(function()
 	{
