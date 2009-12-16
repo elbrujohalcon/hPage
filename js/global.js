@@ -50,6 +50,18 @@ $(function()
 			$(this)[0].src = "images/screenshots/hpage-0.5.2-OSX.png"
 		});
 	});
+	$('#screenshotWindows').click(function()
+	{
+		$('#screenshot')[0].alt = "hPage on Windows";
+		$('#screenshot')[0].src = "images/screenshots/hpage-0.5.2-Windows.png"
+		$('#screenshot').hover(function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-Windows-explained.png"
+		}, function()
+		{
+			$(this)[0].src = "images/screenshots/hpage-0.5.2-Windows.png"
+		});
+	});
 	$('#screenshotLinux').click(function()
 	{
 		$('#screenshot')[0].alt = "hPage on Linux";
