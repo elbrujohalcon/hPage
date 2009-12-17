@@ -7,7 +7,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-EN" lang="en-EN">
 
 <!--
-	* XHTML 1.0 Strict
+	* XHTML 1.0 Transitional
 	* @author Darío Ruellan
 -->
 
@@ -68,11 +68,25 @@
 			</div>
 
 			<div>
-				<p>
-					You can see some screenshots <a href="#" class="screenshots">here</a>
-				</p>
+				<img src="images/tit_icon_screenshots.png" alt="icon screenshots" class="icon" />
+				<h2><img src="images/tit_screenshots.png" alt="Screenshots" /></h2>
+				
+				<p>Pick a screenshot for a closer look:</p>
+				<a href="#" class="screenshot" rel="windows">
+					<img src="images/screenshots/windows_th.png" alt="windows" />
+					<span>Windows</span>
+				</a>
+				<a href="#" class="screenshot" rel="linux">
+					<img src="images/screenshots/linux_th.png" alt="linux" />
+					<span>Linux</span>
+				</a>
+				<a href="#" class="screenshot" rel="osx">
+					<img src="images/screenshots/osx_th.png" alt="osx" />
+					<span>OS X</span>
+				</a>
+			
+				<div class="clear"></div>
 			</div>
-
 			<div>
 				<img src="images/tit_icon_download.png" alt="icon download" class="icon" />
 				<h2><img src="images/tit_download.png" alt="Download" /></h2>
@@ -100,6 +114,18 @@
 					<li><a href="http://wxwidgets.org/" class="external">wxWidgets 2.8.10+</a></li>
 					<li><a href="http://wxhaskell.sourceforge.net/" class="external">wxHaskell</a></li>
 				</ul>
+
+				<div class="clear"></div>
+			</div>
+
+			<div>
+				<img src="images/tit_icon_resources.png" alt="icon resources" class="icon" />
+				<h2><img src="images/tit_resources.png" alt="Rescources" /></h2>
+				
+				<p>You can find installation instructions, FAQ and other information in the <a class="external" href="http://wiki.github.com/elbrujohalcon/hPage">λPage Wiki</a></p>
+				<p>Please file bugs or feature requests in our <a class="external" href="http://github.com/elbrujohalcon/hPage/issues">Issues Tracker</a> or drop us a line on <a target="_blank" href="http://twitter.com/direct_messages/create/hpage" class="twitter">Twitter</a></p>
+				
+				<div class="clear"></div>
 			</div>
 
 			<div>
@@ -139,13 +165,9 @@
 			<a href="#close" class="jqmClose"><em>Close</em></a>
 			<h1>Screenshots</h1>
 		</div>
-		<div class="jqmContent">
-			<p class="screenshotsP">
-				<a href="#" class="screenshotLink" id="screenshotOSX">OSX</a>&nbsp;|&nbsp;
-				<a href="#" class="screenshotLink" id="screenshotWindows">Windows</a>&nbsp;|&nbsp;
-				<a href="#" class="screenshotLink" id="screenshotLinux">Linux</a><br/>
-				<img id="screenshot" />
-			</p>
+		<div class="jqmContent screenshotsP">
+			<h4>Roll over for descriptions</h4>
+			<img id="screenshot" />
 		</div>
 	</div>
 

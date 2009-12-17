@@ -209,6 +209,19 @@ body {
 	display: block;
 }
 
+#text .screenshot {
+	float: left;
+	text-decoration: none;
+}
+#text .screenshot img {
+	margin: 6px;
+}
+#text .screenshot span {
+	display: block;
+	margin-left: 8px;
+}
+
+
 /* Footer */
 
 #footer {

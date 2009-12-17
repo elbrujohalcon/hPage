@@ -45,7 +45,10 @@
 	.jqmTitle h1 a:hover {
 		color: white;
 	}
-
+.jqmWindow h4 {
+	margin-bottom: 4px;
+	font-weight: bold;
+}
 .jqmWindow .jqmClose em{display:none;}
 .jqmWindow .jqmClose {
 	 width: 20px;
