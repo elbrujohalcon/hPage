@@ -35,7 +35,8 @@
   float:left;
   height:20px;
 }
-.jqmTitle h1 a {
+.jqmTitle h1 a,
+.jqmTitle h1 span{
 	color: silver;
 	text-decoration: none;
 	font-size: 12px;
@@ -124,4 +125,20 @@
 	font-size: 14px;
 	margin-top: 1px;
 	margin-bottom: 8px;
+}
+
+/* Screenshot positioning */
+
+#screenshots {
+	width: 600px;
+    left: 50%;
+	margin-left: -300px;
+}
+
+.screenshotsP {
+	width: 100%;
+	text-align: center;
+}
+#screenshot {
+	height: 480px;
 }
