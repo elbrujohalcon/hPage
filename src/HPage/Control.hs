@@ -55,13 +55,11 @@ module HPage.Control (
     ctxString
  ) where
 
-import Prelude hiding (catch)
 import System.IO
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
 import Data.Char
-import Control.Exception
 import Control.Monad.Loops
 import Control.Monad.Error
 import Control.Monad.State
@@ -76,8 +74,9 @@ import Data.List (isPrefixOf)
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
 import qualified Language.Haskell.Exts.Parser as Parser
-import Distribution.Simple.Configure
+import Distribution.Simple.Configure hiding (tryGetConfigStateFile)
 import Distribution.Simple.LocalBuildInfo
+import Distribution.Simple.Utils
 import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.ModuleName
@@ -567,7 +566,7 @@ setGhcOpts opts =  do
 loadPackage :: FilePath -> HPage (Either String PackageIdentifier)
 loadPackage file = do
                         let dir = dropFileName file
-                        res <- liftIO $ catch (getPersistBuildConfig dir >>= return . Right) $ \ex@(SomeException _) -> return (Left $ show ex)
+                        res <- liftIO $ tryGetPersistBuildConfig dir
                         case res of
                             Left err ->
                                 return $ Left $ "Couldn't load package: " ++ err
@@ -898,3 +897,24 @@ TAKEN FROM: http://hackage.haskell.org/packages/archive/MissingH/1.0.0/doc/html/
 uniq :: Eq a => [a] -> [a]
 uniq [] = []
 uniq (x:xs) = x : uniq (filter (/= x) xs)
+
+{- Taken from the source code of Distribution.Simple.Configure -}
+tryGetPersistBuildConfig :: FilePath -> IO (Either String LocalBuildInfo)
+tryGetPersistBuildConfig distPref
+    = tryGetConfigStateFile (localBuildInfoFile distPref)
+
+tryGetConfigStateFile :: (Read a) => FilePath -> IO (Either String a)
+tryGetConfigStateFile filename = do
+  exists <- doesFileExist filename
+  if not exists
+    then return (Left missing)
+    else withFileContents filename $ \str ->
+      case lines str of
+        [headder, rest] -> case reads rest of
+            [(bi,_)] -> return (Right bi)
+            _        -> return (Left cantParse)
+        _            -> return (Left cantParse)
+  where
+    missing   = "Run the 'configure' command first."
+    cantParse = "Saved package config file seems to be corrupt. "
+             ++ "Try re-running the 'configure' command."
