@@ -55,11 +55,13 @@ module HPage.Control (
     ctxString
  ) where
 
+import Prelude hiding (catch)
 import System.IO
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
 import Data.Char
+import Control.Exception
 import Control.Monad.Loops
 import Control.Monad.Error
 import Control.Monad.State
@@ -562,37 +564,45 @@ setGhcOpts opts =  do
                                 liftErrorIO $ ("Error setting ghc opts dirs", opts, e)
                         return res
 
-loadPackage :: FilePath -> HPage (Either Hint.InterpreterError PackageIdentifier)
+loadPackage :: FilePath -> HPage (Either String PackageIdentifier)
 loadPackage file = do
                         let dir = dropFileName file
-                        lbinfo <- liftIO $ getPersistBuildConfig dir
-                        let pkgdesc = localPkgDescr lbinfo
-                            pkgname = package pkgdesc
-                            bldinfos= allBuildInfo pkgdesc
-                            dirs = ("dist" </> "build" </> "autogen") : (uniq $ concatMap hsSourceDirs bldinfos)
-                            exts = uniq . map (read . show) $ concatMap extensions bldinfos
-                            opts = uniq $ concatMap (hcOptions GHC) bldinfos
-                            mods = uniq . map (joinWith "." . components) $ exeModules pkgdesc ++ (libModules pkgdesc)
-                            action = do
-                                        liftTraceIO $ "loading package: " ++ show pkgname
-                                        Hint.unsafeSetGhcOption "-i"
-                                        Hint.unsafeSetGhcOption "-i."
-                                        forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
-                                        Hint.set [Hint.languageExtensions := exts]
-                                        forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
-                                        return pkgname
-                        liftDebugIO mods
-                        res <- syncRun action
+                        res <- liftIO $ catch (getPersistBuildConfig dir >>= return . Right) $ \ex@(SomeException _) -> return (Left $ show ex)
                         case res of
-                            Right _ ->
-                                modify (\ctx -> ctx{activePackage       = Just pkgname,
-                                                    pkgModules          = mods,
-                                                    extraSrcDirs        = dirs,
-                                                    ghcOptions          = (ghcOptions ctx) ++ " " ++ (joinWith " " opts),
-                                                    recoveryLog         = recoveryLog ctx >> action >> return ()})
-                            Left e ->
-                                liftErrorIO $ ("Error loading package", pkgname, e)
-                        return res
+                            Left err ->
+                                return $ Left $ "Couldn't load package: " ++ err
+                            Right lbinfo ->
+                                do
+                                    let pkgdesc = localPkgDescr lbinfo
+                                        pkgname = package pkgdesc
+                                        bldinfos= allBuildInfo pkgdesc
+                                        dirs = ("dist" </> "build" </> "autogen") : (uniq $ concatMap hsSourceDirs bldinfos)
+                                        exts = uniq . map (read . show) $ concatMap extensions bldinfos
+                                        opts = uniq $ concatMap (hcOptions GHC) bldinfos
+                                        mods = uniq . map (joinWith "." . components) $ exeModules pkgdesc ++ (libModules pkgdesc)
+                                        action = do
+                                                    liftTraceIO $ "loading package: " ++ show pkgname
+                                                    Hint.unsafeSetGhcOption "-i"
+                                                    Hint.unsafeSetGhcOption "-i."
+                                                    forM_ dirs $ Hint.unsafeSetGhcOption . ("-i" ++)
+                                                    Hint.set [Hint.languageExtensions := exts]
+                                                    forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
+                                                    return pkgname
+                                    liftDebugIO mods
+                                    res <- syncRun action
+                                    case res of
+                                        Right x ->
+                                            do
+                                                modify (\ctx -> ctx{activePackage       = Just pkgname,
+                                                                    pkgModules          = mods,
+                                                                    extraSrcDirs        = dirs,
+                                                                    ghcOptions          = (ghcOptions ctx) ++ " " ++ (joinWith " " opts),
+                                                                    recoveryLog         = recoveryLog ctx >> action >> return ()})
+                                                return $ Right x
+                                        Left e ->
+                                            do
+                                                liftErrorIO $ ("Error loading package", pkgname, e)
+                                                return . Left $ prettyPrintError e
 
 reset :: HPage (Either Hint.InterpreterError ())
 reset = do

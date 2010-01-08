@@ -503,14 +503,16 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
                     return ()
                 Just setupConfig ->
                     do
-                        loadres <- tryIn model $ do
+                        loadres <- tryIn' model $ do
                                                     lr <- HP.loadPackage setupConfig
                                                     HP.addPage
                                                     return lr
                         case loadres of
                             Left err ->
                                 warningDialog win "Error" err
-                            Right pkg ->
+                            Right (Left err) ->
+                                warningDialog win "Error" err
+                            Right (Right pkg) ->
                                 do
                                     absPath <- canonicalizePath setupConfig
                                     let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
@@ -850,9 +852,7 @@ tryIn model hpacc =
         res <- HPS.runIn model $ catchError (hpacc >>= return . Right)
                                             (\ioerr -> return $ Left ioerr)
         case res of
-            Left err          -> do
-                                    errorIO err
-                                    return . Left  $ ioeGetErrorString err
+            Left err          -> return . Left  $ ioeGetErrorString err
             Right (Left err)  -> return . Left  $ HP.prettyPrintError err
             Right (Right val) -> return . Right $ val
 
