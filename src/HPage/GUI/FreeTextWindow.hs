@@ -73,7 +73,8 @@ gui =
         -- Server context
         model <- HPS.start
         
-        win <- frame [text := "\955Page"]
+        win <- frame [text := "\955Page",
+                      visible := False]
         imageFile "icon/hpage.tif" >>= topLevelWindowSetIconFromFile win 
         
         set win [on closing := HPS.stop model >> propagateEvent]
@@ -161,7 +162,7 @@ gui =
         menuAppend mnuPage wxId_SAVE "&Save\tCtrl-s" "Save Page" False
         menuAppend mnuPage wxId_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
         menuAppendSeparator mnuPage
-        menuQuit mnuPage [on command := close win]
+        menuQuit mnuPage [on command := wxcAppExit]
         
         mnuEdit <- menuPane [text := "Edit"]
         menuAppend mnuEdit wxId_UNDO "&Undo\tCtrl-z" "Undo" False
@@ -262,10 +263,11 @@ gui =
             rightL      = minsize (sz 485 100) $ fill $ widget txtCode
         set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
                  clientSize := sz 800 600]
-
+                 
         -- ...and RUN!
         refreshPage model guiCtx
         onCmd "start" openHelpPage
+        set win [visible := True]
         focusOn txtCode
 
 -- EVENT HANDLERS --------------------------------------------------------------
