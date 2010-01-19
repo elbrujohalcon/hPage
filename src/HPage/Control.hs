@@ -55,15 +55,12 @@ module HPage.Control (
     ctxString
  ) where
 
-import System.IO
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
-import Data.Char
 import Control.Monad.Loops
 import Control.Monad.Error
 import Control.Monad.State
-import Control.Monad.State.Class
 import Control.Concurrent.MVar
 import Language.Haskell.Interpreter (OptionVal((:=)))
 import qualified Language.Haskell.Interpreter as Hint
@@ -71,7 +68,6 @@ import qualified Language.Haskell.Interpreter.Unsafe as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import HPage.Utils.Log
 import Data.List (isPrefixOf)
-import qualified Data.List as List
 import qualified Data.ByteString.Char8 as Str
 import qualified Language.Haskell.Exts.Parser as Parser
 import Distribution.Simple.Configure hiding (tryGetConfigStateFile)

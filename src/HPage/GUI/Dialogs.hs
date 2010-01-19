@@ -1,12 +1,9 @@
 
 module HPage.GUI.Dialogs where
 
-import System.FilePath
 import Data.List
-import Control.Monad.Error
 import Graphics.UI.WX
 import Graphics.UI.WXCore
-import Graphics.UI.WXCore.WxcClasses
 import HPage.GUI.IDs
 import qualified HPage.Control as HP
 

@@ -23,10 +23,6 @@ import Control.Monad.Error
 import Control.Monad.Loops
 import Graphics.UI.WX
 import Graphics.UI.WXCore hiding (kill, Process)
-import Graphics.UI.WXCore.Types
-import Graphics.UI.WXCore.Dialogs
-import Graphics.UI.WXCore.Events
---import Graphics.UI.WXCore.WxcClasses hiding (Process, kill)
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import HPage.GUI.Dialogs
