@@ -731,10 +731,12 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         -- now we fill the textbox --
                         varSet varErrors []
                         set txtValue [text := ""]
-                        spawn . valueFiller $ HP.intValue interp
+                        chfHandle <- spawn charFiller
+                        chf <- varCreate chfHandle
+                        spawn . valueFiller chf $ HP.intValue interp
                         return ()
-    where valueFiller :: String -> Process a ()
-          valueFiller val =
+    where valueFiller :: Var (Handle (String, MVar ())) -> String -> Process a ()
+          valueFiller chf val =
               do
                     prevOnCmd <- liftIO $ get btnInterpret $ on command
                     myself <- self
@@ -757,34 +759,36 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                             liftIO revert
                         Right t ->
                             do
-                                ready <- liftIO newEmptyMVar
-                                cfh <- liftIO . spawn $ charFiller t ready
+                                chfHandle <- liftIO $ varGet chf
+                                ready <- liftIO $ newEmptyMVar
                                 let killCmd =
-                                        do
-                                            stillRunning <- isEmptyMVar ready
-                                            if stillRunning
-                                                then do
-                                                        kill cfh
+                                            do
+                                                stillRunning <- liftIO $ isEmptyMVar ready
+                                                if stillRunning
+                                                    then do
+                                                        kill chfHandle
+                                                        chfNewHandle <- liftIO . spawn $ charFiller
+                                                        varSet chf chfNewHandle
                                                         varUpdate varErrors (++ [GUIBtm "Timed Out" t])
                                                         addText bottomChar
-                                                        tryPutMVar ready ()
                                                         return ()
-                                                else
-                                                    return ()
+                                                    else
+                                                        return ()
+                                sendTo chfHandle (t, ready)
                                 timeKiller <- liftIO $ timer win [interval := charTimeout,
                                                                   on command := killCmd]
-                                liftIO $ readMVar ready
+                                liftIO $ takeMVar ready
                                 liftIO $ timerOnCommand timeKiller $ return ()
-                                valueFiller $ tail val
-          charFiller :: String -> MVar () -> Process a ()
-          charFiller t r = liftIO $ do
-                                     catch (addText t) $ \(ErrorCall desc) ->
-                                                            varUpdate varErrors (++ [GUIBtm desc t]) >>
-                                                            addText bottomChar
-                                     putMVar r ()
-          addText t = do
-                        orig <- get txtValue text
-                        set txtValue [text := orig ++ t]
+                                valueFiller chf $ tail val
+          charFiller :: Process (String, MVar ()) ()
+          charFiller = forever $ do
+                            (t, r) <- recv
+                            liftIO $ do
+                                        catch (addText t) $ \(ErrorCall desc) ->
+                                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
+                                                                    addText bottomChar
+                                        putMVar r ()
+          addText = textCtrlAppendText txtValue
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
