@@ -761,6 +761,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                             do
                                 chfHandle <- liftIO $ varGet chf
                                 ready <- liftIO $ newEmptyMVar
+                                sendTo chfHandle (t, ready)
                                 let killCmd =
                                             do
                                                 stillRunning <- liftIO $ isEmptyMVar ready
@@ -771,14 +772,14 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                         varSet chf chfNewHandle
                                                         varUpdate varErrors (++ [GUIBtm "Timed Out" t])
                                                         addText bottomChar
-                                                        return ()
+                                                        putMVar ready ()
                                                     else
                                                         return ()
-                                sendTo chfHandle (t, ready)
-                                timeKiller <- liftIO $ timer win [interval := charTimeout,
-                                                                  on command := killCmd]
-                                liftIO $ takeMVar ready
-                                liftIO $ timerOnCommand timeKiller $ return ()
+                                liftIO $ do
+                                            timeKiller <- timer win [interval := charTimeout,
+                                                                     on command := killCmd]
+                                            takeMVar ready
+                                            timerOnCommand timeKiller $ return ()
                                 valueFiller chf $ tail val
           charFiller :: Process (String, MVar ()) ()
           charFiller = forever $ do
@@ -788,7 +789,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                                     varUpdate varErrors (++ [GUIBtm desc t]) >>
                                                                     addText bottomChar
                                         putMVar r ()
-          addText = textCtrlAppendText txtValue
+          addText t = debugIO ("c", t) >> textCtrlAppendText txtValue t
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
