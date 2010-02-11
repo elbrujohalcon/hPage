@@ -1,0 +1,92 @@
+\documentclass[a4paper]{article}
+\usepackage[spanish,activeacute]{babel}
+\usepackage[ansinew]{inputenc}
+% Anda fen'omeno mientras codifiquemos el archivo como ansi.
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm]{geometry}
+\usepackage{ulem} %Para tachar cosas
+%\usepackage{epigraph}
+%\usepackage{listings}
+\usepackage{html}
+\usepackage[colorlinks=true]{hyperref}
+\parindent = 0 pt
+\parskip = 11 pt
+
+\newcommand{\hpage}{\textbf{\textsl{$\lambda$Page}} }
+
+\begin{document}
+
+	\thispagestyle{empty}
+	\begin{center}
+	{\Large Tesis de Licenciatura}\\[1em]
+	{\huge \textbf{$\lambda$Page}}\\[0.5em]
+	{\large \textit{Un bloc de notas para desarrolladores Haskell}}\\[1em]
+	\par\vspace{\stretch{2}}
+	{\large Departamento de Computaci\'on}\\[0.5em]
+	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
+	{\large Universidad de Buenos Aires}
+	\begin{figure}[h]
+		\begin{center}
+		\includegraphics[width=40mm]{logoUba}
+		\end{center}
+	\end{figure}
+	\par\vspace{\stretch{3}}
+	{\Large \textbf{Alumno}}\\[0.8em]
+	{\Large Fernando Benavides (LU 470/01)} \par
+	{\Large greenmellon@gmail.com} \par
+	\par\vspace{\stretch{3}}
+	{\Large \textbf{Directores}}\\[0.8em]
+	{\Large Dr. Diego Garbervetsky} \par
+	{\Large Lic. Daniel Gor'in}
+	\end{center}
+	\newpage
+
+\tableofcontents
+\newpage
+
+\section{Introducci'on}
+\subsection{Motivaci'on}
+\paragraph{}TODO: Adaptar de la Propuesta de Tesis
+\subsection{Trabajos Relacionados}
+\paragraph{}TODO: Ver mail de Daniel
+\subsection{\hpage}
+\newpage
+
+\section{Tutorial - Descubriendo \hpage}
+\subsection{Instalaci'on}
+\paragraph{}TODO: Instrucciones generales y el resto copiar (y verificar) de la wiki
+\subsubsection{OSX}
+\subsubsection{Windows}
+\subsubsection{Linux}
+\subsection{QuickStart}TODO: Tutorial donde se noten las features de \hpage
+\newpage
+
+\section{Desarrollo - ?`C'omo se hizo \hpage?}
+\subsection{Arquitectura General} TODO: Gr'aficos de arquitectura general
+\subsection{Dise'no} TODO: Contar las decisiones que tomamos y por qu'e
+\subsection{Implementaci'on} TODO: Detalles generales de implementaci'on
+\subsubsection{wxHaskell}TODO: Pros y contras y workarounds
+\subsubsection{Bottoms}TODO: C'omo manejamos los bottoms en el resultado?
+\subsubsection{Threads}TODO: C'omo manejamos los threads para la GUI y la VM?
+\subsubsection{hint}TODO: C'omo utilizamos hint para conectarnos con la VM y el tema de que es \textsl{lazy}
+\subsection{Problemas Resueltos}
+\subsubsection{Un Editor de Texto en Haskell}TODO: wxhNotepad
+\subsubsection{Multithreading en GHC}TODO: ?`C'omo simular multhreading cuando GHC no es multithread?
+TODO: Otros
+
+\section{Resultados}
+\subsection{Objetivos Alcanzados}TODO: ?`Qu'e se puede hacer ahora que existe \hpage?
+\subsection{Trabajo a Realizar} TODO: Future Work
+
+% As'i se pone c'odigo...
+%\lstset{language=C++, frame=single, tabsize=2}
+%\begin{lstlisting}
+%#include <utility>#include <assert.h>#include <iostream>#include "float_T.h"using namespace std;float_T::float_T() {}float_T::float_T(TIPO_DATO x, unsigned int mantisa){	original= x;	mantisaReal = mantisa;	setValor(x);}TIPO_DATO float_T::getValor(){	return deMantisa;}void float_T::setValor(TIPO_DATO numero){	int mantisa = mantisaReal;	assert(! (mantisa > MAX_MANTISA) );	unsigned char	mascara[CANT_BYTES];		for( int k = CANT_BYTES - 1; k >= 0; k-- )		if (CANT_BYTES - k <= BYTES_EXP)			mascara[k] = 0xFF;		else			mascara[k] = 0x00;		int i = CANT_BYTES - BYTES_EXP - 1;	while(mantisa >= 8)	{		mascara[i] = 0xFF;		mantisa	-= 8;		i--;	}	unsigned char quito = 0x80;	while( mantisa > 0 )	{		mascara[i] += quito;		quito = quito / 2;		mantisa--;	}	for(unsigned int j = 0; j < CANT_BYTES; j++ )	{		quito				= ((unsigned char *)&numero)[j];		mascara[j]	&= quito;	}		deMantisa= *((TIPO_DATO *)&mascara);}unsigned int float_T::getMantisa(){	return mantisaReal;}TIPO_DATO float_T::getOriginal(){	return original;}void float_T::setOriginal(TIPO_DATO y){	original= y;	}
+%\end{lstlisting}
+
+% As'i se ponen ep'igrafes...
+%\begin{epigraphs}
+%    \qitem{bla bla bla}{Alguien}
+%    \qitem{jajaja}{Alguien Chistoso}
+%\end{epigraphs}
+\end{document}
