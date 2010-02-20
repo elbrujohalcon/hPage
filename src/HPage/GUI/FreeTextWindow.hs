@@ -60,7 +60,8 @@ data GUIContext = GUICtx { guiWin :: Frame (),
                            guiCode :: TextCtrl (),
                            guiResults :: GUIResults,
                            guiStatus :: StatusField,
-                           guiTimer :: Var (TimerEx ()),
+                           guiTimer :: TimerEx (),
+                           guiCharTimer :: TimerEx (),
                            guiSearch :: FindReplaceData ()} 
 
 gui :: IO ()
@@ -116,15 +117,15 @@ gui =
         status <- statusField [text := "hello... this is \955Page! type in your instructions :)"]
         set win [statusBar := [status]]
 
-        -- Timer ...
-        refreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
-        varTimer <- varCreate refreshTimer
+        -- Timers ...
+        refreshTimer <- timer win []
+        charTimer <- timer win []
         
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
         
         let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
-        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status varTimer search 
+        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
         set btnInterpret [on command := onCmd "interpret" interpret]
@@ -260,6 +261,9 @@ gui =
         set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
                  clientSize := sz 800 600]
                  
+        -- test the server...
+        runTxtHPSelection "1" model HP.interpret
+        
         -- ...and RUN!
         refreshPage model guiCtx
         onCmd "start" openHelpPage
@@ -271,7 +275,7 @@ refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, copyResult, copyType, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
     textContextMenu, moduleContextMenu, valueContextMenu,
-    restartTimer, killTimer, interpret, hayoo, explain,
+    restartTimer, interpret, hayoo, explain,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
@@ -705,7 +709,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   res4Dots  = lbl4Dots,
                                                   resType   = txtType,
                                                   resErrors = varErrors},
-                              guiCode = txtCode, guiWin = win} =
+                              guiCode       = txtCode,
+                              guiCharTimer  = charTimer,
+                              guiWin        = win} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
@@ -764,9 +770,10 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                 sendTo chfHandle (t, ready)
                                 let killCmd =
                                             do
-                                                stillRunning <- liftIO $ isEmptyMVar ready
-                                                if stillRunning
+                                                stillRuning <- liftIO $ isEmptyMVar ready
+                                                if stillRuning
                                                     then do
+                                                        timerOnCommand charTimer $ return ()
                                                         kill chfHandle
                                                         chfNewHandle <- liftIO . spawn $ charFiller
                                                         varSet chf chfNewHandle
@@ -776,10 +783,10 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                     else
                                                         return ()
                                 liftIO $ do
-                                            timeKiller <- timer win [interval := charTimeout,
-                                                                     on command := killCmd]
+                                            timerOnCommand charTimer killCmd
+                                            timerStart charTimer charTimeout True
                                             takeMVar ready
-                                            timerOnCommand timeKiller $ return ()
+                                            timerOnCommand charTimer $ return ()
                                 valueFiller chf $ tail val
           charFiller :: Process (String, MVar ()) ()
           charFiller = forever $ do
@@ -789,7 +796,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                                     varUpdate varErrors (++ [GUIBtm desc t]) >>
                                                                     addText bottomChar
                                         putMVar r ()
-          addText t = debugIO ("c", t) >> textCtrlAppendText txtValue t
+          addText t = textCtrlAppendText txtValue t
  
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
@@ -812,7 +819,8 @@ runTxtHPSelection s model hpacc =
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> IO ()
 refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
-                                guiWin = win} =
+                                guiWin = win,
+                                guiTimer = refreshTimer} =
    do
         txt <- get txtCode text
         ip <- textCtrlGetInsertionPoint txtCode
@@ -825,23 +833,17 @@ refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
             Right _ ->
                 debugIO "refreshExpr done"
         
-        killTimer model guiCtx
+        timerOnCommand refreshTimer $ return ()
 
 
 -- TIMER HANDLERS --------------------------------------------------------------
-restartTimer model guiCtx@GUICtx{guiWin = win, guiTimer = varTimer} =
+restartTimer model guiCtx@GUICtx{guiWin = win, guiTimer = refreshTimer} =
     do
-        newRefreshTimer <- timer win [interval := 1000,
-                                      on command := refreshExpr model guiCtx]
-        refreshTimer <- varSwap varTimer newRefreshTimer
-        timerOnCommand refreshTimer $ return ()
-
-killTimer _model GUICtx{guiWin = win, guiTimer = varTimer} =
-    do
-        -- kill the timer till there's new notices
-        newRefreshTimer <- timer win [interval := 1000000, on command := debugIO "Inactivity detected"]
-        refreshTimer <- varSwap varTimer newRefreshTimer
-        timerOnCommand refreshTimer $ return ()
+        timerOnCommand refreshTimer $ refreshExpr model guiCtx
+        started <- timerStart refreshTimer 1000 True
+        if started
+            then return ()
+            else fail "Could not start more timers"
 
 -- INTERNAL UTILS --------------------------------------------------------------
 type ErrorString = String

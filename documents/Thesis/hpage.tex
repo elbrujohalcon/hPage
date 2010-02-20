@@ -16,39 +16,62 @@
 
 \begin{document}
 
-	\thispagestyle{empty}
-	\begin{center}
-	{\Large Tesis de Licenciatura}\\[1em]
-	{\huge \textbf{$\lambda$Page}}\\[0.5em]
-	{\large \textit{Un bloc de notas para desarrolladores Haskell}}\\[1em]
-	\par\vspace{\stretch{2}}
-	{\large Departamento de Computaci\'on}\\[0.5em]
-	{\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
-	{\large Universidad de Buenos Aires}
-	\begin{figure}[h]
-		\begin{center}
-		\includegraphics[width=40mm]{logoUba}
-		\end{center}
-	\end{figure}
-	\par\vspace{\stretch{3}}
-	{\Large \textbf{Alumno}}\\[0.8em]
-	{\Large Fernando Benavides (LU 470/01)} \par
-	{\Large greenmellon@gmail.com} \par
-	\par\vspace{\stretch{3}}
-	{\Large \textbf{Directores}}\\[0.8em]
-	{\Large Dr. Diego Garbervetsky} \par
-	{\Large Lic. Daniel Gor'in}
-	\end{center}
-	\newpage
+    \thispagestyle{empty}
+    \begin{center}
+	    {\Large Tesis de Licenciatura}\\[1em]
+	    {\huge \textbf{$\lambda$Page}}\\[0.5em]
+	    {\large \textit{Un bloc de notas para desarrolladores Haskell}}\\[1em]
+	    \par\vspace{\stretch{1}}
+	    {\large Departamento de Computaci\'on}\\[0.5em]
+	    {\large Facultad de Ciencias Exactas y Naturales}\\[0.5em]
+	    {\large Universidad de Buenos Aires}
+	    \par\vspace{\stretch{1}}
+	    \begin{figure}[h]
+	        \begin{center}
+	        \includegraphics[width=40mm]{logoUba}
+	        \end{center}
+	    \end{figure}
+	    {\Large \textbf{Alumno}}\\[0.8em]
+	    {\Large Fernando Benavides (LU 470/01)} \par
+	    {\Large greenmellon@gmail.com} \par
+	    \par\vspace{\stretch{1}}
+	    {\Large \textbf{Directores}}\\[0.8em]
+	    {\Large Dr. Diego Garbervetsky} \par
+	    {\Large Lic. Daniel Gor'in} \par
+	    \par\vspace{\stretch{2}}
+         {\Large \textbf{Abstract}}\\[0.5em]
+    \end{center}
+    TODO: Escribir el abstract
+    \vspace*{\stretch{3}}
+    \newpage
 
 \tableofcontents
 \newpage
 
 \section{Introducci'on}
 \subsection{Motivaci'on}
-\paragraph{}TODO: Adaptar de la Propuesta de Tesis
+\paragraph{}Actualmente estamos presenciando un importante cambio en el desarrollo de sistemas, gracias al 'exito de proyectos como \htmladdnormallinkfoot{CouchDB}{http://couchdb.apache.org}, \htmladdnormallinkfoot{ejabberd}{http://www.ejabberd.im} y el chat de \htmladdnormallinkfoot{Facebook}{http://www.facebook.com}, todos ellos desarrollados utilizando lenguajes del paradigma funcional.
+\paragraph{}Ejemplos de 'estos lenguajes de programaci'on, como \htmladdnormallinkfoot{Haskell}{http://www.haskell.org} o \htmladdnormallinkfoot{Erlang}{http://www.erlang.org}, demuestran ser maduros, confiables y presentan claras ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, los desarrolladores que deciden realizar el cambio de paradigma se encuentran con el problema de la escasez de ciertas herramientas que les permitan realizar su trabajo m'as eficientemente.  Por el contrario, 'estas herramientas abundan en el desarrollo de proyectos utilizando lenguajes orientados a objetos.  En particular, nuestro foco de atenci'on se centra sobre aquellas herramientas que permiten realizar \textsl{debugging} y \textsl{entendimiento} de c'odigo a trav'es de \textsl{``micro-testing''}\footnote{Enti'endase ``micro-testing'' como la tarea de realizar tests eventuales para entender o evaluar alg'un aspecto de un programa} .
+\paragraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
+\begin{description}
+	\item[\htmladdnormallinkfoot{GHCi}{http://www.haskell.org/ghc/docs/latest/html/users\_guide/ghci.html}]
+		La consola que provee \htmladdnormallinkfoot{GHC}{http://www.haskell.org/ghc} permite a los desarrolladores evaluar expresiones, verificar su tipo o su clase.  Cuenta tambi'en con un \htmladdnormallinkfoot{mecanismo de debugging}{http://www.haskell.org/ghc/docs/6.10-latest/html/users\_guide/ghci-debugger.html} integrado que permite realizar la evaluaci'on de expresiones paso a paso.  Pese a ser la herramienta m'as utilizada por los desarrolladores, \textit{GHCi} tiene varias limitaciones.  En particular:
+		\begin{itemize}
+			\item No permite editar m'as de una expresi'on a la vez
+			\item No permite intercalar expresiones con definiciones
+			\item	Si bien permite utilizar definiciones, 'estas se pierden al recargar m'odulos
+			\item No es sencillo utilizar en una sesi'on las definiciones y/o expresiones creadas en sesiones anteriores
+		\end{itemize}
+	\item[\htmladdnormallinkfoot{Hat}{http://www.haskell.org/hat}]
+		Un herramienta para realizar seguimiento a nivel de c'odigo fuente.  A trav'es de la generaci'on de trazas de ejecuci'on, \textit{Hat} ayuda a localizar errores en los programas y es 'util para entender su funcionamiento.  Sin embargo, por estar basado en la generaci'on de trazas, requiere la compilaci'on y ejecuci'on de un programa para poder utilizarlo y esto no siempre es c'omodo para el desarrollador que puede querer simplemente analizar una expresi'on particular que incluso quiz'a no compile a'un.  Adem'as, su mantenimiento activo parece haber cesado hace m'as de un a'no y en su p'agina se observa una importante lista de \htmladdnormallinkfoot{problemas conocidos}{http://www.haskell.org/hat/bugs.html} y \htmladdnormallinkfoot{caracter'isticas deseadas}{http://www.haskell.org/hat/bugs.html}.  
+\end{description}
+\paragraph{}En el mundo de la programaci'on orientada a objetos podemos encontrar herramientas de este tipo, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estos aplicativos, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.  Un concepto compartido por ambas herramientas es el de presentar ``p'aginas'' de texto en las que varias expresiones pueden intercalarse con partes de texto libre y permitir al desarrollador intentar evaluar s'olo una porci'on de todo lo escrito.  Estas p'aginas pueden ser guardardas y luego recuperadas de modo de poder analizar nuevamente las mismas expresiones.  Adem'as permiten crear objetos (lo que para los lenguajes funcionales equivaldr'ia a definir expresiones) locales a la p'agina en uso y utilizarlos en ella.
+
+%%------------------------------------------------------------------------------------------------------------------------------
 \subsection{Trabajos Relacionados}
 \paragraph{}TODO: Ver mail de Daniel
+
+%%------------------------------------------------------------------------------------------------------------------------------
 \subsection{\hpage}
 \newpage
 
@@ -81,7 +104,7 @@ TODO: Otros
 % As'i se pone c'odigo...
 %\lstset{language=C++, frame=single, tabsize=2}
 %\begin{lstlisting}
-%#include <utility>#include <assert.h>#include <iostream>#include "float_T.h"using namespace std;float_T::float_T() {}float_T::float_T(TIPO_DATO x, unsigned int mantisa){	original= x;	mantisaReal = mantisa;	setValor(x);}TIPO_DATO float_T::getValor(){	return deMantisa;}void float_T::setValor(TIPO_DATO numero){	int mantisa = mantisaReal;	assert(! (mantisa > MAX_MANTISA) );	unsigned char	mascara[CANT_BYTES];		for( int k = CANT_BYTES - 1; k >= 0; k-- )		if (CANT_BYTES - k <= BYTES_EXP)			mascara[k] = 0xFF;		else			mascara[k] = 0x00;		int i = CANT_BYTES - BYTES_EXP - 1;	while(mantisa >= 8)	{		mascara[i] = 0xFF;		mantisa	-= 8;		i--;	}	unsigned char quito = 0x80;	while( mantisa > 0 )	{		mascara[i] += quito;		quito = quito / 2;		mantisa--;	}	for(unsigned int j = 0; j < CANT_BYTES; j++ )	{		quito				= ((unsigned char *)&numero)[j];		mascara[j]	&= quito;	}		deMantisa= *((TIPO_DATO *)&mascara);}unsigned int float_T::getMantisa(){	return mantisaReal;}TIPO_DATO float_T::getOriginal(){	return original;}void float_T::setOriginal(TIPO_DATO y){	original= y;	}
+%#include <utility>#include <assert.h>#include <iostream>#include "float_T.h"using namespace std;float_T::float_T() {}float_T::float_T(TIPO_DATO x, unsigned int mantisa){    original= x;    mantisaReal = mantisa;    setValor(x);}TIPO_DATO float_T::getValor(){    return deMantisa;}void float_T::setValor(TIPO_DATO numero){    int mantisa = mantisaReal;    assert(! (mantisa > MAX_MANTISA) );    unsigned char    mascara[CANT_BYTES];        for( int k = CANT_BYTES - 1; k >= 0; k-- )        if (CANT_BYTES - k <= BYTES_EXP)            mascara[k] = 0xFF;        else            mascara[k] = 0x00;        int i = CANT_BYTES - BYTES_EXP - 1;    while(mantisa >= 8)    {        mascara[i] = 0xFF;        mantisa    -= 8;        i--;    }    unsigned char quito = 0x80;    while( mantisa > 0 )    {        mascara[i] += quito;        quito = quito / 2;        mantisa--;    }    for(unsigned int j = 0; j < CANT_BYTES; j++ )    {        quito                = ((unsigned char *)&numero)[j];        mascara[j]    &= quito;    }        deMantisa= *((TIPO_DATO *)&mascara);}unsigned int float_T::getMantisa(){    return mantisaReal;}TIPO_DATO float_T::getOriginal(){    return original;}void float_T::setOriginal(TIPO_DATO y){    original= y;    }
 %\end{lstlisting}
 
 % As'i se ponen ep'igrafes...
