@@ -12,7 +12,7 @@
 \parindent = 0 pt
 \parskip = 11 pt
 
-\newcommand{\haskell}{\textsl{Haskell} }
+\newcommand{\haskell}{\textsl{Haskell}}
 \newcommand{\hpage}{\textbf{\textsl{$\lambda$Page}}}
 
 \begin{document}
@@ -42,7 +42,7 @@
 	    \par\vspace{\stretch{2}}
          {\Large \textbf{Abstract}}\\[0.5em]
     \end{center}
-    El presente documento describe una herramienta para desarrolladores \haskell que pretende facilitar la tarea de ``debuggear'', analizar y entender c'odigo, llamada \hpage.  Con ella el usuario puede manipular ``p'aginas'' de texto libre que contengan expresiones \haskell, intentar interpretar 'estas expresiones independientemente y analizar los resultados obtenidos.
+    El presente documento describe una herramienta para desarrolladores \haskell\ que pretende facilitar la tarea de ``debuggear'', analizar y entender c'odigo, llamada \hpage.  Con ella el usuario puede manipular ``p'aginas'' de texto libre que contengan expresiones \haskell, intentar interpretar 'estas expresiones independientemente y analizar los resultados obtenidos.
     \vspace*{\stretch{3}}
     \newpage
 
@@ -70,10 +70,16 @@
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{Trabajos Relacionados}
 \paragraph{}En el mundo de la programaci'on orientada a objetos podemos encontrar herramientas de este tipo, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estos aplicativos, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.  Un concepto compartido por ambas herramientas es el de presentar ``p'aginas'' de texto en las que varias expresiones pueden intercalarse con partes de texto libre y permitir al desarrollador intentar evaluar s'olo una porci'on de todo lo escrito.  Estas p'aginas pueden ser guardardas y luego recuperadas de modo de poder analizar nuevamente las mismas expresiones.  Adem'as permiten crear objetos (lo que para los lenguajes funcionales equivaldr'ia a definir expresiones) locales a la p'agina en uso y utilizarlos en ella.
-\paragraph{}Dentro del paradigma funcional, con un enfoque similar, aunque un poco m'as orientado a la presentaci'on y visualizaci'on de documentos, \htmladdnormallinkfoot{Keith Hanna}{http://www.cs.kent.ac.uk/people/staff/fkh/} de la Universidad de Kent, ha desarrollado \htmladdnormallinkfoot{Vital}{http://www.cs.kent.ac.uk/projects/vital/}.  \textsl{Vital} es una implementaci'on de un entorno de visualizaci'on de documentos para \haskell.  Pretende presentar \haskell de una manera apropiada para usuarios finales en areas de aplicaci'on como la ingenier'ia, las matem'aticas o las finanzas.  Dentro de esta herramienta, los m'odulos \haskell son presentados como documentos en los que pueden visualizarse los valores que en ellos se definen directamente en el lugar en el que aparecen, ya sea de modo textual o gr'afico (como ``vistas''). 
+\paragraph{}Dentro del paradigma funcional, con un enfoque similar, aunque un poco m'as orientado a la presentaci'on y visualizaci'on de documentos, \htmladdnormallinkfoot{Keith Hanna}{http://www.cs.kent.ac.uk/people/staff/fkh/} de la Universidad de Kent, ha desarrollado \htmladdnormallinkfoot{Vital}{http://www.cs.kent.ac.uk/projects/vital/}.  \textsl{Vital} es una implementaci'on de un entorno de visualizaci'on de documentos para \haskell.  Pretende presentar \haskell\ de una manera apropiada para usuarios finales en areas de aplicaci'on como la ingenier'ia, las matem'aticas o las finanzas.  Dentro de esta herramienta, los m'odulos \haskell\ son presentados como documentos en los que pueden visualizarse los valores que en ellos se definen directamente en el lugar en el que aparecen, ya sea de modo textual o gr'afico (como ``vistas''). 
 
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{\hpage}
+\paragraph{} \htmladdnormallinkfoot{\hpage}{http://haskell.hpage.com} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y su clase.
+\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallinkfoot{Cabal}{http://www.haskell.org/cabal} y \htmladdnormallinkfoot{Hayoo!}{http://holumbus.fh-wedel.de/hayoo} y se encuentra ya disponible en \htmladdnormallinkfoot{HackageDB}{http://hackage.haskell.org/package/hpage}.
+\subparagraph{}\hpage\ presenta una interfaz simple e intuitiva, desarrollada utilizando \htmladdnormallinkfoot{wxHaskell}{http://haskell.org/haskellwiki/WxHaskell}, lo que lo convierte en un sistema multiplataforma.
+\subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado fuerte (que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas) y la evaluaci'on perezosa (que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente).
+\subparagraph{}A diferencia de \textsl{GHCi} que es una herramienta ``de consola'', \hpage\ permite visualizar resultados de manera m'as din'amica, permitiendo que errores intermedios, detectados durante la evaluaci'on de una expresi'on no impidan continuar con la misma hasta llegar a un resultado m'as completo.
+\subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallinkfoot{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos (o m'as precisamente, c'alculos que demoran demasiado) e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
 \newpage
 
 \section{Tutorial - Descubriendo \hpage}
