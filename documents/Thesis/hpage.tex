@@ -6,7 +6,7 @@
 \usepackage[left=2cm,right=2cm]{geometry}
 \usepackage{ulem} %Para tachar cosas
 %\usepackage{epigraph}
-%\usepackage{listings}
+\usepackage{listings}
 \usepackage{html}
 \usepackage[colorlinks=true]{hyperref}
 \parindent = 0 pt
@@ -84,10 +84,21 @@
 
 \section{Tutorial - Descubriendo \hpage}
 \subsection{Instalaci'on}
-\paragraph{}TODO: Instrucciones generales y el resto copiar (y verificar) de la wiki
-\subsubsection{OSX}
-\subsubsection{Windows}
-\subsubsection{Linux}
+\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, sin embargo,como se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \textsl{Cabal}, con el siguiente comando:
+\lstset{language=sh, frame=single, tabsize=2}
+\begin{lstlisting}
+$ cabal install hpage
+\end{lstlisting}
+\subparagraph{}Sin embargo, para ello, previamente se deben satisfacer las siguientes dependencias:
+\begin{description}
+	\item[\htmladdnormallinkfoot{wxWidgets 2.8.10+}{http://www.wxwidgets.org/downloads/}] El framework de desarrollo para interfaces de usuario que utiliza \textsl{wxHaskell}.  Debe ser instalado con los m'odulos unicode, cmdline, config, log, stl, richtext y clipboard, al menos y con el m'odulo odbc desactivado.
+	\item[\htmladdnormallinkfoot{Haskell Platform}{http://hackage.haskell.org/platform/}] Una distribuci'on de \haskell\ que incluye todo lo necesario para compilar e instalar programas desarrollados en este lenguaje (de particular inter'es para \hpage: GHC y happy).
+\end{description}
+\subsubsection{Windows}Para el correcto funcionamiento de \hpage\ los usuarios de \textsl{Windows XP} deben instalar el \htmladdnormallinkfoot{C++ 2008 SP1}{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2}.
+\subsubsection{Linux}En algunas distribuciones de Linux es conveniente, adem'as de la instalaci'on de \textsl{Haskell Platform} instalar las librer'ias de \textit{Monad Transformers} ejecutando, por ejemplo:
+\begin{lstlisting}
+$ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
+\end{lstlisting}
 \subsection{QuickStart}TODO: Tutorial donde se noten las features de \hpage
 \newpage
 
