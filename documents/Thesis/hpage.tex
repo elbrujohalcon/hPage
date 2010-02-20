@@ -12,7 +12,8 @@
 \parindent = 0 pt
 \parskip = 11 pt
 
-\newcommand{\hpage}{\textbf{\textsl{$\lambda$Page}} }
+\newcommand{\haskell}{\textsl{Haskell} }
+\newcommand{\hpage}{\textbf{\textsl{$\lambda$Page}}}
 
 \begin{document}
 
@@ -41,7 +42,7 @@
 	    \par\vspace{\stretch{2}}
          {\Large \textbf{Abstract}}\\[0.5em]
     \end{center}
-    TODO: Escribir el abstract
+    El presente documento describe una herramienta para desarrolladores \haskell que pretende facilitar la tarea de ``debuggear'', analizar y entender c'odigo, llamada \hpage.  Con ella el usuario puede manipular ``p'aginas'' de texto libre que contengan expresiones \haskell, intentar interpretar 'estas expresiones independientemente y analizar los resultados obtenidos.
     \vspace*{\stretch{3}}
     \newpage
 
@@ -65,11 +66,11 @@
 	\item[\htmladdnormallinkfoot{Hat}{http://www.haskell.org/hat}]
 		Un herramienta para realizar seguimiento a nivel de c'odigo fuente.  A trav'es de la generaci'on de trazas de ejecuci'on, \textit{Hat} ayuda a localizar errores en los programas y es 'util para entender su funcionamiento.  Sin embargo, por estar basado en la generaci'on de trazas, requiere la compilaci'on y ejecuci'on de un programa para poder utilizarlo y esto no siempre es c'omodo para el desarrollador que puede querer simplemente analizar una expresi'on particular que incluso quiz'a no compile a'un.  Adem'as, su mantenimiento activo parece haber cesado hace m'as de un a'no y en su p'agina se observa una importante lista de \htmladdnormallinkfoot{problemas conocidos}{http://www.haskell.org/hat/bugs.html} y \htmladdnormallinkfoot{caracter'isticas deseadas}{http://www.haskell.org/hat/bugs.html}.  
 \end{description}
-\paragraph{}En el mundo de la programaci'on orientada a objetos podemos encontrar herramientas de este tipo, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estos aplicativos, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.  Un concepto compartido por ambas herramientas es el de presentar ``p'aginas'' de texto en las que varias expresiones pueden intercalarse con partes de texto libre y permitir al desarrollador intentar evaluar s'olo una porci'on de todo lo escrito.  Estas p'aginas pueden ser guardardas y luego recuperadas de modo de poder analizar nuevamente las mismas expresiones.  Adem'as permiten crear objetos (lo que para los lenguajes funcionales equivaldr'ia a definir expresiones) locales a la p'agina en uso y utilizarlos en ella.
 
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{Trabajos Relacionados}
-\paragraph{}TODO: Ver mail de Daniel
+\paragraph{}En el mundo de la programaci'on orientada a objetos podemos encontrar herramientas de este tipo, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estos aplicativos, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.  Un concepto compartido por ambas herramientas es el de presentar ``p'aginas'' de texto en las que varias expresiones pueden intercalarse con partes de texto libre y permitir al desarrollador intentar evaluar s'olo una porci'on de todo lo escrito.  Estas p'aginas pueden ser guardardas y luego recuperadas de modo de poder analizar nuevamente las mismas expresiones.  Adem'as permiten crear objetos (lo que para los lenguajes funcionales equivaldr'ia a definir expresiones) locales a la p'agina en uso y utilizarlos en ella.
+\paragraph{}Dentro del paradigma funcional, con un enfoque similar, aunque un poco m'as orientado a la presentaci'on y visualizaci'on de documentos, \htmladdnormallinkfoot{Keith Hanna}{http://www.cs.kent.ac.uk/people/staff/fkh/} de la Universidad de Kent, ha desarrollado \htmladdnormallinkfoot{Vital}{http://www.cs.kent.ac.uk/projects/vital/}.  \textsl{Vital} es una implementaci'on de un entorno de visualizaci'on de documentos para \haskell.  Pretende presentar \haskell de una manera apropiada para usuarios finales en areas de aplicaci'on como la ingenier'ia, las matem'aticas o las finanzas.  Dentro de esta herramienta, los m'odulos \haskell son presentados como documentos en los que pueden visualizarse los valores que en ellos se definen directamente en el lugar en el que aparecen, ya sea de modo textual o gr'afico (como ``vistas''). 
 
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{\hpage}
