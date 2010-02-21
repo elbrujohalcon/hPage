@@ -127,6 +127,19 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 	\item[Value Filler] Estos procesos, iniciados por el \textbf{UI Manager} ante cada evaluaci'on solicitada por el usuario son los encargados de procesar el resultado obtenido del \textbf{HPage Server}. Cabe recordar aqu'i que \haskell\ trabaja con evaluaci'on ``lazy'', por lo cual el resultado obtenido no ha sido a'un completamente procesado.  Cada \textbf{Value Filler} se encarga de evaluar un resultado y mostrarlo por pantalla, para ello env'ia y recibe mensajes del \textbf{Char Filler} a fin de procesar cada caracter a mostrar.
 	\item[Runaway Killer] Este thread, creado utilizando la clase \textsl{TimerEx} provista por \textsl{wxHaskell}, es iniciado por cada \textbf{Value Filler} al momento de enviar un nuevo caracter al \textbf{Char Filler}.  El objetivo del \textbf{Runaway Killer} es el de detectar prorcesamiento ``posiblemente'' infinito.  B'asicamente, pasado un segundo de procesamiento, reinicia el \textbf{Char Filler} e informa al \textbf{Value Filler} que lo inici'o que el caracter que se esperaba procesar ha demorado demasiado y podr'ia desencadenar una evaluaci'on infinita.
 \end{description}
+\paragraph{}Para un mayor detalle, la figura \ref{seq1} nos muestra un diagrama de secuencia correspondiente a un proceso de evaluaci'on.  Para poder brindar un ejemplo completo, hemos ``fabricado'' un tipo que responde al siguiente c'odigo:
+\lstset{language=haskell, frame=single, tabsize=4}
+\begin{lstlisting}
+data WithIfiniteChar = WICinstance Show WithIfiniteChar where    show WIC = ['c', head . show $ length [1..]]
+\end{lstlisting}
+\subparagraph{}Como puede observarse, al intentar mostrar la expresi'on \texttt{WIC}, \hpage\ se encontrar'a con una cadena cuyo segundo caracter no puede computar pues requiere un c'alculo infinito, en la figura representamos este caracter con la letra $\Omega$.  All'i es donde entra en acci'on el \textbf{Runaway Killer} para informar esta situaci'on al usuario.
+\begin{figure}[htbp]
+	\begin{center}
+        	\fbox{\includegraphics[width=\textwidth]{sequence}}
+		\caption{Secuencia de Evaluaci'on de ``WIC''}
+		\label{seq1}
+	\end{center}
+\end{figure}
 
 \subsection{Dise'no} TODO: Contar las decisiones que tomamos y por qu'e
 \subsection{Implementaci'on} TODO: Detalles generales de implementaci'on

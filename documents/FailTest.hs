@@ -16,3 +16,8 @@ instance Show InfiniteString where
     
 instance Show InfiniteChar where
     show _ = ['w', 'i', 't', 'h', ' ', head . show $ length [1..]] ++ " which yields an infinite calculation"
+
+data WithIfiniteChar = WIC
+
+instance Show WithIfiniteChar where
+    show WIC = ['c', head . show $ length [1..]]
