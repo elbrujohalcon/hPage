@@ -99,11 +99,35 @@ $ cabal install hpage
 \begin{lstlisting}
 $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \end{lstlisting}
+\newpage
 \subsection{QuickStart}TODO: Tutorial donde se noten las features de \hpage
 \newpage
 
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
-\subsection{Arquitectura General} TODO: Gr'aficos de arquitectura general
+\subsection{Arquitectura General}
+\paragraph{}Las principales decisiones de arquitectura que se tomaron durante el desarrollo de \hpage\ tuvieron como principales motivaciones los siguientes requerimientos:
+\begin{description}
+\item[Conexi'on con GHC] \hpage\ deb'ia conectarse con el motor de GHC a trav'es de su API de modo de poder detectar e interpretar expresiones.  Para ello se utiliz'o \htmladdnormallinkfoot{hint}{http://projects.haskell.org/hint}
+\item[Paralelismo] \hpage\ deb'ia permitir al usuario editar sus documentos mientras esperaba el resultado de la evaluaci'on de alguna expresi'on.  Para ello se cre'o \textsl{eprocess} y se implement'o un modelo de procesos utiliz'andolo.
+\item[Errores Controlados] \hpage\ no deb'ia fallar si la evaluaci'on de una expresi'on fallaba.  M'as a'un, tambi'en deb'ia detectar posibles evaluaciones infinitas e informar estas situaciones al usuario
+\end{description}
+\begin{figure}[htbp]
+	\begin{center}
+        	\fbox{\includegraphics[]{architecture}}
+		\caption{Arquitectura de \hpage}
+		\label{arq1}
+	\end{center}
+\end{figure}
+\subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la figura \ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representan un proceso o ``thread'' en ejecuci'on.  Cada uno de estos procesos se ejecuta dentro del entorno de una m'onada, la cual se encuentra identificada en la esquina superior derecha del bloque.  En el diagrama podemos identificar los siguientes componentes:
+\begin{description}
+	\item[UI Manager] Este es el thread que inicia el programa, genera y administra la interfaz del usuario utilizando las herramientas provistas por \textsl{wxHaskell}.  En este thread se mantiene el estado visual de la aplicaci'on: el estado de los controles, la 'ultima b'usqueda realizada, etc.
+	\item[HPage Server] Este proceso, iniciado por el \textbf{UI Manager}, es el que comunica a la interfaz del usuario con la m'aquina virtual de GHC, a trav'es del \textbf{Hint Server}, captura sus errores y lo reinicia en caso de ser necesario.  En este proceso se mantiene el estado general de la aplicaci'on: sus p'aginas, expresiones, paquetes y m'odulos cargados, etc.
+	\item[Hint Server] Este proceso, iniciado por el \textbf{HPage Server}, mantiene una conexi'on con la m'aquina virtual de GHC (a la cual se muestra en la figura conectado a trav'es de una l'inea de puntos)
+	\item[Char Filler] Este proceso, iniciado por el \textbf{UI Manager} cumple una muy sencilla funci'on: utilizando los procedimientos de env'io y recepci'on de mensajes provistos por \textsl{eprocess}, espera recibir un caracter (o sea, una expresi'on de tipo Char), para luego evaluarlo y enviar como respuesta su valor en forma normal.
+	\item[Value Filler] Estos procesos, iniciados por el \textbf{UI Manager} ante cada evaluaci'on solicitada por el usuario son los encargados de procesar el resultado obtenido del \textbf{HPage Server}. Cabe recordar aqu'i que \haskell\ trabaja con evaluaci'on ``lazy'', por lo cual el resultado obtenido no ha sido a'un completamente procesado.  Cada \textbf{Value Filler} se encarga de evaluar un resultado y mostrarlo por pantalla, para ello env'ia y recibe mensajes del \textbf{Char Filler} a fin de procesar cada caracter a mostrar.
+	\item[Runaway Killer] Este thread, creado utilizando la clase \textsl{TimerEx} provista por \textsl{wxHaskell}, es iniciado por cada \textbf{Value Filler} al momento de enviar un nuevo caracter al \textbf{Char Filler}.  El objetivo del \textbf{Runaway Killer} es el de detectar prorcesamiento ``posiblemente'' infinito.  B'asicamente, pasado un segundo de procesamiento, reinicia el \textbf{Char Filler} e informa al \textbf{Value Filler} que lo inici'o que el caracter que se esperaba procesar ha demorado demasiado y podr'ia desencadenar una evaluaci'on infinita.
+\end{description}
+
 \subsection{Dise'no} TODO: Contar las decisiones que tomamos y por qu'e
 \subsection{Implementaci'on} TODO: Detalles generales de implementaci'on
 \subsubsection{wxHaskell}TODO: Pros y contras y workarounds
