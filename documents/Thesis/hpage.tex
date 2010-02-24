@@ -5,7 +5,7 @@
 \usepackage{graphicx}
 \usepackage[left=2cm,right=2cm]{geometry}
 \usepackage{ulem} %Para tachar cosas
-%\usepackage{epigraph}
+\usepackage{epigraph}
 \usepackage{listings}
 \usepackage{html}
 \usepackage[colorlinks=true]{hyperref}
@@ -51,6 +51,10 @@
 
 \section{Introducci'on}
 \subsection{Motivaci'on}
+\begin{epigraphs}
+    \qitem{Motivation is what gets you started. Habit is what keeps you going}{Jim Rohn}
+    \qitem{Essstamo mo-ti-va-dos, nene}{El ``Bambino'' Veira}
+\end{epigraphs}
 \paragraph{}Actualmente estamos presenciando un importante cambio en el desarrollo de sistemas, gracias al 'exito de proyectos como \htmladdnormallinkfoot{CouchDB}{http://couchdb.apache.org}, \htmladdnormallinkfoot{ejabberd}{http://www.ejabberd.im} y el chat de \htmladdnormallinkfoot{Facebook}{http://www.facebook.com}, todos ellos desarrollados utilizando lenguajes del paradigma funcional.
 \paragraph{}Ejemplos de 'estos lenguajes de programaci'on, como \htmladdnormallinkfoot{Haskell}{http://www.haskell.org} o \htmladdnormallinkfoot{Erlang}{http://www.erlang.org}, demuestran ser maduros, confiables y presentan claras ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, los desarrolladores que deciden realizar el cambio de paradigma se encuentran con el problema de la escasez de ciertas herramientas que les permitan realizar su trabajo m'as eficientemente.  Por el contrario, 'estas herramientas abundan en el desarrollo de proyectos utilizando lenguajes orientados a objetos.  En particular, nuestro foco de atenci'on se centra sobre aquellas herramientas que permiten realizar \textsl{debugging} y \textsl{entendimiento} de c'odigo a trav'es de \textsl{``micro-testing''}\footnote{Enti'endase ``micro-testing'' como la tarea de realizar tests eventuales para entender o evaluar alg'un aspecto de un programa} .
 \paragraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
@@ -69,11 +73,18 @@
 
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{Trabajos Relacionados}
+\begin{epigraphs}
+	\qitem{I like work; it fascinates me. I can sit and look at it for hours}{Jerom Klapka}
+\end{epigraphs}
 \paragraph{}En el mundo de la programaci'on orientada a objetos podemos encontrar herramientas de este tipo, como \htmladdnormallinkfoot{Java Scrapbook Pages}{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/ref-34.htm} para \htmladdnormallinkfoot{Java}{http://www.java.com} y \htmladdnormallinkfoot{Workspace}{http://wiki.squeak.org/squeak/1934} para \htmladdnormallinkfoot{SmallTalk}{http://www.smalltalk.org}.  Utilizando estos aplicativos, los desarrolladores pueden introducir peque'nas porciones de c'odigo, ejecutarlas y luego inspeccionar y analizar los resultados obtenidos.  Un concepto compartido por ambas herramientas es el de presentar ``p'aginas'' de texto en las que varias expresiones pueden intercalarse con partes de texto libre y permitir al desarrollador intentar evaluar s'olo una porci'on de todo lo escrito.  Estas p'aginas pueden ser guardardas y luego recuperadas de modo de poder analizar nuevamente las mismas expresiones.  Adem'as permiten crear objetos (lo que para los lenguajes funcionales equivaldr'ia a definir expresiones) locales a la p'agina en uso y utilizarlos en ella.
 \paragraph{}Dentro del paradigma funcional, con un enfoque similar, aunque un poco m'as orientado a la presentaci'on y visualizaci'on de documentos, \htmladdnormallinkfoot{Keith Hanna}{http://www.cs.kent.ac.uk/people/staff/fkh/} de la Universidad de Kent, ha desarrollado \htmladdnormallinkfoot{Vital}{http://www.cs.kent.ac.uk/projects/vital/}.  \textsl{Vital} es una implementaci'on de un entorno de visualizaci'on de documentos para \haskell.  Pretende presentar \haskell\ de una manera apropiada para usuarios finales en areas de aplicaci'on como la ingenier'ia, las matem'aticas o las finanzas.  Dentro de esta herramienta, los m'odulos \haskell\ son presentados como documentos en los que pueden visualizarse los valores que en ellos se definen directamente en el lugar en el que aparecen, ya sea de modo textual o gr'afico (como ``vistas''). 
 \paragraph{}Durante el desarrollo de \hpage\ hemos tenido que enfrentar varios desaf'ios relacionados principalmente con el desarrollo de interfaces visuales dentro del paradigma funcional.  Volcando el conocimiento adquirido durante ese proceso, hemos desarrollado \htmladdnormallinkfoot{wxhNotepad}{http://github.com/elbrujohalcon/wxhnotepad} que es, ante todo, una prueba de concepto sobre c'omo desarrollar editores de texto con \textsl{wxHaskell}.  Gracias a \htmladdnormallinkfoot{Jeremy O'Donoghue}{http://wewantarock.wordpress.com/about/}, \textsl{wxhNotepad} est'a siendo publicado como \htmladdnormallinkfoot{un tutorial}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/} en sucesivos art'iculos en su blog
 %%------------------------------------------------------------------------------------------------------------------------------
 \subsection{\hpage}
+\begin{epigraphs}
+    \qitem{Ancorch'e lo ingegno umano faccia invenzioni varie, rispondendo con vari strumenti a un medesimo fine, mai esso trover\`a invenzione pi\`u bella, n'e pi\`u facile n'e pi\`u brieve della natura, perch'e nelle sue invenzioni nulla manca e nulla \`e superfluo}{Leonardo da Vinci}
+    \qitem{La programaci'on intensiva y el uso prolongado de Tetris s'olo lleva a ver estructuras de orden y secuencias en la verduler'ia y a querer apilar los autos para formar l'ineas s'olidas}{Dar'io Ruellan}
+\end{epigraphs}
 \paragraph{} \htmladdnormallinkfoot{\hpage}{http://haskell.hpage.com} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y su clase.
 \subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallinkfoot{Cabal}{http://www.haskell.org/cabal} y \htmladdnormallinkfoot{Hayoo!}{http://holumbus.fh-wedel.de/hayoo} y se encuentra ya disponible en \htmladdnormallinkfoot{HackageDB}{http://hackage.haskell.org/package/hpage}.
 \subparagraph{}\hpage\ presenta una interfaz simple e intuitiva, desarrollada utilizando \htmladdnormallinkfoot{wxHaskell}{http://haskell.org/haskellwiki/WxHaskell}, lo que lo convierte en un sistema multiplataforma.
@@ -84,6 +95,10 @@
 
 \section{Tutorial - Descubriendo \hpage}
 \subsection{Instalaci'on}
+\begin{epigraphs}
+	\qitem{As a rule, software systems do not work well until they have been used, and have failed repeatedly, in real applications.}{Dave Parnas}
+	\qitem{The \#1 programmer excuse for legitimately slacking off: ``My code is compiling''}{David Knutz}
+\end{epigraphs}
 \paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, sin embargo,como se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \textsl{Cabal}, con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{lstlisting}
@@ -100,11 +115,19 @@ $ cabal install hpage
 $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \end{lstlisting}
 \newpage
-\subsection{QuickStart}TODO: Tutorial donde se noten las features de \hpage
+\subsection{QuickStart}
+\begin{epigraphs}
+	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
+	\qitem{How is education supposed to make me feel smarter? Besides, every time I learn something new, it pushes some old stuff out of my brain - remember when I took that home winemaking course, and I forgot how to drive?}{Homer Simpons}
+\end{epigraphs}
+TODO: Tutorial donde se noten las features de \hpage
 \newpage
 
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
 \subsection{Arquitectura General}
+\begin{epigraphs}
+	\qitem{If you think good architecture is expensive, try bad architecture}{Brian Foote and Joseph Yoder}
+\end{epigraphs}
 \paragraph{}Las principales decisiones de arquitectura que se tomaron durante el desarrollo de \hpage\ tuvieron como principales motivaciones los siguientes requerimientos:
 \begin{description}
 \item[Conexi'on con GHC] \hpage\ deb'ia conectarse con el motor de GHC a trav'es de su API de modo de poder detectar e interpretar expresiones.  Para ello se utiliz'o \htmladdnormallinkfoot{hint}{http://projects.haskell.org/hint}
@@ -144,9 +167,12 @@ instance Show WithIfiniteChar where
 	\end{center}
 \end{figure}
 
-\subsection{Dise'no} TODO: Contar las decisiones que tomamos y por qu'e
-\subsection{Implementaci'on}
-\subsubsection{UI} La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
+\subsection{Dise'no}
+\begin{epigraphs}
+	\qitem{Design and programming are human activities; forget that and all is lost}{Bjarne Stroustrup}
+\end{epigraphs}
+\subsubsection{eprocess} TODO: Por qu'e y c'omo hicimos eprocess (link a realworldhaskell)
+\subsubsection{Servers} TODO: Por qu'e y c'omo hicimos hint-server y hpage-server
 \subsubsection{Bottoms}El lenguaje \haskell\ tiene una caracter'istica 'unica: \textsl{la evaluaci'on perezosa} o \textsl{lazy evaluation}.  Gracias a esta caracter'istica, las expresiones \haskell\ no son completamente evaluadas (reducidas a forma normal) hasta el momento en que realmente se necesita conocer su valor.  Dado que \hpage\ presenta al usuario un interprete de expresiones, es necesario que est'e preparado para soportar esta caracter'istica.  En particular, dentro de \hpage\ las expresiones son reducidas a forma normal al momento de intentar mostrar el resultado de su evaluaci'on al usuario.  En ese momento, lo 'unico que se sabe es que la expresi'on a mostrar es de clase \textsl{Show}.  \hpage\ intenta entonces ejecutar la funci'on \texttt{show} sobre la expresi'on a mostrar y pueden suceder varias cosas:
 \begin{itemize}
 	\item Por supuesto, puede suceder que al evaluar la expresi'on se obtenga una cadena de caracteres, en cuyo caso \hpage\ simplemente presentar'a el resultado al usuario
@@ -155,32 +181,32 @@ instance Show WithIfiniteChar where
 	\item Es posible tambi'en que, al intentar evaluar un caracter, se produzca una excepci'on.  En este caso, \hpage\ atrapa la excepci'on, la informa al usuario y luego contin'ua evaluando los siguientes caracteres
 	\item Otra posibilidad es que, luego de presentar un caracter, al intentar obtener el resto de la cadena, \hpage\ encuentre un c'alculo ``infinito'' o una excepci'on.  En estos casos, se informa la situaci'on al usuario y se aborta la evaluaci'on de la expresi'on.
 \end{itemize}
-\paragraph{}Para visualizar m'as claramente el comportamiento descrito, podemos analizar el c'odigo de la secci'on correspondiente de \hpage:
-\paragraph{}TODO: Insertar c'odigo de valueFiller y charFiller
-\subsubsection{Threads}TODO: C'omo manejamos los threads para la GUI y la VM?
-\subsubsection{hint}TODO: C'omo utilizamos hint para conectarnos con la VM y el tema de que es \textsl{lazy}
-\subsubsection{Cabal}TODO: C'omo nos integramos con cabal
-\subsection{Problemas Resueltos}
-\subsubsection{Un Editor de Texto en Haskell}TODO: wxhNotepad
-\subsubsection{Multithreading en GHC}TODO: ?`C'omo simular multhreading cuando GHC no es multithread?
-TODO: Otros
+\subsubsection{Cabal}TODO: Por qu'e y c'omo nos integramos con cabal
+\subsubsection{Hayoo!}TODO: Por qu'e y c'omo nos integramos con Hayoo!
+
+\subsection{Implementaci'on}
+\begin{epigraphs}
+	\qitem{Nothing resolves design issues like an implementation}{J. D. Horton}
+	\qitem{A child of five would understand this. Send someone to fetch a child of five}{Groucho Marx}
+\end{epigraphs}
+\subsubsection{UI} La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
+\subsubsection{TODO: OTROS}TODO: Ver el c'odigo... detectar cosas interesantes y armarles secciones
 
 \section{Resultados}
-\subsection{Objetivos Alcanzados}TODO: ?`Qu'e se puede hacer ahora que existe \hpage?
-\subsection{Trabajo a Realizar} TODO: Future Work
+\subsection{Objetivos Alcanzados}
+\begin{epigraphs}
+	\qitem{Results! Why, man? I have gotten a lot of results. I know several thousand things that wont work}{Thomas A. Edison}
+	\qitem{Kids, you tried your best and you failed miserably. The lesson is: ``never try''}{Homer Simpsons}
+\end{epigraphs}
+TODO: ?`Qu'e se puede hacer ahora que existe \hpage?
+\subsection{Trabajo a Realizar}
+\begin{epigraphs}
+	\qitem{Inside every large program, there is a small program trying to get out}{C.A.R. Hoare}
+	\qitem{I'm a man with a one-track mind, so much to do in one life-time}{Queen}
+\end{epigraphs}
+So much to do, so little done, such things to be
+TODO: Future Work
 
 \section{Agradecimientos}
 \paragraph{}TODO: Acknowledgments.  Recordar a Jeremy, al flaco del Undo/Redo, a los de Hayoo!
-
-% As'i se pone c'odigo...
-%\lstset{language=C++, frame=single, tabsize=2}
-%\begin{lstlisting}
-%#include <utility>#include <assert.h>#include <iostream>#include "float_T.h"using namespace std;float_T::float_T() {}float_T::float_T(TIPO_DATO x, unsigned int mantisa){    original= x;    mantisaReal = mantisa;    setValor(x);}TIPO_DATO float_T::getValor(){    return deMantisa;}void float_T::setValor(TIPO_DATO numero){    int mantisa = mantisaReal;    assert(! (mantisa > MAX_MANTISA) );    unsigned char    mascara[CANT_BYTES];        for( int k = CANT_BYTES - 1; k >= 0; k-- )        if (CANT_BYTES - k <= BYTES_EXP)            mascara[k] = 0xFF;        else            mascara[k] = 0x00;        int i = CANT_BYTES - BYTES_EXP - 1;    while(mantisa >= 8)    {        mascara[i] = 0xFF;        mantisa    -= 8;        i--;    }    unsigned char quito = 0x80;    while( mantisa > 0 )    {        mascara[i] += quito;        quito = quito / 2;        mantisa--;    }    for(unsigned int j = 0; j < CANT_BYTES; j++ )    {        quito                = ((unsigned char *)&numero)[j];        mascara[j]    &= quito;    }        deMantisa= *((TIPO_DATO *)&mascara);}unsigned int float_T::getMantisa(){    return mantisaReal;}TIPO_DATO float_T::getOriginal(){    return original;}void float_T::setOriginal(TIPO_DATO y){    original= y;    }
-%\end{lstlisting}
-
-% As'i se ponen ep'igrafes...
-%\begin{epigraphs}
-%    \qitem{bla bla bla}{Alguien}
-%    \qitem{jajaja}{Alguien Chistoso}
-%\end{epigraphs}
 \end{document}
