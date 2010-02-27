@@ -197,6 +197,25 @@ instance Show WithIfiniteChar where
 	\qitem{Nothing resolves design issues like an implementation}{J. D. Horton}
 	\qitem{A child of five would understand this. Send someone to fetch a child of five}{Groucho Marx}
 \end{epigraphs}
+
+\subsubsection{eprocess}
+\paragraph{}Para la implementaci'on de \textsl{eprocess}, nuestra librer'ia de procesos, utilizamos dos herramientas de paralelismo y concurrencia que se encuentran muy bien descriptas en el libro \htmladdnormallinkfoot{Real World Haskell}{http://book.realworldhaskell.org/read/concurrent-and-multicore-programming.html}.  Utilizamos \textsl{Threads} para paralelizar procesos y \textsl{Channels} y \textsl{MVars} para permitirles comunicarse.  Definimos entonces un tipo mon'adico para representar a las acciones a realizarse en procesos paralelos de tipo \texttt{m}, tales que retornan expresiones de tipo \texttt{a} y pueden recibir elementos de tipo \texttt{r}:
+\begin{lstlisting}
+newtype ReceiverT r m a = RT { internalReader :: ReaderT (Handle r) m a }
+    deriving (Monad, MonadIO, MonadTrans, MonadCatchIO)
+\end{lstlisting}
+\subparagraph{}Individualizamos luego este tipo gen'erico, definiendo el tipo \texttt{Process}:
+\begin{lstlisting}
+type Process r = ReceiverT r IO
+\end{lstlisting}
+
+\subparagraph{}Finalmente definimos las funciones que permiten la ejecuci'on y mensajer'ia entre procesos:
+\begin{lstlisting}
+type Process r = ReceiverT r IO
+\end{lstlisting}
+
+TODO: Escribir m‡s...
+
 \subsubsection{UI}
 \paragraph{}La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
 \subsubsection{TODO: OTROS}
