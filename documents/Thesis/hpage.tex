@@ -330,17 +330,15 @@ data Context = Context { -- Package --
 \subparagraph{}Tambi'en debe notarse que mucha de la informaci'on de estado guardada en el \texttt{Context} es ``redundante'' pues se configura directamente en el \textbf{Hint Server}.  Eso se debe a que ante la eventual ca'ida del \textbf{Hint Server}, el \textbf{HPage Server} lo reinicia y restaura su estado utilizando esos datos.
 \subparagraph{}Finalmente, \texttt{running} y \texttt{recoveryLog} se utilizan para permitir al usuario cancelar acciones que intenta ejecutar.  Cada acci'on que se desea realizar de forma asincr'onica, devuelve una \textsl{MVar} que se llenar'a en caso de finalizar la acci'on con 'exito y se acumular'a en el \texttt{recoveryLog}.  En caso de cancelar, el \textbf{HPage Server} reinicia al \textbf{Hint Server}, lo configura seg'un los dem'as par'ametros (ej: \texttt{ghcOptions}) y vuelve a ejecutar el \texttt{recoveryLog} para ``ponerlo al d'ia''.
 \subparagraph{}El estado de las p'aginas con las que el usuario trabaja est'a definido como una lista de expresiones y dos listas de acciones para permitir el uso de \textsl{undo} y \textsl{redo}.  Finalmente, si la p'agina corresponde a un archivo en disco, \hpage\ identifica el ``path'' del mismo para poder guardarlo o recargarlo de ser necesario.
-
-\subsubsection{Test Driven Development}
-\paragraph{}Gracias, en parte, a haber separado la l'ogica correspondiente a la interfaz de usuario y la propia de \hpage, hemos podido desarrollar esta 'ultima utilizando la t'ecnica de \htmladdnormallinkfoot{TDD}{http://www.agiledata.org/essays/tdd.html} (Test Driven Development).  Para ello utilizamos \htmladdnormallinkfoot{QuickCheck}{http://www.cs.chalmers.se/~rjmh/QuickCheck/} y desarrollamos una serie de tests que pueden ser ejecutados mediante el comando 
+\subparagraph{}Gracias a haber separado la l'ogica correspondiente a la interfaz de usuario y la propia de \hpage, hemos podido desarrollar esta 'ultima utilizando la t'ecnica de \htmladdnormallinkfoot{TDD}{http://www.agiledata.org/essays/tdd.html} (Test Driven Development).  Para utilizamos \htmladdnormallinkfoot{QuickCheck}{http://www.cs.chalmers.se/~rjmh/QuickCheck/}, una herramienta que nos permiti'o ir desarrollando y verificando tests de manera incremental hasta alcanzar la actual definici'on del \textbf{HPage Server}.  Los tests desarrollados pueden ser ejecutados utilizando el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{lstlisting}
 $ cabal test hpage
 \end{lstlisting}
+\lstset{language=haskell, frame=single, tabsize=4}
 
 \subsubsection{UI}
 \paragraph{}La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
-\paragraph{}TODO: Ver el c'odigo... detectar cosas interesantes y armarles secciones
 
 \section{Resultados}
 \subsection{Objetivos Alcanzados}
