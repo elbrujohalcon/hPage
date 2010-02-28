@@ -73,4 +73,4 @@ makeExecutable :: FilePath -> IO ExitCode
 makeExecutable f = system $ "chmod a+x " ++ f 
 
 hPageTestRunner :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
-hPageTestRunner _ _ _ _ = system "cd src && runhaskell HPage/Test/Server.hs" >> return ()
+hPageTestRunner _ _ _ _ = system "runhaskell -isrc -idist/build/autogen HPage.Test.Server" >> return ()
