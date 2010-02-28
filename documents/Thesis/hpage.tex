@@ -208,17 +208,131 @@ newtype ReceiverT r m a = RT { internalReader :: ReaderT (Handle r) m a }
 \begin{lstlisting}
 type Process r = ReceiverT r IO
 \end{lstlisting}
-
 \subparagraph{}Finalmente definimos las funciones que permiten la ejecuci'on y mensajer'ia entre procesos:
 \begin{lstlisting}
-type Process r = ReceiverT r IO
+spawn :: MonadIO m => Process r k -> m (Handle r)
+kill :: MonadIO m => Handle a -> m ()
+self :: Monad m => ReceiverT r m (Handle r)
+sendTo :: MonadIO m => Handle a -> a -> m ()
+recv :: MonadIO m => ReceiverT r m r
 \end{lstlisting}
+\subparagraph{}Las funciones \texttt{spawn} y \texttt{kill} inician y dentienen un proceso respectivamente.  \texttt{spawn} retorna como resultado un \texttt{Handle}, que identifica un'ivocamente al proceso y permite enviarle mensajes utilizando la funci'on \texttt{sendTo}.  Cabe notar que esta funci'on no necesita ser utilizada dentro de un \textsl{proceso} sino simplemente en cualquier instancia de la clase \texttt{MonadIO}.
+\subparagraph{}Luego, dentro de una instancia de \texttt{ReceiverT} se puede utilizar la funci'on \texttt{self} para conocer el propio \texttt{Handle} y \texttt{recv} para recibir mensajes.  Cabe notar que \texttt{recv} se ejecuta de manera bloqueante, emulando el comportamiento de la funci'on \texttt{receive} de \textsl{Erlang}.
 
-TODO: Escribir m‡s...
+\subsubsection{Servers}
+\paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  Gracias al uso de m'onadas y los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos dos servers de una manera sencilla.   Mostramos, a modo de ejemplo e incluyendo comentarios explicativos, el c'odigo m'as significativo de uno de ellos:
+\begin{lstlisting}
+-- Para comenzar definimos un tipo ``ServerHandle'', que debe ser utilizado para
+-- enviarle mensajes al servidor
+newtype ServerHandle = SH {handle :: Handle (InterpreterT IO ())}
+
+-- Convertimos a (ReceiverT r m) en una instancia de MonadInterpreter para poder
+-- ejecutar las acciones que esperamos recibir como mensajes
+instance MonadInterpreter m => MonadInterpreter (ReceiverT r m) where
+    fromSession = lift . fromSession
+    modifySessionRef a = lift . (modifySessionRef a)
+    runGhc = lift . runGhc 
+
+-- Definimos una funcion que inicia el servidor y retorna su handle
+-- El servidor simplemente recibe acciones de tipo MonadInterpreter
+-- y las ejecuta utilizando la funcion lift
+start :: IO ServerHandle
+start = (spawn $ makeProcess runInterpreter interpreter) >>= return . SH
+    where interpreter =
+            do
+                setImports ["Prelude"]
+                forever $ recv >>= lift
+
+-- Definimos una funcion para ejecutar acciones asincronicamente
+-- Esta funcion recibe la acciona a ejecutar junto con el handle del servidor
+-- y devuelve una MVar que llenara con el resultado de la accion
+asyncRunIn :: ServerHandle -> InterpreterT IO a
+     -> IO (MVar (Either InterpreterError a))
+asyncRunIn server action = do
+     resVar <- liftIO newEmptyMVar
+     sendTo (handle server) $ try action >>= liftIO . putMVar resVar
+     return resVar
+
+-- Definimos tambien una funcion para ejecutar resultados sincronicamente
+-- Esta funcion envia al servidor la acciona a ejecutar y espera recibir el 
+-- resultado para luego devolverlo
+runIn :: ServerHandle -> InterpreterT IO a
+       -> IO (Either InterpreterError a)
+runIn server action = runHere $ do
+     me <- self
+     sendTo (handle server) $ try action >>= sendTo me
+     recv
+
+-- Finalmente, definimos una funcion que detiene al servidor utilizando la
+-- la funcion kill
+stop :: ServerHandle -> IO ()
+stop = kill . handle
+\end{lstlisting}
+\subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 25 l'ineas de c'odigo es capaz de ejecutar todas las acciones que provee \textsl{hint} en un proceso aislado y controlado.
+
+\subsubsection{M'odulos de \hpage}
+\paragraph{}El m'odulo principal de la aplicaci'on es el denominado \texttt{HPage.Control}.  Este m'odulo describe la m'onada \texttt{HPage} e incluye todas las acciones que pueden realizarse en ella.  Es el encargado de mantener el estado del sistema, para lo cual hemos definido un tipo de datos llamado \texttt{Context}, que mostraremos a continuaci'on.
+\subparagraph{} Los principales componentes del estado del sistema son:
+\begin{description}
+	\item[activePackage] El paquete \cabal\ activo, si es que se ha cargado alguno.
+	\item[pages] Las p'aginas que el usuario est'a viendo.  Cabe notar que un usuario puede tener varias p'aginas activas a la vez, una con cada documento.
+	\item[loadedModules / importedModules] Los m'odulos que el usuario ha cargado / importado
+	\item[server] El handle del \textbf{Hint Server} que el mismo \textbf{HPage Server} inicia y mantiene
+	\item[running] La acci'on que se encuentra ejecut'andose de manera asincr'onica, si es que hay alguna
+	\item[recoveryLog] El log de acciones realizadas hasta el momento, 'util al momento
+\end{description}
+\begin{lstlisting}
+newtype Expression = Exp {exprText :: String}       
+    deriving (Eq, Show)
+
+data InFlightData = LoadModules { loadingModules :: Set String,
+                                  runningAction :: Hint.InterpreterT IO ()
+                                  } |
+                    ImportModules { importingModules :: Set String,
+                                    runningAction :: Hint.InterpreterT IO ()
+                                    } | 
+                    SetSourceDirs { settingSrcDirs :: [FilePath],
+                                    runningAction :: Hint.InterpreterT IO ()
+                                    } |
+                    SetGhcOpts { settingGhcOpts :: String,
+                                 runningAction :: Hint.InterpreterT IO ()
+                                 } |
+                    Reset
+
+data Page = Page { -- Display --
+                   expressions :: [Expression],
+                   currentExpr :: Int,
+                   undoActions :: [HPage ()],
+                   redoActions :: [HPage ()],
+                   -- File System --
+                   original :: [Expression],
+                   filePath    :: Maybe FilePath
+                  }
+                  
+data Context = Context { -- Package --
+                         activePackage :: Maybe PackageIdentifier,
+                         pkgModules :: [Hint.ModuleName],
+                         -- Pages --
+                         pages :: [Page],
+                         currentPage :: Int,
+                         -- GHC State --
+                         loadedModules :: Set String,
+                         importedModules :: Set String,
+                         extraSrcDirs :: [FilePath],
+                         ghcOptions :: String,
+                         server :: HS.ServerHandle,
+                         -- Actions --
+                         running :: Maybe InFlightData,
+                         recoveryLog :: Hint.InterpreterT IO ()
+                       }
+\end{lstlisting}
+\subparagraph{}Notese que el paquete \cabal\, las extensiones y los m'odulos cargados o importados, etc. son independientes de las p'aginas con las que el usuario est'e trabajando, por lo que el usuario por ejemplo no puede manejar dos paquetes \cabal\ a la vez.  'Esto se debe a que la API de \textsl{GHC} no permite la utilizaci'on de \textsl{multi-threading}, por lo tanto, como dentro de un programa s'olo puede haber una 'unica lista de m'odulos cargados/importados, una 'unica lista de extensiones, etc.
+\subparagraph{}Tambi'en debe notarse que mucha de la informaci'on de estado guardada en el \texttt{Context} es ``redundante'' pues se configura directamente en el \textbf{Hint Server}.  Eso se debe a que ante la eventual ca'ida del \textbf{Hint Server}, el \textbf{HPage Server} lo reinicia y restaura su estado utilizando esos datos.
+\subparagraph{}Finalmente, \texttt{running} y \texttt{recoveryLog} se utilizan para permitir al usuario cancelar acciones que intenta ejecutar.  Cada acci'on que se desea realizar de forma asincr'onica, devuelve una \textsl{MVar} que se llenar'a en caso de finalizar la acci'on con 'exito y se acumular'a en el \texttt{recoveryLog}.  En caso de cancelar, el \textbf{HPage Server} reinicia al \textbf{Hint Server}, lo configura seg'un los dem'as par'ametros (ej: \texttt{ghcOptions}) y vuelve a ejecutar el \texttt{recoveryLog} para ``ponerlo al d'ia''.
+\subparagraph{}El estado de las p'aginas con las que el usuario trabaja est'a definido como una lista de expresiones y dos listas de acciones para permitir el uso de \textsl{undo} y \textsl{redo}.  Finalmente, si la p'agina corresponde a un archivo en disco, \hpage\ identifica el ``path'' del mismo para poder guardarlo o recargarlo de ser necesario.
 
 \subsubsection{UI}
 \paragraph{}La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
-\subsubsection{TODO: OTROS}
 \paragraph{}TODO: Ver el c'odigo... detectar cosas interesantes y armarles secciones
 
 \section{Resultados}
