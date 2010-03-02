@@ -338,7 +338,7 @@ $ cabal test hpage
 \lstset{language=haskell, frame=single, tabsize=4}
 
 \subsubsection{UI}
-\paragraph{}La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \ \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
+\paragraph{}La interfaz gr'afica de \hpage\ est'a desarrollada utilizando \textsl{wxHaskell}, un framework elegido por ser multi-plataforma y, gracias a estar constru'ido sobre \textsl{wxWidgets}, presentar un ``look\&feel'' nativo en distintos entornos.  \textsl{wxHaskell} es un framework sencillo para utilizar y entender y, pese a que a'un se encuentra en per'iodo de evoluci'on, es suficientemente estable.  Sin embargo, tal como puede verse en \textsl{wxhNotepad} hemos tenido que superar varios escollos hasta lograr una UI estable e intuitiva.  A los lectores interesados en estos detalles t'ecnicos les recomendamos la lectura de los art'iculos escritos por Jeremy O'Donoghue en su tutorial \htmladdnormallinkfoot{Building a text editor}{http://wewantarock.wordpress.com/2010/01/31/building-a-text-editor-part-1/}.
 
 \section{Resultados}
 \subsection{Objetivos Alcanzados}
@@ -346,15 +346,28 @@ $ cabal test hpage
 	\qitem{Results! Why, man? I have gotten a lot of results. I know several thousand things that wont work}{Thomas A. Edison}
 	\qitem{Kids, you tried your best and you failed miserably. The lesson is: ``never try''}{Homer Simpsons}
 \end{epigraphs}
-TODO: ?`Qu'e se puede hacer ahora que existe \hpage?
+\paragraph{}A primera vista, \hpage\ puede parecer simplemente un editor de texto al que se le agrega la posibilidad de interpretar expresiones \haskell.  Esta visi'on es cierta, y en s'i misma es un avance con respecto a las herramientas ya existentes pues permite intercalar en un mismo documento texto libre y expresiones \haskell.
+\subparagraph{}Sin embargo, \hpage\ presenta como varios atributos que generan un importante valor agregado:
+\begin{itemize}
+	\item Permite configurar el entorno autom'aticamente en base a un paquete \cabal
+	\item Permite buscar documentaci'on sobre expresiones \haskell\ utilizando \textsl{Hayoo!}
+	\item Permite al usuario editar texto mientras espera el resultado de la evaluaci'on de una expresi'on
+	\item Permite visualizar y analizar expresiones que contengan errores, ``bottoms'' o que generen c'alculos ``infinitos''
+\end{itemize}
+\subparagraph{}Son todas estas caracter'isticas las que convierten a \hpage\ en una herramienta de gran utilidad para todo desarrollador \haskell, desde el estudiante universitario que generalmente se encuentra frente a la necesidad de ``entender'' c'omo funcionan ciertas funciones del lenguaje para aprenderlo hasta el desarrollador avanzado que necesita debuggear sus aplicaciones.
 \subsection{Trabajo a Realizar}
 \begin{epigraphs}
 	\qitem{Inside every large program, there is a small program trying to get out}{C.A.R. Hoare}
 	\qitem{I'm a man with a one-track mind, so much to do in one life-time}{Queen}
 \end{epigraphs}
-So much to do, so little done, such things to be
-TODO: Future Work
-
+\paragraph{}\hpage\ es todav'ia una aplicaci'on en desarrollo y de c'odigo abierto.  A'un queda mucho por hacer y por eso la hemos publicado en internet utilizando \htmladdnormallinkfoot{github}{http://github.com}.  Gracias a este servicio, se encuentra habilitada \htmladdnormallinkfoot{una lista de bugs y sugerencias}{http://github.com/elbrujohalcon/hPage/issues} en constante actualizaci'on.  Entre las tareas que all'i se encuentran al d'ia de hoy, cabe destacar:
+\begin{description}
+	\item[ByteStrings] Las aplicaciones \haskell\ tradicionales manejan el texto utilizando \textbf{Strings} (o sea, listas de caracteres), pero ya se encuentra a disposici'on del desarrollador \haskell\ una nueva herramienta que permite manejar texto de una manera m'as 'optima: \textbf{ByteStrings}.  \hpage\ utiliza en su mayor'ia \textbf{Strings} y podr'ia ser optimizado migrando la mayor cantidad posible a \textbf{ByteStrings}.
+	\item[Mejoras Visuales] La UI de \hpage\ tiene mucho por mejorar y optimizar.  Ejemplos de esto son el coloreo de c'odigo y la autocompleci'on.  \textsl{wxHaskell} se encuentra en constante desarrollo y sus optimizaciones deber'ian ser aprovechadas por \hpage\ cuando sea posible.
+	\item[\cabal] La actual integraci'on con \cabal\ cubre lo b'asico de la configuraci'on de paquetes, como las extensiones y los m'odulos, pero \cabal\ permite describir varias cosas m'as que podr'ian ser aprovechadas por \hpage\ como la ubicaci'on de librer'ias y otros archivos
+	\item[Auto Reload] Una caracter'istica que ser'ia muy 'util agregar a \hpage\ es la recarga autom'atica de los m'odulos cargados.  De este modo, el desarrollador no necesitar'ia presionar el bot'on ``reload'' cada vez que modifica un m'odulo para que \hpage\ tome los cambios realizados.
+\end{description}
+\newpage
 \section{Agradecimientos}
-\paragraph{}TODO: Acknowledgments.  Recordar a Jeremy, al flaco del Undo/Redo, a los de Hayoo!
+\paragraph{}
 \end{document}
