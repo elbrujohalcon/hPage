@@ -42,10 +42,11 @@ Executable hpage
                    wxcore >=0.11.1,             wxcore < 0.13,
                    wx >=0.11.1,                 wx < 0.13,
                    filepath >=1.1.0,            filepath < 1.2,
-                   Cabal >= 1.6,        	 	Cabal < 1.9,
+                   Cabal >= 1.6,        	 	    Cabal < 1.9,
                    hint >= 0.3.2,               hint < 0.4,
                    eprocess >= 1.1.0,           eprocess < 2,
-                   hint-server >= 1.1.0,        hint-server < 2
+                   hint-server >= 1.1.0,        hint-server < 2,
+                   time >= 1.1.4,               time < 2
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src

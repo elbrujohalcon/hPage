@@ -2,12 +2,14 @@
 module HPage.Utils.Log where
 
 import Control.Monad.Trans
+import Data.Time()
+import Data.Time.Clock
 
 data LogLevel = Trace | Debug | Info | Warning | Error | Fatal
     deriving (Show, Eq)
 
 logIO :: Show a => LogLevel -> a -> IO ()
-logIO lvl msg = putStrLn $ (show lvl) ++ ": " ++ (show msg)
+logIO lvl msg = getCurrentTime >>= \ts -> putStrLn $ (show ts) ++ " (" ++ (show lvl) ++ "): " ++ (show msg)
 
 liftLogIO :: (MonadIO m, Show a) => LogLevel -> a -> m ()
 liftLogIO lvl = liftIO . (logIO lvl) 
@@ -29,7 +31,7 @@ fatalIO = logIO Fatal
 {- with log...
 liftTraceIO = liftLogIO Trace
 -}
-liftTraceIO _ = return ()
+liftTraceIO _ = return () 
 liftDebugIO = liftLogIO Debug
 liftInfoIO = liftLogIO Info
 liftWarnIO = liftLogIO Warning

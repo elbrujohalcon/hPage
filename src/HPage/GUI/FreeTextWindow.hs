@@ -9,8 +9,8 @@ module HPage.GUI.FreeTextWindow ( gui ) where
 
 import Prelude hiding (catch)
 import Control.Exception
-import Control.Concurrent.MVar
 import Control.Concurrent.Process
+import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
@@ -54,15 +54,17 @@ data GUIResults = GUIRes { resButton :: Button (),
                            resType  :: TextCtrl (),
                            resErrors :: Var [GUIBottom] }
 
-data GUIContext = GUICtx { guiWin :: Frame (),
-                           guiPages :: SingleListBox (),
-                           guiModules :: (Var Int, ListCtrl ()),
-                           guiCode :: TextCtrl (),
-                           guiResults :: GUIResults,
-                           guiStatus :: StatusField,
-                           guiTimer :: TimerEx (),
+data GUIContext = GUICtx { guiWin       :: Frame (),
+                           guiPages     :: SingleListBox (),
+                           guiModules   :: (Var Int, ListCtrl ()),
+                           guiCode      :: TextCtrl (),
+                           guiResults   :: GUIResults,
+                           guiStatus    :: StatusField,
+                           guiTimer     :: TimerEx (),
                            guiCharTimer :: TimerEx (),
-                           guiSearch :: FindReplaceData ()} 
+                           guiSearch    :: FindReplaceData (),
+                           guiChrFiller :: MVar (Handle String),
+                           guiValFiller :: MVar (Handle (Either String Bool))} 
 
 gui :: IO ()
 gui =
@@ -123,14 +125,29 @@ gui =
         
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
+
+        chfv <- newEmptyMVar
+        vfv <- newEmptyMVar
         
         let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
-        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search 
+        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search chfv vfv 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
-        set btnInterpret [on command := onCmd "interpret" interpret]
+        -- Helper processes
+        chf <- spawn $ charFiller guiCtx
+        putMVar chfv chf
+        vf <- spawn $ valueFiller guiCtx
+        putMVar vfv vf
         
         -- Events
+        timerOnCommand refreshTimer $ refreshExpr model guiCtx
+        timerOnCommand charTimer $ do
+                                        newchf <- spawn $ charFiller guiCtx
+                                        swapMVar chfv newchf >>= kill
+                                        readMVar vfv >>= flip sendTo (Right False)
+        
+        set btnInterpret [on command := onCmd "interpret" interpret]
+        
         set lstPages [on select := onCmd "pageChange" pageChange]
         set txtCode [on keyboard := \_ -> onCmd "restartTimer" restartTimer >> propagateEvent,
                      on mouse :=  \e -> case e of
@@ -269,6 +286,76 @@ gui =
         onCmd "start" openHelpPage
         set win [visible := True]
         focusOn txtCode
+
+-- PROCESSES -------------------------------------------------------------------
+charFiller :: GUIContext -> Process String ()
+charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
+                                      resErrors= varErrors},
+                  guiValFiller = vfv} =
+    forever $ do
+         t <- recv
+         liftIO $ do
+                    catch (textCtrlAppendText txtValue t) $ \(ErrorCall desc) ->
+                                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
+                                                                    textCtrlAppendText txtValue bottomChar
+                    readMVar vfv >>= flip sendTo (Right True)
+
+valueFiller :: GUIContext -> Process (Either String Bool) ()
+valueFiller guiCtx@GUICtx{guiResults = GUIRes{resButton = btnInterpret},
+                          guiValFiller = vfv,
+                          guiChrFiller = chfv} =
+    forever $ do
+                rv <- recv
+                case rv of
+                    Left val ->
+                        do
+                            poc <- liftIO $ get btnInterpret $ on command
+                            let revert = do
+                                            newchf <- spawn $ charFiller guiCtx
+                                            swapMVar chfv newchf >>= kill
+                                            newvf <- spawn $ valueFiller guiCtx
+                                            swapMVar vfv newvf >>= kill
+                                            set btnInterpret [on command := poc, text := "Interpret"]
+                             in liftIO $ set btnInterpret [text := "Cancel",
+                                                           on command := revert]
+                            valueFill guiCtx val
+                            liftIO $ set btnInterpret [on command := poc,
+                                                       text := "Interpret"]
+                    Right _ ->
+                        liftErrorIO "Received bool while waiting for string"
+
+valueFill :: GUIContext -> String -> Process (Either String Bool) ()
+valueFill guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
+                                            resErrors = varErrors},
+                        guiCharTimer = charTimer,
+                        guiChrFiller = chfv,
+                        guiValFiller = vfv} val =
+      do
+        h <- liftIO $ try (case val of
+                               [] -> return []
+                               (c:_) -> return [c])
+        case h of
+            Left (ErrorCall desc) ->
+                liftIO $ do
+                           varUpdate varErrors (++ [GUIBtm desc val])
+                           textCtrlAppendText txtValue bottomString
+            Right [] ->
+                return ()
+            Right t ->
+                do
+                    liftIO $ timerStart charTimer charTimeout True
+                    liftIO $ readMVar chfv >>= flip sendTo t
+                    rv <- recv
+                    liftIO $ case rv of
+                                Left val ->
+                                    errorIO "Received string while waiting for bool"
+                                Right True ->
+                                    timerStop charTimer
+                                Right False ->
+                                    do
+                                        varUpdate varErrors (++ [GUIBtm "Timed Out" t])
+                                        textCtrlAppendText txtValue bottomChar
+                    valueFill guiCtx $ tail val
 
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
@@ -711,18 +798,20 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resErrors = varErrors},
                               guiCode       = txtCode,
                               guiCharTimer  = charTimer,
-                              guiWin        = win} =
+                              guiWin        = win,
+                              guiValFiller  = vfv} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
                         "" -> tryIn
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx
+        liftTraceIO "running..."
         res <- runner model HP.interpret
+        liftTraceIO "ready"
         case res of
             Left err ->
-                do
-                    warningDialog win "Error" err
+                warningDialog win "Error" err
             Right interp ->
                 if HP.isIntType interp
                     then do
@@ -734,70 +823,12 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         set lbl4Dots [visible := True]
                         set txtType [visible := True, text := HP.intType interp]
                         set lblInterpret [text := "Value:"]
-                        -- now we fill the textbox --
                         varSet varErrors []
                         set txtValue [text := ""]
-                        chfHandle <- spawn charFiller
-                        chf <- varCreate chfHandle
-                        spawn . valueFiller chf $ HP.intValue interp
-                        return ()
-    where valueFiller :: Var (Handle (String, MVar ())) -> String -> Process a ()
-          valueFiller chf val =
-              do
-                    prevOnCmd <- liftIO $ get btnInterpret $ on command
-                    myself <- self
-                    let revert = set btnInterpret [on command := prevOnCmd,
-                                                   text := "Interpret"]
-                    liftIO $ set btnInterpret [text := "Cancel",
-                                               on command := do
-                                                                spawn $ liftIO revert >> kill myself
-                                                                return ()]
-                    h <- liftIO $ try (case val of
-                                            [] -> return []
-                                            (c:_) -> return [c])
-                    case h of
-                        Left (ErrorCall desc) ->
-                            liftIO $ do
-                                        varUpdate varErrors (++ [GUIBtm desc val])
-                                        addText bottomString
-                                        revert
-                        Right [] ->
-                            liftIO revert
-                        Right t ->
-                            do
-                                chfHandle <- liftIO $ varGet chf
-                                ready <- liftIO $ newEmptyMVar
-                                sendTo chfHandle (t, ready)
-                                let killCmd =
-                                            do
-                                                stillRuning <- liftIO $ isEmptyMVar ready
-                                                if stillRuning
-                                                    then do
-                                                        timerOnCommand charTimer $ return ()
-                                                        kill chfHandle
-                                                        chfNewHandle <- liftIO . spawn $ charFiller
-                                                        varSet chf chfNewHandle
-                                                        varUpdate varErrors (++ [GUIBtm "Timed Out" t])
-                                                        addText bottomChar
-                                                        putMVar ready ()
-                                                    else
-                                                        return ()
-                                liftIO $ do
-                                            timerOnCommand charTimer killCmd
-                                            timerStart charTimer charTimeout True
-                                            takeMVar ready
-                                            timerOnCommand charTimer $ return ()
-                                valueFiller chf $ tail val
-          charFiller :: Process (String, MVar ()) ()
-          charFiller = forever $ do
-                            (t, r) <- recv
-                            liftIO $ do
-                                        catch (addText t) $ \(ErrorCall desc) ->
-                                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
-                                                                    addText bottomChar
-                                        putMVar r ()
-          addText t = textCtrlAppendText txtValue t
- 
+                        -- now we fill the textbox --
+                        liftTraceIO "sending the value to the Value Filler..."
+                        readMVar vfv >>= flip sendTo (Left $ HP.intValue interp)
+
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
 runTxtHPSelection s model hpacc =
@@ -833,13 +864,12 @@ refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
             Right _ ->
                 debugIO "refreshExpr done"
         
-        timerOnCommand refreshTimer $ return ()
+        timerStop refreshTimer
 
 
 -- TIMER HANDLERS --------------------------------------------------------------
 restartTimer model guiCtx@GUICtx{guiWin = win, guiTimer = refreshTimer} =
     do
-        timerOnCommand refreshTimer $ refreshExpr model guiCtx
         started <- timerStart refreshTimer 1000 True
         if started
             then return ()
