@@ -65,7 +65,7 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
                            guiSearch    :: FindReplaceData (),
                            guiChrVar    :: MVar (Maybe String),
                            guiChrFiller :: MVar (Handle String),
-                           guiValFiller :: MVar (Handle String)} 
+                           guiValFiller :: MVar (Handle (String, IO ()))} 
 
 gui :: IO ()
 gui =
@@ -306,32 +306,14 @@ charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
                     tryPutMVar chv $ Just txt
     where eval t = t `seq` length t `seq` return t
 
-valueFiller :: GUIContext -> Process String ()
+valueFiller :: GUIContext -> Process (String, IO ()) ()
 valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                                 resErrors = varErrors,
-                                                resValue  = txtValue},
-                          guiChrVar    = chv,
-                          guiValFiller = vfv,
-                          guiChrFiller = chfv} =
+                                                resValue  = txtValue}} =
     forever $ do
                 liftDebugIO "Waiting for a new value to interpret"
-                val <- recv
+                (val, poc) <- recv
                 liftDebugIO "Value received in valueFiller"
-                poc <- liftIO $ get btnInterpret $ on command
-                let revert = do
-                                debugIO "Cancelling..."
-                                tryTakeMVar chv --NOTE: empty the var
-                                debugIO "Killing the char filler..."
-                                newchf <- spawn $ charFiller guiCtx
-                                swapMVar chfv newchf >>= kill
-                                debugIO "Killing the value filler..."
-                                newvf <- spawn $ valueFiller guiCtx
-                                swapMVar vfv newvf >>= kill
-                                debugIO "Ready"
-                                set txtValue [enabled := True]
-                                set btnInterpret [on command := poc, text := "Interpret"]
-                 in liftIO $ set btnInterpret [text := "Cancel",
-                                               on command := revert]
                 liftDebugIO "Trying to evaluate the whole value first..."
                 liftIO $ do
                             set txtValue [text := ""]
@@ -346,7 +328,8 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                         textCtrlAppendText txtValue res
                             set btnInterpret [on command := poc,
                                               text := "Interpret"]
-                            set txtValue [enabled := True]
+                            set txtValue [enabled := True,
+                                          bgcolor := white]
 
 valueFiller' :: GUIContext -> String -> IO ()
 valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
@@ -836,7 +819,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                               guiCode       = txtCode,
                               guiCharTimer  = charTimer,
                               guiWin        = win,
-                              guiValFiller  = vfv} =
+                              guiChrVar     = chv,
+                              guiValFiller  = vfv,
+                              guiChrFiller  = chfv} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
@@ -844,7 +829,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx
         liftTraceIO "running..."
-        set txtValue [enabled := False]
+        set txtValue [enabled := False,
+                      bgcolor := lightgrey]
         res <- runner model HP.interpret
         liftTraceIO "ready"
         case res of
@@ -853,7 +839,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
             Right interp ->
                 if HP.isIntType interp
                     then do
-                        set txtValue [enabled := True, text := HP.intKind interp]
+                        set txtValue [enabled := True,
+                                      bgcolor := white,
+                                      text := HP.intKind interp]
                         set lbl4Dots [visible := False]
                         set txtType [visible := False]
                         set lblInterpret [text := "Kind:"]
@@ -862,8 +850,24 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         set txtType [visible := True, text := HP.intType interp]
                         set lblInterpret [text := "Value:"]
                         -- now we fill the textbox --
+                        poc <- liftIO $ get btnInterpret $ on command
+                        let revert = do
+                                        debugIO "Cancelling..."
+                                        tryTakeMVar chv --NOTE: empty the var
+                                        debugIO "Killing the char filler..."
+                                        newchf <- spawn $ charFiller guiCtx
+                                        swapMVar chfv newchf >>= kill
+                                        debugIO "Killing the value filler..."
+                                        newvf <- spawn $ valueFiller guiCtx
+                                        swapMVar vfv newvf >>= kill
+                                        debugIO "Ready"
+                                        set txtValue [enabled := True,
+                                                      bgcolor := white]
+                                        set btnInterpret [on command := poc, text := "Interpret"]
+                         in liftIO $ set btnInterpret [text := "Cancel",
+                                                       on command := revert]
                         liftDebugIO "sending the value to the Value Filler..."
-                        readMVar vfv >>= flip sendTo (HP.intValue interp)
+                        readMVar vfv >>= flip sendTo ((HP.intValue interp), poc)
 
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
