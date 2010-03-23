@@ -63,8 +63,9 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
                            guiTimer     :: TimerEx (),
                            guiCharTimer :: TimerEx (),
                            guiSearch    :: FindReplaceData (),
+                           guiChrVar    :: MVar (Maybe String),
                            guiChrFiller :: MVar (Handle String),
-                           guiValFiller :: MVar (Handle (Either String Bool))} 
+                           guiValFiller :: MVar (Handle String)} 
 
 gui :: IO ()
 gui =
@@ -126,11 +127,12 @@ gui =
         -- Search ...
         search <- findReplaceDataCreate wxFR_DOWN
 
+        chv <- newEmptyMVar
         chfv <- newEmptyMVar
         vfv <- newEmptyMVar
         
         let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
-        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search chfv vfv 
+        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search chv chfv vfv 
         let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
 
         -- Helper processes
@@ -142,10 +144,13 @@ gui =
         -- Events
         timerOnCommand refreshTimer $ refreshExpr model guiCtx
         timerOnCommand charTimer $ do
-                                        newchf <- spawn $ charFiller guiCtx
-                                        swapMVar chfv newchf >>= kill
-                                        readMVar vfv >>= flip sendTo (Right False)
-        
+                                     wasEmpty <- tryPutMVar chv Nothing
+                                     if wasEmpty
+                                         then do
+                                             newchf <- spawn $ charFiller guiCtx
+                                             swapMVar chfv newchf >>= kill
+                                         else return ()
+
         set btnInterpret [on command := onCmd "interpret" interpret]
         
         set lstPages [on select := onCmd "pageChange" pageChange]
@@ -291,71 +296,104 @@ gui =
 charFiller :: GUIContext -> Process String ()
 charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
                                       resErrors= varErrors},
-                  guiValFiller = vfv} =
+                  guiChrVar  = chv} =
     forever $ do
          t <- recv
          liftIO $ do
-                    catch (textCtrlAppendText txtValue t) $ \(ErrorCall desc) ->
-                                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
-                                                                    textCtrlAppendText txtValue bottomChar
-                    readMVar vfv >>= flip sendTo (Right True)
+                    txt <- catch (eval t) $ \(ErrorCall desc) ->
+                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
+                                                    return bottomChar
+                    tryPutMVar chv $ Just txt
+    where eval t = t `seq` length t `seq` return t
 
-valueFiller :: GUIContext -> Process (Either String Bool) ()
-valueFiller guiCtx@GUICtx{guiResults = GUIRes{resButton = btnInterpret},
+valueFiller :: GUIContext -> Process String ()
+valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
+                                                resErrors = varErrors,
+                                                resValue  = txtValue},
+                          guiChrVar    = chv,
                           guiValFiller = vfv,
                           guiChrFiller = chfv} =
     forever $ do
-                rv <- recv
-                case rv of
-                    Left val ->
-                        do
-                            poc <- liftIO $ get btnInterpret $ on command
-                            let revert = do
-                                            newchf <- spawn $ charFiller guiCtx
-                                            swapMVar chfv newchf >>= kill
-                                            newvf <- spawn $ valueFiller guiCtx
-                                            swapMVar vfv newvf >>= kill
-                                            set btnInterpret [on command := poc, text := "Interpret"]
-                             in liftIO $ set btnInterpret [text := "Cancel",
-                                                           on command := revert]
-                            valueFill guiCtx val
-                            liftIO $ set btnInterpret [on command := poc,
-                                                       text := "Interpret"]
-                    Right _ ->
-                        liftErrorIO "Received bool while waiting for string"
+                liftDebugIO "Waiting for a new value to interpret"
+                val <- recv
+                liftDebugIO "Value received in valueFiller"
+                poc <- liftIO $ get btnInterpret $ on command
+                let revert = do
+                                debugIO "Cancelling..."
+                                tryTakeMVar chv --NOTE: empty the var
+                                debugIO "Killing the char filler..."
+                                newchf <- spawn $ charFiller guiCtx
+                                swapMVar chfv newchf >>= kill
+                                debugIO "Killing the value filler..."
+                                newvf <- spawn $ valueFiller guiCtx
+                                swapMVar vfv newvf >>= kill
+                                debugIO "Ready"
+                                set txtValue [enabled := True]
+                                set btnInterpret [on command := poc, text := "Interpret"]
+                 in liftIO $ set btnInterpret [text := "Cancel",
+                                               on command := revert]
+                liftDebugIO "Trying to evaluate the whole value first..."
+                liftIO $ do
+                            set txtValue [text := ""]
+                            res <- valueFill guiCtx val
+                            if res == bottomChar
+                                then do
+                                        debugIO "didn't work... going char by char..."
+                                        varSet varErrors []
+                                        valueFiller' guiCtx val
+                                else do
+                                        debugIO "It worked!!"
+                                        textCtrlAppendText txtValue res
+                            set btnInterpret [on command := poc,
+                                              text := "Interpret"]
+                            set txtValue [enabled := True]
 
-valueFill :: GUIContext -> String -> Process (Either String Bool) ()
-valueFill guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
-                                            resErrors = varErrors},
-                        guiCharTimer = charTimer,
-                        guiChrFiller = chfv,
-                        guiValFiller = vfv} val =
+valueFiller' :: GUIContext -> String -> IO ()
+valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
+                                               resErrors = varErrors}} val =
       do
-        h <- liftIO $ try (case val of
-                               [] -> return []
-                               (c:_) -> return [c])
+        h <- try (case val of
+                      [] -> return []
+                      (c:_) -> return [c])
         case h of
             Left (ErrorCall desc) ->
-                liftIO $ do
-                           varUpdate varErrors (++ [GUIBtm desc val])
-                           textCtrlAppendText txtValue bottomString
+                do
+                   varUpdate varErrors (++ [GUIBtm desc val])
+                   textCtrlAppendText txtValue bottomString
             Right [] ->
                 return ()
             Right t ->
                 do
-                    liftIO $ timerStart charTimer charTimeout True
-                    liftIO $ readMVar chfv >>= flip sendTo t
-                    rv <- recv
-                    liftIO $ case rv of
-                                Left val ->
-                                    errorIO "Received string while waiting for bool"
-                                Right True ->
-                                    timerStop charTimer
-                                Right False ->
-                                    do
-                                        varUpdate varErrors (++ [GUIBtm "Timed Out" t])
-                                        textCtrlAppendText txtValue bottomChar
-                    valueFill guiCtx $ tail val
+                    valueFill guiCtx t >>= textCtrlAppendText txtValue
+                    valueFiller' guiCtx $ tail val
+
+valueFill :: GUIContext -> String -> IO String
+valueFill GUICtx{guiResults = GUIRes{resErrors = varErrors},
+                 guiCharTimer = charTimer,
+                 guiChrVar    = chv,
+                 guiChrFiller = chfv} val =
+    do
+        debugIO "valueFill starting..."
+        tryTakeMVar chv --NOTE: empty the var
+        debugIO "timer starting..."
+        timerStart charTimer charTimeout True
+        debugIO "sending msg to charFiller..."
+        readMVar chfv >>= flip sendTo val
+        debugIO "waiting for value toAdd..."
+        toAdd <- readMVar chv --NOTE: Not using "take" to be sure that noone touches it
+        debugIO ("Ready to add...", toAdd)
+        case toAdd of
+            Just txt ->
+                do
+                    isR <- timerIsRuning charTimer
+                    if isR then timerStop charTimer else return ()
+                    debugIO $ "returning " ++ txt
+                    return txt
+            Nothing -> --NOTE: Means "Timed Out"
+                do
+                    varUpdate varErrors (++ [GUIBtm "Timed Out" val])
+                    debugIO $ "timed out"
+                    return bottomChar
 
 -- EVENT HANDLERS --------------------------------------------------------------
 refreshPage, savePageAs, savePage, openPage,
@@ -794,8 +832,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resButton = btnInterpret,
                                                   resValue  = txtValue,
                                                   res4Dots  = lbl4Dots,
-                                                  resType   = txtType,
-                                                  resErrors = varErrors},
+                                                  resType   = txtType},
                               guiCode       = txtCode,
                               guiCharTimer  = charTimer,
                               guiWin        = win,
@@ -807,6 +844,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx
         liftTraceIO "running..."
+        set txtValue [enabled := False]
         res <- runner model HP.interpret
         liftTraceIO "ready"
         case res of
@@ -815,7 +853,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
             Right interp ->
                 if HP.isIntType interp
                     then do
-                        set txtValue [text := HP.intKind interp]
+                        set txtValue [enabled := True, text := HP.intKind interp]
                         set lbl4Dots [visible := False]
                         set txtType [visible := False]
                         set lblInterpret [text := "Kind:"]
@@ -823,11 +861,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         set lbl4Dots [visible := True]
                         set txtType [visible := True, text := HP.intType interp]
                         set lblInterpret [text := "Value:"]
-                        varSet varErrors []
-                        set txtValue [text := ""]
                         -- now we fill the textbox --
-                        liftTraceIO "sending the value to the Value Filler..."
-                        readMVar vfv >>= flip sendTo (Left $ HP.intValue interp)
+                        liftDebugIO "sending the value to the Value Filler..."
+                        readMVar vfv >>= flip sendTo (HP.intValue interp)
 
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)

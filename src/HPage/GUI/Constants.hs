@@ -5,4 +5,4 @@ bottomString = "\10200"
 bottomChar   = "\724"
 
 charTimeout :: Int
-charTimeout  = 3000
+charTimeout  = 2000
