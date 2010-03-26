@@ -1,0 +1,92 @@
+\begin{thebibliography}{10}
+
+\bibitem{couchdb}
+Couchdb [online].
+\newblock Available from: \url{http://couchdb.apache.org}.
+
+\bibitem{ejabberd}
+ejabberd [online].
+\newblock Available from: \url{http://www.ejabberd.im}.
+
+\bibitem{erlang}
+Erlang [online].
+\newblock Available from: \url{http://www.erlang.org}.
+
+\bibitem{ghci}
+Ghci [online].
+\newblock Available from:
+  \url{http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html}.
+
+\bibitem{ghcdebug}
+Ghci debugger [online].
+\newblock Available from:
+  \url{http://www.haskell.org/ghc/docs/6.10-latest/html/users_guide/ghci-debug%
+ger.html}.
+
+\bibitem{ghc}
+The glasgow haskell compiler [online].
+\newblock Available from: \url{http://www.haskell.org/ghc}.
+
+\bibitem{haskell}
+Haskell [online].
+\newblock Available from: \url{http://www.haskell.org}.
+
+\bibitem{hat}
+Hat - the haskell tracer [online].
+\newblock Available from: \url{http://www.haskell.org/hat}.
+
+\bibitem{javascrapbook}
+Java scrapbook pages [online].
+\newblock Available from:
+  \url{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.use%
+r/reference/ref-34.htm}.
+
+\bibitem{smalltalk}
+Smalltalk [online].
+\newblock Available from: \url{http://www.smalltalk.org}.
+
+\bibitem{smalltalkworkspace}
+Smalltalk workspace [online].
+\newblock Available from: \url{http://wiki.squeak.org/squeak/1934}.
+
+\bibitem{java}
+Java [online].
+\newblock October 2007.
+\newblock Available from: \url{http://www.java.com}.
+
+\bibitem{hpage}
+Fernando Benavides.
+\newblock $\lambda$page [online].
+\newblock 2009.
+\newblock Available from: \url{http://haskell.hpage.com}.
+
+\bibitem{wxhnotepad}
+Fernando Benavides.
+\newblock wxhnotepad [online].
+\newblock December 2009.
+\newblock Available from: \url{http://github.com/elbrujohalcon/wxhnotepad}.
+
+\bibitem{vital}
+Keith Hanna.
+\newblock A document-centered environment for haskell.
+\newblock April 2005.
+\newblock Available from:
+  \url{http://www.cs.kent.ac.uk/projects/vital/description/2005/all.ps}.
+
+\bibitem{insidesmalltalk}
+Wilf~R. LaLonde and John~R. Pugh.
+\newblock {\em Inside Smalltalk: vol. 1}, volume~I, page~71.
+\newblock Prentice-Hall, Inc., Upper Saddle River, NJ, USA, 1990.
+
+\bibitem{wewantarock}
+Jeremy O'Donoghue.
+\newblock Building a text editor.
+\newblock {\em \url{http://wewantarock.wordpress.com}}, January 2010.
+
+\bibitem{facebook}
+Chris Piro.
+\newblock Facebook chat, February 2009.
+\newblock Available from:
+  \url{http://www.facebook.com/note.php?note_id=51412338919}.
+
+\end{thebibliography}
