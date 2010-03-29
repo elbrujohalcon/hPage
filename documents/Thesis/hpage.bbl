@@ -27,19 +27,41 @@ ger.html}.
 The glasgow haskell compiler [online].
 \newblock Available from: \url{http://www.haskell.org/ghc}.
 
+\bibitem{hackage}
+Hackagedb [online].
+\newblock Available from: \url{http://hackage.haskell.org}.
+
 \bibitem{haskell}
 Haskell [online].
 \newblock Available from: \url{http://www.haskell.org}.
 
+\bibitem{cabal}
+The haskell cabal [online].
+\newblock Available from: \url{http://www.haskell.org/cabal}.
+
+\bibitem{platform}
+Haskell platform [online].
+\newblock Available from: \url{http://hackage.haskell.org/platform/}.
+
 \bibitem{hat}
 Hat - the haskell tracer [online].
 \newblock Available from: \url{http://www.haskell.org/hat}.
+
+\bibitem{hayoo}
+Hayoo! [online].
+\newblock Available from: \url{http://holumbus.fh-wedel.de/hayoo}.
 
 \bibitem{javascrapbook}
 Java scrapbook pages [online].
 \newblock Available from:
   \url{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.use%
 r/reference/ref-34.htm}.
+
+\bibitem{cppsp1}
+Microsoft visual c++ 2008 sp1 redistributable package (x86) [online].
+\newblock Available from:
+  \url{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-%
+4AB7-A40D-3802B2AF5FC2}.
 
 \bibitem{smalltalk}
 Smalltalk [online].
@@ -49,10 +71,29 @@ Smalltalk [online].
 Smalltalk workspace [online].
 \newblock Available from: \url{http://wiki.squeak.org/squeak/1934}.
 
+\bibitem{wxhaskell}
+Wxhaskell [online].
+\newblock Available from: \url{http://haskell.org/haskellwiki/WxHaskell}.
+
+\bibitem{wxwidgets}
+Wxwidgets [online].
+\newblock Available from: \url{http://www.wxwidgets.org/}.
+
 \bibitem{java}
 Java [online].
 \newblock October 2007.
 \newblock Available from: \url{http://www.java.com}.
+
+\bibitem{tdd}
+Kent Beck.
+\newblock {\em Test Driven Development: By Example}.
+\newblock {Addison-Wesley Professional}, 2002.
+
+\bibitem{eprocess}
+Fernando Benavides.
+\newblock eprocess.
+\newblock \url{http://hackage.haskell.org/package/eprocess}, October 2009.
+\newblock Available from: \url{http://hackage.haskell.org/package/eprocess}.
 
 \bibitem{hpage}
 Fernando Benavides.
@@ -62,9 +103,13 @@ Fernando Benavides.
 
 \bibitem{wxhnotepad}
 Fernando Benavides.
-\newblock wxhnotepad [online].
-\newblock December 2009.
+\newblock wxhnotepad, December 2009.
 \newblock Available from: \url{http://github.com/elbrujohalcon/wxhnotepad}.
+
+\bibitem{hint}
+Daniel Gor'in.
+\newblock Hint.
+\newblock \url{http://projects.haskell.org/hint}, January 2009.
 
 \bibitem{vital}
 Keith Hanna.
@@ -72,6 +117,11 @@ Keith Hanna.
 \newblock April 2005.
 \newblock Available from:
   \url{http://www.cs.kent.ac.uk/projects/vital/description/2005/all.ps}.
+
+\bibitem{quickcheck}
+John~Hughes Koen~Claessen.
+\newblock Quickcheck [online].
+\newblock Available from: \url{http://www.cs.chalmers.se/~rjmh/QuickCheck/}.
 
 \bibitem{insidesmalltalk}
 Wilf~R. LaLonde and John~R. Pugh.
@@ -82,6 +132,11 @@ Wilf~R. LaLonde and John~R. Pugh.
 Jeremy O'Donoghue.
 \newblock Building a text editor.
 \newblock {\em \url{http://wewantarock.wordpress.com}}, January 2010.
+
+\bibitem{realworldhaskell}
+Bryan O'Sullivan, John Goerzen, and Don Stewart.
+\newblock {\em Real World Haskell}.
+\newblock O'Reilly Media, Inc., 1 edition, 2008.
 
 \bibitem{facebook}
 Chris Piro.
