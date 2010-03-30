@@ -23,6 +23,10 @@ Ghci debugger [online].
   \url{http://www.haskell.org/ghc/docs/6.10-latest/html/users_guide/ghci-debug%
 ger.html}.
 
+\bibitem{github}
+Github [online].
+\newblock Available from: \url{http://github.com}.
+
 \bibitem{ghc}
 The glasgow haskell compiler [online].
 \newblock Available from: \url{http://www.haskell.org/ghc}.
@@ -105,6 +109,14 @@ Fernando Benavides.
 Fernando Benavides.
 \newblock wxhnotepad, December 2009.
 \newblock Available from: \url{http://github.com/elbrujohalcon/wxhnotepad}.
+
+\bibitem{plp}
+Paradigmas de~Lenguajes~de Programaci'on.
+\newblock {\em Pr'actica de Programaci'on Funcional}.
+\newblock Universidad de Buenos Aires, Segundo Cuatrimestre 2009.
+\newblock Available from:
+  \url{http://www.dc.uba.ar/materias/plp/cursos/2009/cuat2/descargas/guias/Pra%
+ctica-funcional.pdf/at_download/file}.
 
 \bibitem{hint}
 Daniel Gor'in.
