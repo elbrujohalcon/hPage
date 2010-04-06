@@ -154,7 +154,7 @@ gui =
         set btnInterpret [on command := onCmd "interpret" interpret]
         
         set lstPages [on select := onCmd "pageChange" pageChange]
-        set txtCode [on keyboard := \_ -> onCmd "restartTimer" restartTimer >> propagateEvent,
+        set txtCode [on keyboard := onCmd "key" . keyEvent,
                      on mouse :=  \e -> case e of
                                             MouseLeftUp _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
                                             MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
@@ -290,6 +290,7 @@ gui =
         refreshPage model guiCtx
         onCmd "start" openHelpPage
         set win [visible := True]
+        set txtCode [font := fontFixed] -- again just to be sure
         focusOn txtCode
 
 -- PROCESSES -------------------------------------------------------------------
@@ -379,6 +380,20 @@ valueFill GUICtx{guiResults = GUIRes{resErrors = varErrors},
                     return bottomChar
 
 -- EVENT HANDLERS --------------------------------------------------------------
+keyEvent :: EventKey -> HPS.ServerHandle -> GUIContext -> IO ()
+keyEvent eventKey model guiCtx@GUICtx{guiCode = txtCode} =
+    do
+        case keyKey eventKey of
+            KeyTab ->
+                if isNoneDown (keyModifiers eventKey)
+                    then
+                        textCtrlWriteText txtCode "\t" >> restartTimer model guiCtx
+                    else
+                        return ()
+            _ ->
+                restartTimer model guiCtx
+        propagateEvent
+    
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, copyResult, copyType, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
@@ -710,7 +725,8 @@ openHelpPage model guiCtx@GUICtx{guiCode = txtCode} =
     do
         f <- helpFile
         txt <- readFile f
-        set txtCode [text := txt]
+        set txtCode [font := fontFixed,
+                     text := txt]
         -- Refresh the current expression box
         refreshExpr model guiCtx
 
@@ -766,7 +782,8 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     varSet varModsSel $ -1
                     
                     -- Refresh the current text
-                    set txtCode [text := t]
+                    set txtCode [text := t,
+                                 font := fontFixed]
                     
                     -- Clean the status bar
                     set status [text := ""]
@@ -893,6 +910,7 @@ refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
                                 guiWin = win,
                                 guiTimer = refreshTimer} =
    do
+        set txtCode [font := fontFixed] -- Just to be sure
         txt <- get txtCode text
         ip <- textCtrlGetInsertionPoint txtCode
         
