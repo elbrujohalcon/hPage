@@ -202,18 +202,40 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 	\end{center}
 \end{figure}
 
+\newpage
 \subsubsection{Alto Orden y Esquemas de Recursi'on}
 \paragraph{Ejercicio 9}
 \renewcommand{\theenumi}{\Roman{enumi}}
-\begin[\Roman]{enumerate}
+\begin{enumerate}
 	\item Definir la funci'on \texttt{genLista}, que genera una lista de una cantidad dada de elementos, a partir de un elemento inicial y de una funci'on de incremento entre los elementos de la lista.  Dicha funci'on de incremento, dado un elemento de la lista, devuelve el elemento siguiente.
 	\item Usando \texttt{genLista}, definir la funci'on \texttt{dh}, que dado un par de n'umeros (el primero menor que el segundo), devuelve una lista de n'umeros consecutivos desde el primero hasta el segundo.
 \end{enumerate}
 \renewcommand{\theenumi}{\arabic{enumi}}
-\subparagraph{Resoluci'on}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina (pues prev'e que es mucho lo que escribir'a) y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut06}.
+\subparagraph{Resoluci'on}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut06}.  Luego, intenta testear su ejercicio y, tal como se ve en la figura \ref{tut07}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la figura \ref{tut08} y obtener as'i el resultado esperado.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/06}
+		\caption{Tutorial - Ejercicio 9 - Primer Intento}
+		\label{tut06}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/07}
+		\caption{Tutorial - Ejercicio 9 - Recursi'on Infinita}
+		\label{tut07}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/08}
+		\caption{Tutorial - Ejercicio 9 - Segundo Intento}
+		\label{tut08}
+	\end{center}
+\end{figure}
+\subparagraph{}Cabe aclarar que lo hecho en este ejercicio no es (ni pretende tampoco) ser un completo test de las funciones creadas.  Es simplemente lo que hemos llamado \textsl{``micro-testing''}: El ejercicio de realizar peque'nas pruebas ``a mano'' utilizando expresiones cuyo resultado de evaluaci'on es previsible.
 
-
-
+	
 \newpage
 
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
