@@ -110,6 +110,12 @@ Fernando Benavides.
 \newblock wxhnotepad, December 2009.
 \newblock Available from: \url{http://github.com/elbrujohalcon/wxhnotepad}.
 
+\bibitem{hfiar}
+Fernando Benavides.
+\newblock hfiar [online].
+\newblock January 2010.
+\newblock Available from: \url{http://hackage.haskell.org/package/hfiar}.
+
 \bibitem{plp}
 Paradigmas de~Lenguajes~de Programaci'on.
 \newblock {\em Pr'actica de Programaci'on Funcional}.

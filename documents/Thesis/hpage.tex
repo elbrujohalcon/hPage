@@ -97,7 +97,7 @@
 \subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos (o m'as precisamente, c'alculos que demoran demasiado) e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
 \newpage
 
-\section{Tutorial - Descubriendo \hpage}
+\section{Descubriendo \hpage}
 \subsection{Instalaci'on}
 \begin{epigraphs}
 	\qitem{As a rule, software systems do not work well until they have been used, and have failed repeatedly, in real applications.}{Dave Parnas}
@@ -123,13 +123,13 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \newpage
 \subsection{Caso de Uso: Aprobando PLP con \hpage}
 \begin{epigraphs}
-	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
+	\qitem{Es como un 'arbol, pero al rev'es: con la ra'iz abajo}{Eduardo Bonelli, profesor de PLP}
 	\qitem{How is education supposed to make me feel smarter? Besides, every time I learn something new, it pushes some old stuff out of my brain - remember when I took that home winemaking course, and I forgot how to drive?}{Homer Simpons}
 \end{epigraphs}
-\paragraph{}Mostraremos a continuaci'on, a trav'es de un ejemplo, c'omo utilizar \hpage.  En este caso, hemos tomado prestada una pr'actica de la materia \textsl{Paradigmas de Lenguajes de Programaci'on}~\cite{plp}.  Exhibiremos entonces, c'omo un alumno podr'ia utilizar \hpage\ para resolver los ejercicios que all'i se presentan.  Seleccionaremos s'olo algunos ejercicios, aquellos que a nuestro criterio son los m'as representativos a la hora de entender c'omo \hpage\ ayuda al alumno a su resoluci'on.
+\paragraph{}Mostraremos a continuaci'on, a trav'es de un ejemplo, c'omo utilizar \hpage.  En este caso, hemos tomado prestada una pr'actica de la materia \textsl{Paradigmas de Lenguajes de Programaci'on}~\cite{plp}.  Exhibiremos entonces, c'omo un alumno podr'ia utilizar \hpage\ para resolver algunos de los ejercicios que all'i se presentan.  Seleccionaremos s'olo aquellos que a nuestro criterio son los m'as representativos a la hora de entender c'omo \hpage\ ayuda al alumno en su resoluci'on.
 
 \subsubsection{Pasos previos}
-\paragraph{}Antes de comenzar a resolver los ejercicios, el alumno ejecuta \hpage y clickea en el bot'on \textsl{New}.  El programa presentar'a una pantalla similar a la de la figura \ref{tut00}.
+\paragraph{}Antes de comenzar a resolver los ejercicios, el alumno ejecuta \hpage\ y clickea en el bot'on \textsl{New}.  El programa presentar'a una pantalla similar a la de la figura \ref{tut00}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.9\textwidth]{pictures/tutorial/00}
@@ -162,7 +162,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \begin{lstlisting}
 	[ x | x <- [1..4], y <- [x..5], (x+y) `mod` 2 == 0 ]
 \end{lstlisting}
-\subparagraph{Resoluci'on}Este ejercicio se resuelve simplemente copiando y pegando el c'odigo dentro de \hpage, seleccionando la expresi'on a evaluar (si es que no se ha borrado las expresiones anteriores) y evalu'andola con el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]}.  La figura \ref{tut02} nos lo muestra.
+\subparagraph{Resoluci'on}Este ejercicio se resuelve simplemente copiando y pegando el c'odigo dentro de \hpage, seleccionando la expresi'on a evaluar (si es que no se ha borrado las expresiones anteriores) y evalu'andola con el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la figura \ref{tut02}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.9\textwidth]{pictures/tutorial/02}
@@ -184,7 +184,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 		\label{tut03}
 	\end{center}
 \end{figure}
-\subparagraph{}El alumno podr'a observar entonces que el resultado de la interpretaci'on (si bien tiene un tipo v'alido) nunca aparece por pantalla.  Esto se debe al modo en el que se eval'uan las listas por comprensi'on en \haskell: En este caso teniendo tres generadores (\texttt{a}, \texttt{b} y \texttt{c}), para generar el primer elemento de la lista, \haskell toma el primer valor posible para \texttt{a} (o sea $1$), el primer valor posible para \texttt{b} (o sea $2$) y luego itera sobre \texttt{c}, con lo que intentar'a verificar en cada paso de esta iteraci'on que $1^{2} + 1^{2} = c$.  Pero $1^{2}+1^{2} = 2$ y sabemos que no existe ning'un n'umero natural que elevado al cuadrado sea $2$, por lo tanto, \haskell\ nunca encontrar'a el primer elemento de esta lista.  \hpage\ permite al alumno, pues, presionar el bot'on \textsl{Cancel} de modo de interrumpir la evaluaci'on y poder continuar trabajando.
+\subparagraph{}El alumno podr'a observar entonces que el resultado de la interpretaci'on (si bien tiene un tipo v'alido) nunca aparece por pantalla.  Esto se debe al modo en el que se eval'uan las listas por comprensi'on en \haskell: En este caso teniendo tres generadores (\texttt{a}, \texttt{b} y \texttt{c}), para generar el primer elemento de la lista, \haskell\ toma el primer valor posible para \texttt{a} (o sea $1$), el primer valor posible para \texttt{b} (o sea $2$) y luego itera sobre \texttt{c}, con lo que intentar'a verificar en cada paso de esta iteraci'on que $1^{2} + 1^{2} = c$.  Pero $1^{2}+1^{2} = 2$ y sabemos que no existe ning'un n'umero natural que elevado al cuadrado sea $2$, por lo tanto, \haskell\ nunca encontrar'a el primer elemento de esta lista.  \hpage\ permite al alumno, pues, presionar el bot'on \textsl{Cancel} de modo de interrumpir la evaluaci'on y poder continuar trabajando.
 \subparagraph{}Luego de presionar el bot'on \textsl{Cancel}, o incluso durante el lapso en el que \hpage\ trata de evaluar la expresi'on, el alumno puede modificar la expresi'on para cumplir con la consigna del ejercicio.  Podr'ia, por ejemplo, reformularla como muestra la figura \ref{tut04} e intentar interpretarla, considerando que, dentro de los n'umeros naturales se cumple que $a > c \Rightarrow a^{2} > c^{2}$ y $b > c \Rightarrow b^{2} > c^{2}$.  \hpage\ entonces, comenzar'a a exhibir resultados hasta que el alumno presione el bot'on \textsl{Cancel}.
 \begin{figure}[hp]
 	\begin{center}
@@ -201,6 +201,17 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 		\label{tut05}
 	\end{center}
 \end{figure}
+
+\newpage
+\subsection{Caso de Uso: Ganando al 4 en L'inea con \hpage}
+\begin{epigraphs}
+	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
+	\qitem{Look behind you, a Three-Headed Monkey!}{Guybrush Threepwood}
+\end{epigraphs}
+\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos c'omo trabajar con herramientas tales como \cabal, \textsl{Hayoo!} y \textsl{wxhaskell}.  Veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, suficiente tiempo atr'as).
+\subsubsection{Introducci'on}
+\paragraph{}La historia comienza cuando a nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada  \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
+\subparagraph{}Como es de suponer, F'atima no conoce al creador del juego y no puede contactarlo por lo que sus 'unicas herramientas, m'as all'a de su conocimiento de \haskell\ y del juego en s'i, son el c'odigo fuente de \textsl{hfiar} y \hpage.
 
 \newpage
 \subsubsection{Alto Orden y Esquemas de Recursi'on}
@@ -235,9 +246,70 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \end{figure}
 \subparagraph{}Cabe aclarar que lo hecho en este ejercicio no es (ni pretende tampoco) ser un completo test de las funciones creadas.  Es simplemente lo que hemos llamado \textsl{``micro-testing''}: El ejercicio de realizar peque'nas pruebas ``a mano'' utilizando expresiones cuyo resultado de evaluaci'on es previsible.
 
-	
 \newpage
+\paragraph{Ejercicio 23}Definimos el siguiente tipo:
+\begin{lstlisting}
+	data Agenda p t = Vacia | Telefonos p [t] (Agenda p t)
+\end{lstlisting}
+\subparagraph{}Este tipo modela una agenda de tel'efonos.  A una agenda se le puede agregar una nueva entrada, donde se registra para una persona una lista de tel'efonos.  Una misma persona puede aparecer en varias entradas.  La lista de tel'efonos de una entrada puede contener repetidos.  Ejemplo:
+\begin{lstlisting}
+miAgenda = Telefonos "Letincho" [42079999,43834567] 
+           (Telefonos "Javi" [47779830] (Telefonos "Letincho" [42079999] Vacia)) 
+\end{lstlisting}
+\subparagraph{}\ldots
+\subparagraph{Resoluci'on}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la figura \ref{tut09}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/09}
+		\caption{Tutorial - Ejercicio 23 - Primer Intento}
+		\label{tut09}
+	\end{center}
+\end{figure}
+\subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{File $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut10}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la figura \ref{tut11}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/10}
+		\caption{Tutorial - Ejercicio 23 - Crear M'odulo}
+		\label{tut10}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/11}
+		\caption{Tutorial - Ejercicio 23 - Segundo Intento}
+		\label{tut11}
+	\end{center}
+\end{figure}
+\subparagraph{}Podemos ver, por un lado, que el resultado no ha sido mostrado, sino que s'olo se inform'o su tipo.  Esto se debe a que el tipo \texttt{Agenda} no es instancia de la clase \texttt{Show}.  Para visualizar el resultado, el alumno podr'ia agregar la cl'ausla \texttt{deriving (Show)} al tipo \texttt{Agenda}, grabar el m'odulo modificado, presionar el bot'on \textsl{Reload} y luego evaluar nuevamente \texttt{miAgenda} tal como se ve en la figura \ref{tut12}.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/12}
+		\caption{Tutorial - Ejercicio 23 - Tercer Intento}
+		\label{tut12}
+	\end{center}
+\end{figure}
+\subparagraph{}Por otra parte, aprovecharemos este ejercicio simple para mostrar lo que \hpage\ permite hacer con los elementos de la lista \textsl{Modules}.  Presionando bot'on derecho del mouse sobre un 'item, \hpage\ despliega un men'u que nos permite, entre otras opciones ``navegar''  el m'odulo y observar los elementos que exporta.  La figura \ref{tut13} nos muestra el ``'arbol'' que se desprende de nuestro m'odulo \texttt{Temp}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tutorial/13}
+		\caption{Tutorial - Navegando M'odulos}
+		\label{tut13}
+	\end{center}
+\end{figure}
 
+\newpage
+\subsubsection{Conclusiones}
+\paragraph{}En este tutorial hemos demostrado un uso sencillo de \hpage\ como herramienta de \textsl{micro-testing}, permitiendo al usuario trabajar con las funciones definidas en el \texttt{Prelude} de \haskell\ adem'as de las que 'el mismo desee definir localmente.
+\paragraph{}Pudimos apreciar c'omo \hpage\ permite definir expresiones y funciones, para luego evaluarlas de manera individual o combinada.  Dichas evaluaciones pueden generar diversos resultados y hemos visto c'omo se maneja \hpage\ con algunos de ellos:
+\begin{itemize}
+\item Para aquellas expresiones cuyo valor no puede ser expresado en forma de texto, hemos visto c'omo \hpage\ nos permite conocer su tipo.
+\item En el caso de expresiones cuyo valor es de longitud infinita, \hpage\ exhibe todo lo que el usuario desee del resultado, culminando cuando 'este presiona el bot'on \textsl{Cancel}.
+\item Y en relaci'on a aquellas que requieren un c'alculo infinito para determinar su valor, \hpage\ muestra su tipo y permite al usuario continuar trabajando con las dem'as expresiones hasta que decida presionar el bot'on \textsl{Cancel} e interrumpir de esa manera el c'alculo.
+\end{itemize}
+\paragraph{}Esta forma de trabajar con los resultados, combinada con la posibilidad que brinda \hpage\ de editar definiciones de manera simple y directa, para luego volver a evaluar expresiones que las usan, permite al usuario trabajar de fluidamente y le da la libertad de \textsl{cometer errores}, detectarlos, corregirlos y luego continuar su trabajo.  Esta caracter'istica de \hpage\ es muy importante sobre todo para quienes se encuentran dando sus primeros pasos en el mundo de \haskell\ pues, entendemos, facilita el aprendizaje del lenguaje.
+\paragraph{}Tambi'en hemos visto en este tutorial c'omo se puede utilizar \hpage\ para crear, cargar, modificar y recargar m'odulos, trabajando siempre en una 'unica p'agina de texto.  'Esta es otra caracter'istica de \hpage\ que facilita el trabajo ya no s'olamente a los estudiantes sino a todos los tipos de desarrolladores \haskell.
+
+\newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
 \subsection{Arquitectura General}
 \begin{epigraphs}
