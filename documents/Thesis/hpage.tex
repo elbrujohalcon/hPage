@@ -347,6 +347,7 @@ See http://hackage.haskell.org/package/hfiar
 \end{verbatim}
 \end{description}
 
+\newpage
 \subsubsection{Entendiendo el Proyecto}
 \paragraph{}Para comenzar a entender c'omo est'a estructurada la aplicaci'on, F'atima observa el archivo \textbf{hfiar.cabal} (al que podemos ver en la figura \ref{tut202}) y observa que el proyecto se encuentra compuesto por una librer'ia (que incluye s'olamente al m'odulo \texttt{HFiaR}) y un ejecutable llamado \texttt{hfiar} que, m'as all'a del m'odulo \texttt{Main}, incluye a los m'odulos \texttt{HFiaR.GUI} y \texttt{HFiaR.Server}.  F'atima puede ver adem'as que, para compilar los m'odulos del proyecto debe utilizar las extensiones \textbf{MultiParamTypeClasses} y \textbf{GeneralizedNewtypeDeriving}.
 \begin{figure}[hp]
@@ -406,9 +407,15 @@ Executable hfiar
 \begin{lstlisting}
 $ cabal configure --user
 \end{lstlisting}
+\subparagraph{}Sabiendo que existe una librer'ia en el proyecto, F'atima intenta generar su documentaci'on, ejecutando:
+\begin{lstlisting}
+$ cabal haddock
+\end{lstlisting}
+\subparagraph{}En el caso de \textsl{hfiar}, ese comando genera la documentaci'on en formato HTML, siendo su p'agina principal \texttt{dist/doc/html/hfiar/index.html}.  F'atima encuentra all'i una descripci'on de los componentes del m'odulo \texttt{HFiaR}.  Armada con estos datos, se dispone a utilizar \hpage\ para comprender c'omo funcionan esos componentes.
 
-\subsubsection{\hpage}
-\paragraph{}Una vez configurado el proyecto, es tiempo de abrir \hpage e intentar cargarlo utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la figura \ref{tut202}.
+\newpage
+\subsubsection{Utilizando \hpage}
+\paragraph{}Una vez abierto \hpage, F'atima intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la figura \ref{tut202}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.9\textwidth]{pictures/tut2/02}
@@ -416,7 +423,7 @@ $ cabal configure --user
 		\label{tut202}
 	\end{center}
 \end{figure}
-\subparagraph{}Una vez cargado el proyecto, F'atima tendr'a a su disposici'on los m'odulos que lo componen y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la figura \ref{tut203}.
+\subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la figura \ref{tut203}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.9\textwidth]{pictures/tut2/03}
@@ -433,8 +440,25 @@ $ cabal configure --user
 		\label{tut204}
 	\end{center}
 \end{figure}
-
-
+\paragraph{}Gracias a la documentaci'on generada previamente, F'atima puede observar que la din'amica del juego est'a modelada con una m'onada que permite describir las acciones llevadas a cabo durante un partido (b'asicamente utilizando la funci'on \texttt{dropIn}, que equivale a la acci'on que realiza el jugador actual al momento de dejar caer una ficha en una columna).  Esta m'onada tambi'en permite observar un juego utilizando las funciones \texttt{player} (para conocer el jugador actual), \texttt{board} (para observar el tablero, que es modelado como una lista de listas de \texttt{Tile}s, o sea fichas) y \texttt{result} para verificar el resultado del partido.
+\subparagraph{}Puede ver tambi'en que dichas acciones pueden ser ejecutadas dentro de cualquier m'onada, gracias a las funciones \texttt{play} y \texttt{eval} y al hecho de que la m'onada est'a implementada utilizando la t'ecnica de \textsl{Monad Transformers}~\cite{realworldhaskell}.
+\subparagraph{}Finalmente, y de modo muy conveniente, F'atima observa que el creador del m'odulo provey'o las funciones \texttt{justPlay} y \texttt{justEval} que permiten simplemente ejecutar las acciones de la m'onada y obtener su resultado.  Utilizando estas funciones, F'atima comienza a realizar su tarea de micro-debugging.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la figura \ref{tut205}
+\lstset{language=haskell, frame=single, tabsize=4}
+\begin{lstlisting}
+justPlay $ return ()
+\end{lstlisting}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.9\textwidth]{pictures/tut2/05}
+		\caption{Tutorial 2 - Juego M’nimo}
+		\label{tut205}
+	\end{center}
+\end{figure}
+\subparagraph{}El resultado obtenido es el que sigue y puede interpretarse como \textsl{``el partido se encuentra en curso, es el turno del jugador que juega con fichas verdes y el tablero est'a vac'io''}.
+\begin{lstlisting}
+OnCourse {gamePlayer = Green,
+          gameBoard = [[],[],[],[],[],[],[]]}
+\end{lstlisting}
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
