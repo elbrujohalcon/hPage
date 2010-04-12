@@ -105,9 +105,9 @@
 \end{epigraphs}
 \paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, sin embargo,como se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ cabal install hpage
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Sin embargo, para ello, previamente se deben satisfacer las siguientes dependencias:
 \begin{description}
 	\item[\htmladdnormallink{wxWidgets 2.8.10+}{http://www.wxwidgets.org/downloads/}~\cite{wxwidgets}] El framework de desarrollo para interfaces de usuario que utiliza \textsl{wxHaskell}.  Debe ser instalado con los m'odulos unicode, cmdline, config, log, stl, richtext y clipboard, al menos y con el m'odulo odbc desactivado.
@@ -117,9 +117,9 @@ $ cabal install hpage
 \paragraph{}Para el correcto funcionamiento de \hpage\ los usuarios de \textsl{Windows XP} deben instalar el \htmladdnormallink{C++ 2008 SP1}{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2}~\cite{cppsp1}.
 \subsubsection{Linux}
 \paragraph{}En algunas distribuciones de Linux es conveniente, adem'as de la instalaci'on de \textsl{Haskell Platform} instalar las librer'ias de \textit{Monad Transformers} ejecutando, por ejemplo:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \newpage
 \subsection{Caso de Uso: Aprobando PLP con \hpage}
 \begin{epigraphs}
@@ -132,54 +132,56 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \paragraph{}Antes de comenzar a resolver los ejercicios, el alumno ejecuta \hpage\ y clickea en el bot'on \textsl{New}.  El programa presentar'a una pantalla similar a la de la figura \ref{tut100}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/00}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/00}
 		\caption{Tutorial 1 - Previo a comenzar}
 		\label{tut100}
 	\end{center}
 \end{figure}
 
+\newpage
 \subsubsection{Definici'on de Tipos y Currificaci'on}
 \paragraph{Ejercicio 1}Dado el siguiente programa, ?`Cu'al es el tipo de \texttt{ys}?
 \lstset{language=haskell, frame=single, tabsize=4}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 	xs = [1,2,3]::[Float]
 	ys = map (+) xs
 	
 	[ x | x <- [1..4], y <- [x..5], (x+y) `mod` 2 == 0 ]
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno debe reformular el c'odigo provisto por la c'atedra para que \hpage\ lo interprete correctamente.  Para ello debe ``encerrar'' entre par'entesis la primera expresi'on y quitar el nombre de la segunda de modo que el resultado obtenido al presionar el bot'on \textsl{Interpret} corresponda al valor de \texttt{ys}.  Adem'as debe insertar un rengl'on en blanco luego de la definici'on de \texttt{xs} para que \hpage\ pueda observar que se trata de dos expresiones diferentes.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/01}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/01}
 		\caption{Tutorial 1 - Ejercicio 1}
 		\label{tut101}
 	\end{center}
 \end{figure}
 
+\newpage
 \subsubsection{Listas por Comprensi'on}
 \paragraph{Ejercicio 4}?`Cu'al es el valor de esta expresi'on?
 \lstset{language=haskell, frame=single, tabsize=4}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 	[ x | x <- [1..4], y <- [x..5], (x+y) `mod` 2 == 0 ]
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{Resoluci'on}Este ejercicio se resuelve simplemente copiando y pegando el c'odigo dentro de \hpage, seleccionando la expresi'on a evaluar (si es que no se ha borrado las expresiones anteriores) y evalu'andola con el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la figura \ref{tut102}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/02}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/02}
 		\caption{Tutorial 1 - Ejercicio 4}
 		\label{tut102}
 	\end{center}
 \end{figure}
 
 \paragraph{Ejercicio 5}Una tripla pitag'orica es una tripla $(a,b,c)$ de enteros positivos tal que $a^{2} + b^{2} = c^{2}$.  La siguiente es una definici'on de una lista (infinita) de triplas pitag'oricas.  Explicar por qu'e esta definici'on no es muy 'util.  Dar una definici'on mejor.
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 	pitagorica :: [(Integer,Integer,Integer)] 
 	pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2]
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la figura \ref{tut103} y presionar'a el bot'on \textsl{Interpret}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/03}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/03}
 		\caption{Tutorial 1 - Ejercicio 5 - Primer intento}
 		\label{tut103}
 	\end{center}
@@ -188,7 +190,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \subparagraph{}Luego de presionar el bot'on \textsl{Cancel}, o incluso durante el lapso en el que \hpage\ trata de evaluar la expresi'on, el alumno puede modificar la expresi'on para cumplir con la consigna del ejercicio.  Podr'ia, por ejemplo, reformularla como muestra la figura \ref{tut104} e intentar interpretarla, considerando que, dentro de los n'umeros naturales se cumple que $a > c \Rightarrow a^{2} > c^{2}$ y $b > c \Rightarrow b^{2} > c^{2}$.  \hpage\ entonces, comenzar'a a exhibir resultados hasta que el alumno presione el bot'on \textsl{Cancel}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/04}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/04}
 		\caption{Tutorial 1 - Ejercicio 5 - Segundo intento}
 		\label{tut104}
 	\end{center}
@@ -196,7 +198,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \subparagraph{}Finalmente, el alumno podr'ia tambi'en verificar que puede obtener s'olo las 5 primeras tuplas pitag'oricas, definiendo la serie pitag'orica y tomando s'olo sus primeros 5 elementos como lo muestra la figura \ref{tut105}.  De este modo no necesitar'ia presionar el bot'on \textsl{Cancel}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/05}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/05}
 		\caption{Tutorial 1 - Ejercicio 5 - Tercer intento}
 		\label{tut105}
 	\end{center}
@@ -214,42 +216,41 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \subparagraph{Resoluci'on}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut106}.  Luego, intenta testear su ejercicio y, tal como se ve en la figura \ref{tut107}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la figura \ref{tut108} y obtener as'i el resultado esperado.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/06}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/06}
 		\caption{Tutorial 1 - Ejercicio 9 - Primer Intento}
 		\label{tut106}
 	\end{center}
 \end{figure}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/07}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/07}
 		\caption{Tutorial 1 - Ejercicio 9 - Recursi'on Infinita}
 		\label{tut107}
 	\end{center}
 \end{figure}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/08}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/08}
 		\caption{Tutorial 1 - Ejercicio 9 - Segundo Intento}
 		\label{tut108}
 	\end{center}
 \end{figure}
 \subparagraph{}Cabe aclarar que lo hecho en este ejercicio no es (ni pretende tampoco) ser un completo test de las funciones creadas.  Es simplemente lo que hemos llamado \textsl{``micro-testing''}: El ejercicio de realizar peque'nas pruebas ``a mano'' utilizando expresiones cuyo resultado de evaluaci'on es previsible.
 
-\newpage
 \paragraph{Ejercicio 23}Definimos el siguiente tipo:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 	data Agenda p t = Vacia | Telefonos p [t] (Agenda p t)
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Este tipo modela una agenda de tel'efonos.  A una agenda se le puede agregar una nueva entrada, donde se registra para una persona una lista de tel'efonos.  Una misma persona puede aparecer en varias entradas.  La lista de tel'efonos de una entrada puede contener repetidos.  Ejemplo:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 miAgenda = Telefonos "Letincho" [42079999,43834567] 
            (Telefonos "Javi" [47779830] (Telefonos "Letincho" [42079999] Vacia)) 
-\end{lstlisting}
-\subparagraph{}\ldots
+\end{lstlisting}\end{center}
+\ldots
 \subparagraph{Resoluci'on}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la figura \ref{tut109}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/09}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/09}
 		\caption{Tutorial 1 - Ejercicio 23 - Primer Intento}
 		\label{tut109}
 	\end{center}
@@ -257,14 +258,14 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{File $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut110}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la figura \ref{tut111}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/10}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/10}
 		\caption{Tutorial 1 - Ejercicio 23 - Crear M'odulo}
 		\label{tut110}
 	\end{center}
 \end{figure}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/11}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/11}
 		\caption{Tutorial 1 - Ejercicio 23 - Segundo Intento}
 		\label{tut111}
 	\end{center}
@@ -272,7 +273,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \subparagraph{}Podemos ver, por un lado, que el resultado no ha sido mostrado, sino que s'olo se inform'o su tipo.  Esto se debe a que el tipo \texttt{Agenda} no es instancia de la clase \texttt{Show}.  Para visualizar el resultado, el alumno podr'ia agregar la cl'ausla \texttt{deriving (Show)} al tipo \texttt{Agenda}, grabar el m'odulo modificado, presionar el bot'on \textsl{Reload} y luego evaluar nuevamente \texttt{miAgenda} tal como se ve en la figura \ref{tut112}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/12}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/12}
 		\caption{Tutorial 1 - Ejercicio 23 - Tercer Intento}
 		\label{tut112}
 	\end{center}
@@ -280,7 +281,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \subparagraph{}Por otra parte, aprovecharemos este ejercicio simple para mostrar lo que \hpage\ permite hacer con los elementos de la lista \textsl{Modules}.  Presionando bot'on derecho del mouse sobre un 'item, \hpage\ despliega un men'u que nos permite, entre otras opciones ``navegar''  el m'odulo y observar los elementos que exporta.  La figura \ref{tut113} nos muestra el ``'arbol'' que se desprende de nuestro m'odulo \texttt{Temp}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut1/13}
+        	\includegraphics[width=.75\textwidth]{pictures/tut1/13}
 		\caption{Tutorial 1 - Navegando M'odulos}
 		\label{tut113}
 	\end{center}
@@ -312,9 +313,9 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \subsubsection{Primeros Pasos}
 \paragraph{}Para comenzar, F'atima descarga el c'odigo del programa desde \textsl{HackageDB} y lo descomprime o bien clona el repositorio \textsl{Git} con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ git clone git://github.com/elbrujohalcon/hfiar.git
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics{pictures/tut2/00}
@@ -329,11 +330,11 @@ $ git clone git://github.com/elbrujohalcon/hfiar.git
 \item[Setup.hs] Archivo \haskell utilizado por \cabal para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las siguientes 3 instrucciones de la figura \ref{tut201}.
 \begin{figure}[hp]
 	\begin{center}
-		\begin{lstlisting}
+		\begin{center}\begin{lstlisting}
 $ cabal configure --user
 $ cabal build
 $ cabal install
-		\end{lstlisting}
+		\end{lstlisting}\end{center}
 		\caption{Tutorial 2 - Instalaci'on}
 		\label{tut201}
 	\end{center}
@@ -353,7 +354,7 @@ See http://hackage.haskell.org/package/hfiar
 \begin{figure}[hp]
 	\begin{center}
 	\hbox{}
-		\begin{lstlisting}
+		\begin{center}\begin{lstlisting}
 name: hfiar
 version: 1.0.0
 cabal-version: >=1.6
@@ -398,19 +399,19 @@ Executable hfiar
     other-modules: HFiaR.GUI, HFiaR.Server
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields
                  -fwarn-incomplete-patterns
-		\end{lstlisting}
+		\end{lstlisting}\end{center}
 		\caption{Tutorial 2 - hfiar.cabal}
 		\label{tut201}
 	\end{center}
 \end{figure}
 \subparagraph{}Habiendo realizado este an'alisis, F'atima configura el proyecto ejecutando la siguiente instrucci'on:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ cabal configure --user
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Sabiendo que existe una librer'ia en el proyecto, F'atima intenta generar su documentaci'on, ejecutando:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ cabal haddock
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}En el caso de \textsl{hfiar}, ese comando genera la documentaci'on en formato HTML, siendo su p'agina principal \texttt{dist/doc/html/hfiar/index.html}.  F'atima encuentra all'i una descripci'on de los componentes del m'odulo \texttt{HFiaR}.  Armada con estos datos, se dispone a utilizar \hpage\ para comprender c'omo funcionan esos componentes.
 
 \newpage
@@ -418,7 +419,7 @@ $ cabal haddock
 \paragraph{}Una vez abierto \hpage, F'atima intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la figura \ref{tut202}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut2/02}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/02}
 		\caption{Tutorial 2 - Cargando un proyecto \cabal}
 		\label{tut202}
 	\end{center}
@@ -426,7 +427,7 @@ $ cabal haddock
 \subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la figura \ref{tut203}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut2/03}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/03}
 		\caption{Tutorial 2 - Proyecto \cabal\ cargado}
 		\label{tut203}
 	\end{center}
@@ -435,7 +436,7 @@ $ cabal haddock
 \paragraph{}Recordando que el proyecto inclu'ia una librer'ia compuesta 'unicamente por el m'odulo \texttt{HFiaR}, nuestra amiga F'atima decide cargarlo y navegarlo utilizando el men'u desplegable que nos muestra la figura \ref{tut204}.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut2/04}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/04}
 		\caption{Tutorial 2 - M'odulo \texttt{HFiaR}}
 		\label{tut204}
 	\end{center}
@@ -444,21 +445,21 @@ $ cabal haddock
 \subparagraph{}Puede ver tambi'en que dichas acciones pueden ser ejecutadas dentro de cualquier m'onada, gracias a las funciones \texttt{play} y \texttt{eval} y al hecho de que la m'onada est'a implementada utilizando la t'ecnica de \textsl{Monad Transformers}~\cite{realworldhaskell}.
 \subparagraph{}Finalmente, y de modo muy conveniente, F'atima observa que el creador del m'odulo provey'o las funciones \texttt{justPlay} y \texttt{justEval} que permiten simplemente ejecutar las acciones de la m'onada y obtener su resultado.  Utilizando estas funciones, F'atima comienza a realizar su tarea de micro-debugging.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la figura \ref{tut205}
 \lstset{language=haskell, frame=single, tabsize=4}
-\begin{lstlisting}
-justPlay $ return ()
-\end{lstlisting}
+\begin{center}\begin{lstlisting}
+	justPlay $ return ()
+\end{lstlisting}\end{center}
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.9\textwidth]{pictures/tut2/05}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/05}
 		\caption{Tutorial 2 - Juego M’nimo}
 		\label{tut205}
 	\end{center}
 \end{figure}
 \subparagraph{}El resultado obtenido es el que sigue y puede interpretarse como \textsl{``el partido se encuentra en curso, es el turno del jugador que juega con fichas verdes y el tablero est'a vac'io''}.
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
-\end{lstlisting}
+\end{lstlisting}\end{center}
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
@@ -490,12 +491,12 @@ OnCourse {gamePlayer = Green,
 \end{description}
 \paragraph{}Para un mayor detalle, la figura \ref{seq1} nos muestra un diagrama de secuencia correspondiente a un proceso de evaluaci'on.  Para poder brindar un ejemplo completo, hemos ``fabricado'' un tipo que responde al siguiente c'odigo:
 \lstset{language=haskell, frame=single, tabsize=4}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 data WithIfiniteChar = WIC
 
 instance Show WithIfiniteChar where
     show WIC = ['c', head . show $ length [1..]]
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Como puede observarse, al intentar mostrar la expresi'on \texttt{WIC}, \hpage\ se encontrar'a con una cadena cuyo segundo caracter no puede computar pues requiere un c'alculo infinito, en la figura representamos este caracter con la letra $\Omega$.  All'i es donde entra en acci'on el \textbf{Runaway Killer} para informar esta situaci'on al usuario.
 \begin{figure}[hp]
 	\begin{center}
@@ -534,28 +535,28 @@ instance Show WithIfiniteChar where
 
 \subsubsection{eprocess}
 \paragraph{}Para la implementaci'on de \textsl{eprocess}, nuestra librer'ia de procesos, utilizamos dos herramientas de paralelismo y concurrencia que se encuentran muy bien descriptas en el libro \htmladdnormallink{Real World Haskell}{http://book.realworldhaskell.org/read/concurrent-and-multicore-programming.html}~\cite{realworldhaskell}.  Utilizamos \textsl{Threads} para paralelizar procesos y \textsl{Channels} y \textsl{MVars} para permitirles comunicarse.  Definimos entonces un tipo mon'adico para representar a las acciones a realizarse en procesos paralelos de tipo \texttt{m}, tales que retornan expresiones de tipo \texttt{a} y pueden recibir elementos de tipo \texttt{r}:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 newtype ReceiverT r m a = RT { internalReader :: ReaderT (Handle r) m a }
     deriving (Monad, MonadIO, MonadTrans, MonadCatchIO)
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Individualizamos luego este tipo gen'erico, definiendo el tipo \texttt{Process}:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 type Process r = ReceiverT r IO
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Finalmente definimos las funciones que permiten la ejecuci'on y mensajer'ia entre procesos:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 spawn :: MonadIO m => Process r k -> m (Handle r)
 kill :: MonadIO m => Handle a -> m ()
 self :: Monad m => ReceiverT r m (Handle r)
 sendTo :: MonadIO m => Handle a -> a -> m ()
 recv :: MonadIO m => ReceiverT r m r
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Las funciones \texttt{spawn} y \texttt{kill} inician y dentienen un proceso respectivamente.  \texttt{spawn} retorna como resultado un \texttt{Handle}, que identifica un'ivocamente al proceso y permite enviarle mensajes utilizando la funci'on \texttt{sendTo}.  Cabe notar que esta funci'on no necesita ser utilizada dentro de un \textsl{process} sino simplemente en cualquier instancia de la clase \texttt{MonadIO}.  De este modo, el \textsl{thread} que haya ejecutado \texttt{spawn} puede ejecutar \texttt{sendTo} para enviar mensajes al proceso que ha iniciado.
 \subparagraph{}Luego, dentro de una instancia de \texttt{ReceiverT} se puede utilizar la funci'on \texttt{self} para conocer el propio \texttt{Handle} y \texttt{recv} para recibir mensajes.  Cabe notar que \texttt{recv} se ejecuta de manera bloqueante, emulando el comportamiento de la funci'on \texttt{receive} de \textsl{Erlang}.
 
 \subsubsection{Servers}
 \paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  Gracias al uso de m'onadas y los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos dos servers de una manera sencilla.   Mostramos, a modo de ejemplo e incluyendo comentarios explicativos, el c'odigo m'as significativo de uno de ellos:
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 -- Para comenzar definimos un tipo ``ServerHandle'', que debe ser utilizado para
 -- enviarle mensajes al servidor
 newtype ServerHandle = SH {handle :: Handle (InterpreterT IO ())}
@@ -601,7 +602,7 @@ runIn server action = runHere $ do
 -- la funcion kill
 stop :: ServerHandle -> IO ()
 stop = kill . handle
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 25 l'ineas de c'odigo es capaz de ejecutar todas las acciones que provee \textsl{hint} en un proceso aislado y controlado.
 
 \subsubsection{M'odulos de \hpage}
@@ -615,7 +616,7 @@ stop = kill . handle
 	\item[running] La acci'on que se encuentra ejecut'andose de manera asincr'onica, si es que hay alguna
 	\item[recoveryLog] El log de acciones realizadas hasta el momento, 'util al momento de detener el \textbf{Hint Server}
 \end{description}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 newtype Expression = Exp {exprText :: String}       
     deriving (Eq, Show)
 
@@ -659,16 +660,16 @@ data Context = Context { -- Package --
                          running :: Maybe InFlightData,
                          recoveryLog :: Hint.InterpreterT IO ()
                        }
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \subparagraph{}Notese que el paquete \cabal, las extensiones y los m'odulos cargados o importados, etc. son independientes de las p'aginas con las que el usuario est'e trabajando, por lo que el usuario por ejemplo no puede manejar dos paquetes \cabal\ a la vez.  'Esto se debe a que la API de \textsl{GHC} no permite la utilizaci'on de \textsl{multi-threading}, por lo tanto, como dentro de un programa s'olo puede haber una 'unica lista de m'odulos cargados/importados, una 'unica lista de extensiones, etc.
 \subparagraph{}Tambi'en debe notarse que mucha de la informaci'on de estado guardada en el \texttt{Context} es ``redundante'' pues se configura directamente en el \textbf{Hint Server}.  Eso se debe a que ante la eventual ca'ida del \textbf{Hint Server}, el \textbf{HPage Server} lo reinicia y restaura su estado utilizando esos datos.
 \subparagraph{}Finalmente, \texttt{running} y \texttt{recoveryLog} se utilizan para permitir al usuario cancelar acciones que intenta ejecutar.  Cada acci'on que se desea realizar de forma asincr'onica, devuelve una \textsl{MVar} que se llenar'a en caso de finalizar la acci'on con 'exito y se acumular'a en el \texttt{recoveryLog}.  En caso de cancelar, el \textbf{HPage Server} reinicia al \textbf{Hint Server}, lo configura seg'un los dem'as par'ametros (ej: \texttt{ghcOptions}) y vuelve a ejecutar el \texttt{recoveryLog} para ``ponerlo al d'ia''.
 \subparagraph{}El estado de las p'aginas con las que el usuario trabaja est'a definido como una lista de expresiones y dos listas de acciones para permitir el uso de \textsl{undo} y \textsl{redo}.  Finalmente, si la p'agina corresponde a un archivo en disco, \hpage\ identifica el ``path'' del mismo para poder guardarlo o recargarlo de ser necesario.
 \subparagraph{}Gracias a haber separado la l'ogica correspondiente a la interfaz de usuario y la propia de \hpage, hemos podido desarrollar esta 'ultima utilizando la t'ecnica de TDD (Test Driven Development) ~\cite{tdd}.  Para ello utilizamos \htmladdnormallink{QuickCheck}{http://www.cs.chalmers.se/~rjmh/QuickCheck/}~\cite{quickcheck}, una herramienta que nos permiti'o ir desarrollando y verificando tests de manera incremental hasta alcanzar la actual definici'on del \textbf{HPage Server}.  Los tests desarrollados pueden ser ejecutados utilizando el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
-\begin{lstlisting}
+\begin{center}\begin{lstlisting}
 $ cabal test hpage
-\end{lstlisting}
+\end{lstlisting}\end{center}
 \lstset{language=haskell, frame=single, tabsize=4}
 
 \subsubsection{UI}
