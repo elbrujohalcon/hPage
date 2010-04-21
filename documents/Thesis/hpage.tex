@@ -9,6 +9,7 @@
 \usepackage{epigraph}
 \usepackage{listings}
 \usepackage{html}
+\usepackage{booktabs}
 \usepackage[colorlinks=true]{hyperref}
 \bibliographystyle{plainurl}
 \parindent = 0 pt
@@ -451,7 +452,7 @@ $ cabal haddock
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/05}
-		\caption{Tutorial 2 - Juego M’nimo}
+		\caption{Tutorial 2 - Juego M'inimo}
 		\label{tut205}
 	\end{center}
 \end{figure}
@@ -460,6 +461,103 @@ $ cabal haddock
 OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
 \end{lstlisting}\end{center}
+\newpage
+\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha conclu'ido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.
+
+\lstset{language=haskell, frame=none, tabsize=4}
+	\begin{table}[hp]
+		\begin{center}
+			\begin{tabular}{@{} cc @{}}				\toprule				Expresi'on & Resultado \\ 				\midrule\begin{lstlisting}
+justPlay $ return ()
+\end{lstlisting} &
+\begin{lstlisting}
+OnCourse {gamePlayer = Green,
+          gameBoard = [[],[],[],[],[],[],[]]}
+\end{lstlisting} \\[1.5em]
+\begin{lstlisting}
+justEval $ player
+\end{lstlisting} &
+\begin{lstlisting}
+Right Green
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 1 >> board
+\end{lstlisting} &
+\begin{lstlisting}
+[[],[Green],[],[],[],[],[]]
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 7
+\end{lstlisting} &
+\begin{lstlisting}
+Left That column doesn't exist
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justPlay $ dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> dropIn 1 >>
+           dropIn 4
+\end{lstlisting} &
+\begin{lstlisting}
+Ended {gameResult = WonBy Green,
+       gameBoard = [[],[Red,Red,Red],
+                    [],[],[Green,Green,Green,Green],
+                    [],[]]}
+\end{lstlisting} \\[1.5em]
+\begin{lstlisting}
+justEval $ dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> result
+\end{lstlisting} &
+\begin{lstlisting}
+Right (WonBy Green)
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 4 >> dropIn 1 >>
+           dropIn 4 >> dropIn 1 >>
+           dropIn 3 >> dropIn 1 >>
+           dropIn 4 >> result
+\end{lstlisting} &
+\begin{lstlisting}
+Left Game is on course yet
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 1 >> dropIn 1 >>
+           dropIn 1 >> dropIn 1 >>
+           dropIn 1 >> dropIn 1 >>
+           dropIn 1 >> dropIn 1
+\end{lstlisting} &
+\begin{lstlisting}
+Left That column is full
+\end{lstlisting} \\[1.5em]
+
+			\bottomrule
+		\end{tabular}
+		\caption{Pruebas realizadas en \hpage}
+		\label{tut206}
+	\end{center}
+\end{table}
+\lstset{language=haskell, frame=single, tabsize=4}
+
+\newpage
+\subsubsection{Creando el \textsl{Jugador Computadora}}
+\paragraph{}Con el conocimiento adquirido en el uso de \texttt{HFiaR}, F'atima decide crear la funci'on \texttt{aiDropIn}, que se ejecutar'a dentro de la m'onada \texttt{HFiaR}.  La figura \ref{tut207} nos muestra la aridad de dicha funci'on.
+\begin{figure}[hp]
+	\begin{center}
+		\begin{lstlisting}
+-- | Drop a tile in a column choosen by the Artificial Inteligence
+aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
+		\end{lstlisting}
+		\caption{Aridad de aiDropIn}
+		\label{tut207}
+	\end{center}
+\end{figure}
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
