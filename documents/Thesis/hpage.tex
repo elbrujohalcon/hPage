@@ -256,7 +256,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 		\label{tut109}
 	\end{center}
 \end{figure}
-\subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{File $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut110}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la figura \ref{tut111}
+\subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut110}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la figura \ref{tut111}
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/10}
@@ -462,19 +462,24 @@ OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
 \end{lstlisting}\end{center}
 \newpage
-\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha conclu'ido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.
+\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha conclu'ido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.  Cabe notar que los resultados de tipo \texttt{Left HFiaRError} se exhiben como texto (esto es porque el desarrollador de \textsl{hfiar} ha decidido utilizar la funci'on \texttt{show} para describir los errores en lugar de exhibir su constructor).
 
 \lstset{language=haskell, frame=none, tabsize=4}
 	\begin{table}[hp]
 		\begin{center}
-			\begin{tabular}{@{} cc @{}}				\toprule				Expresi'on & Resultado \\ 				\midrule\begin{lstlisting}
+			\begin{tabular}{@{} cc @{}}
+				\toprule
+				Expresi'on & Resultado \\ 
+				\midrule
+\begin{lstlisting}
 justPlay $ return ()
 \end{lstlisting} &
 \begin{lstlisting}
 OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
 \end{lstlisting} \\[1.5em]
-\begin{lstlisting}
+
+\begin{lstlisting}
 justEval $ player
 \end{lstlisting} &
 \begin{lstlisting}
@@ -504,10 +509,12 @@ justPlay $ dropIn 4 >> dropIn 1 >>
 \begin{lstlisting}
 Ended {gameResult = WonBy Green,
        gameBoard = [[],[Red,Red,Red],
-                    [],[],[Green,Green,Green,Green],
+                    [],[],
+                    [Green,Green,Green,Green],
                     [],[]]}
 \end{lstlisting} \\[1.5em]
-\begin{lstlisting}
+
+\begin{lstlisting}
 justEval $ dropIn 4 >> dropIn 1 >>
            dropIn 4 >> dropIn 1 >>
            dropIn 4 >> dropIn 1 >>
@@ -539,7 +546,7 @@ Left That column is full
 
 			\bottomrule
 		\end{tabular}
-		\caption{Pruebas realizadas en \hpage}
+		\caption{Tutorial 2 - Pruebas realizadas en \hpage}
 		\label{tut206}
 	\end{center}
 \end{table}
@@ -554,8 +561,49 @@ Left That column is full
 -- | Drop a tile in a column choosen by the Artificial Inteligence
 aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 		\end{lstlisting}
-		\caption{Aridad de aiDropIn}
+		\caption{Tutorial 2 - Aridad de aiDropIn}
 		\label{tut207}
+	\end{center}
+\end{figure}
+\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya conclu'ido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/06}
+		\caption{Tutorial 2 - \texttt{aiDropIn} versi'on 1}
+		\label{tut207}
+	\end{center}
+\end{figure}
+\subparagraph{}Una vez definidas ambas funciones, F'atima decide testearlas y, para ello, no necesita m'as que \textsl{evaluar} un juego en el que conozca el resultado.  En particular, F'atima elije hacer jugar a la computadora contra s'i misma 8 movimientos y verifica que las fichas han quedado intercaladas en la primer columna y luego el siguiente jugador ha colocado una en la segunda.
+\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut208}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y, seleccionando \texttt{testGame} puede realizar la misma prueba de la figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
+		\caption{Tutorial 2 - El m'odulo \texttt{HFiaR.AI}}
+		\label{tut208}
+	\end{center}
+\end{figure}
+\newpage
+\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumnFor}, F'atima, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumnFor} y sus funciones adicionales las podemos observar en la figura \ref{tut209}.  El resto del m'odulo permanece tal como estaba.
+\begin{itemize}
+	\item Si poniendo la ficha en alguna columna el jugador gana el partido, se debe elegir esa columna.
+	\item Si poniendo la ficha en alguna columna se impide que el jugador rival gane el partido (pues acumula 3 alineadas convenientemente) se debe elegir esa columna.
+	\item En otro caso, de ser posible, debe elegirse la columna 3 (o sea, la columna central) pues para formar l'ineas de 4 fichas horizontales o diagonales se requiere una ficha en dicha columna
+\end{itemize}
+\begin{figure}[hp]
+	\begin{center}
+		\begin{lstlisting}
+bestColumnFor :: Player -> [[Tile]] -> IntbestColumnFor p b =	case columnWhereWins p b of		Nothing ->			case columnWhereLooses p b of				Nothing ->					case length (b !! 3) of						7 -> length $ takeWhile (\c -> length c == 7) b						_ -> 3				Just cwl -> cwl		Just cww -> cwwcolumnWhereWins :: Player -> [[Tile]] -> Maybe IntcolumnWhereWins Pl{tiles=tile} b =	case (length $ takeWhile (not . wins tile b) [0..6]) of		7 -> Nothing		x -> Just xcolumnWhereLooses :: Player -> [[Tile]] -> Maybe IntcolumnWhereLooses Pl{tiles=tile} b =	let otherTile = case tile of {Green -> Red; Red -> Green}	 in case (length $ takeWhile (not . wins otherTile b) [0..6]) of			7 -> Nothing			x -> Just xwins :: Tile -> [[Tile]] -> Int -> Boolwins t b c =	let	newBoard = (take c b) ++ ((t : (b !! c)) : drop (c+1) b)		col = newBoard !! c		getRow r = map (cell r)		getDiagUpRight c r xss = map (\i -> cell (i+r-c) (xss !! i)) [0..6]		getDiagUpLeft c r xss = map (\i -> cell (r+c-i) (xss !! i)) [0..6]		cell c xs = if (c >= 0 && c < length xs)					then Just $ (reverse xs) !! c					else Nothing		fourIn [] = False		fourIn (Nothing:xs) = fourIn xs		fourIn (Just p:xs) = ([Just p,Just p,Just p] == take 3 xs) || fourIn xs      in	([t,t,t,t] == take 4 col) ||      	fourIn (getRow (length col - 1) newBoard) ||		fourIn (getDiagUpRight c (length col - 1) newBoard) ||		fourIn (getDiagUpLeft  c (length col - 1) newBoard)
+		\end{lstlisting}
+		\caption{Tutorial 2 - Versi'on definitiva de \texttt{HFiaR.AI}}
+		\label{tut209}
+	\end{center}
+\end{figure}
+\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es crear una nueva p'agina utilizando la opci'on \textsl{Page $\rightarrow$ New} e ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la figura \ref{tut210} la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/09}
+		\caption{Tutorial 2 - \textsl{Jugando} contra \texttt{HFiaR.AI}}
+		\label{tut210}
 	\end{center}
 \end{figure}
 
