@@ -308,7 +308,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \end{epigraphs}
 \paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos c'omo trabajar con herramientas tales como \cabal, \textsl{Hayoo!} y \textsl{wxhaskell}.  Veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, suficiente tiempo atr'as).
 \subsubsection{Introducci'on}
-\paragraph{}La historia comienza cuando a nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
+\paragraph{}La historia comienza cuando a nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima}\footnote{El nombre lo hemos elegido en honor a quien, hace ya casi 15 a'nos y utilizando el sobrenombre \textsl{Pers'efone}, fue la \textsl{maestra} y principal rival de 4 en L'inea de Fernando Benavides en \htmladdnormallink{CyberJuegos}{http://www.cyberjuegos.com}} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
 \subparagraph{}Como es de suponer, F'atima no conoce al creador del juego y no puede contactarlo por lo que sus 'unicas herramientas, m'as all'a de su conocimiento de \haskell\ y del juego en s'i, son el c'odigo fuente de \textsl{hfiar} y \hpage.
 
 \subsubsection{Primeros Pasos}
@@ -592,7 +592,48 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 \begin{figure}[hp]
 	\begin{center}
 		\begin{lstlisting}
-bestColumnFor :: Player -> [[Tile]] -> IntbestColumnFor p b =	case columnWhereWins p b of		Nothing ->			case columnWhereLooses p b of				Nothing ->					case length (b !! 3) of						7 -> length $ takeWhile (\c -> length c == 7) b						_ -> 3				Just cwl -> cwl		Just cww -> cwwcolumnWhereWins :: Player -> [[Tile]] -> Maybe IntcolumnWhereWins Pl{tiles=tile} b =	case (length $ takeWhile (not . wins tile b) [0..6]) of		7 -> Nothing		x -> Just xcolumnWhereLooses :: Player -> [[Tile]] -> Maybe IntcolumnWhereLooses Pl{tiles=tile} b =	let otherTile = case tile of {Green -> Red; Red -> Green}	 in case (length $ takeWhile (not . wins otherTile b) [0..6]) of			7 -> Nothing			x -> Just xwins :: Tile -> [[Tile]] -> Int -> Boolwins t b c =	let	newBoard = (take c b) ++ ((t : (b !! c)) : drop (c+1) b)		col = newBoard !! c		getRow r = map (cell r)		getDiagUpRight c r xss = map (\i -> cell (i+r-c) (xss !! i)) [0..6]		getDiagUpLeft c r xss = map (\i -> cell (r+c-i) (xss !! i)) [0..6]		cell c xs = if (c >= 0 && c < length xs)					then Just $ (reverse xs) !! c					else Nothing		fourIn [] = False		fourIn (Nothing:xs) = fourIn xs		fourIn (Just p:xs) = ([Just p,Just p,Just p] == take 3 xs) || fourIn xs      in	([t,t,t,t] == take 4 col) ||      	fourIn (getRow (length col - 1) newBoard) ||		fourIn (getDiagUpRight c (length col - 1) newBoard) ||		fourIn (getDiagUpLeft  c (length col - 1) newBoard)
+bestColumnFor :: Player -> [[Tile]] -> Int
+bestColumnFor p b =
+	case columnWhereWins p b of
+		Nothing ->
+			case columnWhereLooses p b of
+				Nothing ->
+					case length (b !! 3) of
+						7 -> length $ takeWhile (\c -> length c == 7) b
+						_ -> 3
+				Just cwl -> cwl
+		Just cww -> cww
+
+columnWhereWins :: Player -> [[Tile]] -> Maybe Int
+columnWhereWins Pl{tiles=tile} b =
+	case (length $ takeWhile (not . wins tile b) [0..6]) of
+		7 -> Nothing
+		x -> Just x
+
+columnWhereLooses :: Player -> [[Tile]] -> Maybe Int
+columnWhereLooses Pl{tiles=tile} b =
+	let otherTile = case tile of {Green -> Red; Red -> Green}
+	 in case (length $ takeWhile (not . wins otherTile b) [0..6]) of
+			7 -> Nothing
+			x -> Just x
+
+wins :: Tile -> [[Tile]] -> Int -> Bool
+wins t b c =
+	let	newBoard = (take c b) ++ ((t : (b !! c)) : drop (c+1) b)
+		col = newBoard !! c
+		getRow r = map (cell r)
+		getDiagUpRight c r xss = map (\i -> cell (i+r-c) (xss !! i)) [0..6]
+		getDiagUpLeft c r xss = map (\i -> cell (r+c-i) (xss !! i)) [0..6]
+		cell c xs = if (c >= 0 && c < length xs)
+					then Just $ (reverse xs) !! c
+					else Nothing
+		fourIn [] = False
+		fourIn (Nothing:xs) = fourIn xs
+		fourIn (Just p:xs) = ([Just p,Just p,Just p] == take 3 xs) || fourIn xs
+      in	([t,t,t,t] == take 4 col) ||
+      	fourIn (getRow (length col - 1) newBoard) ||
+		fourIn (getDiagUpRight c (length col - 1) newBoard) ||
+		fourIn (getDiagUpLeft  c (length col - 1) newBoard)
 		\end{lstlisting}
 		\caption{Tutorial 2 - Versi'on definitiva de \texttt{HFiaR.AI}}
 		\label{tut209}
@@ -606,6 +647,14 @@ bestColumnFor :: Player -> [[Tile]] -> IntbestColumnFor p b =	case columnWhere
 		\label{tut210}
 	\end{center}
 \end{figure}
+\paragraph{}Resta pues modificar la interfaz gr'afica para que permita al usuario jugar contra la computadora, utilizando la funci'on \texttt{aiDropIn} en los turnos correspondientes a la m'aquina.  Para ello, F'atima abre el m'odulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.  Estos cambios puede realizarlos utilizando \hpage\ o cualquier otro editor, pues por la naturaleza ``imperativa'' del c'odigo a modificar, \hpage\ no representar'a un beneficio importante.  Por el mismo motivo, no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p'agina web del proyecto hfiar en github}{http://github.com/elbrujohalcon/hfiar/commit/88a59a61d3dff930a96a1a51ab1daff4fcac9ef8\#diff-2}~\cite{hfiar}
+\paragraph{}El 'ultimo paso que F'atima debe realizar es incluir su nuevo m'odulo en la lista de m'odulos del ejecutable \textsl{hfiar} dentro del archivo \textbf{hfiar.cabal}.  Una vez hechas estas modificaciones, puede ejecutar los siguientes comandos y disfrutar de un partido de su juego favorito contra la computadora:
+\begin{center}\begin{lstlisting}
+$ cabal configure --user
+$ cabal build
+$ cabal install
+$ ~/.cabal/bin/hfiar &
+\end{lstlisting}\end{center}
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
