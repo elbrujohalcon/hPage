@@ -1,5 +1,5 @@
 name: hpage
-version: 0.6.0
+version: 0.6.1
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3

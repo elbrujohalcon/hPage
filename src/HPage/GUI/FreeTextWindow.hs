@@ -286,6 +286,12 @@ gui =
         -- test the server...
         runTxtHPSelection "1" model HP.interpret
         
+        --HACK: We need to keep a timer ticking just to refresh the screen when the user is doing nothing
+        --      That's because the main C loop of wx only calls wxHaskell callbacks when something happens
+        --      and we try to make things happen in this side but they're not reflected there until some-
+        --      thing happens there
+        timer win [interval := 50, on command := return ()]
+
         -- ...and RUN!
         refreshPage model guiCtx
         onCmd "start" openHelpPage
@@ -304,6 +310,7 @@ charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
                     txt <- catch (eval t) $ \(ErrorCall desc) ->
                                                     varUpdate varErrors (++ [GUIBtm desc t]) >>
                                                     return bottomChar
+                    debugIO $ "Writing chv := " ++ txt
                     tryPutMVar chv $ Just txt
     where eval t = t `seq` length t `seq` return t
 
@@ -318,6 +325,7 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                 liftDebugIO "Trying to evaluate the whole value first..."
                 liftIO $ do
                             set txtValue [text := ""]
+                            varSet varErrors []
                             res <- valueFill guiCtx val
                             if res == bottomChar
                                 then do
@@ -329,8 +337,11 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                         textCtrlAppendText txtValue res
                             set btnInterpret [on command := poc,
                                               text := "Interpret"]
+                            errs <- varGet varErrors
                             set txtValue [enabled := True,
-                                          bgcolor := white]
+                                          bgcolor := case errs of
+                                                        [] -> white
+                                                        _  -> yellow]
 
 valueFiller' :: GUIContext -> String -> IO ()
 valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
@@ -834,7 +845,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resButton = btnInterpret,
                                                   resValue  = txtValue,
                                                   res4Dots  = lbl4Dots,
-                                                  resType   = txtType},
+                                                  resType   = txtType,
+                                                  resErrors = varErrors},
                               guiCode       = txtCode,
                               guiCharTimer  = charTimer,
                               guiWin        = win,
@@ -849,7 +861,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
         refreshExpr model guiCtx
         liftTraceIO "running..."
         set txtValue [enabled := False,
-                      bgcolor := lightgrey]
+                      bgcolor := dimgrey]
         res <- runner model HP.interpret
         liftTraceIO "ready"
         case res of
@@ -880,8 +892,11 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                         newvf <- spawn $ valueFiller guiCtx
                                         swapMVar vfv newvf >>= kill
                                         debugIO "Ready"
+                                        errs <- varGet varErrors
                                         set txtValue [enabled := True,
-                                                      bgcolor := white]
+                                                      bgcolor := case errs of
+                                                                     [] -> white
+                                                                     _  -> yellow]
                                         set btnInterpret [on command := poc, text := "Interpret"]
                          in liftIO $ set btnInterpret [text := "Cancel",
                                                        on command := revert]
