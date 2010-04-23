@@ -566,6 +566,7 @@ openPage model guiCtx@GUICtx{guiWin = win,
 
 savePageAs model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
+        refreshExpr model guiCtx
         fileName <- fileSaveDialog win True True "Save file..." [("Haskells",["*.hs"]),
                                                                  ("Any file",["*.*"])] "" ""
         case fileName of
@@ -578,6 +579,7 @@ savePageAs model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
 
 savePage model guiCtx@GUICtx{guiWin = win} =
     do
+        refreshExpr model guiCtx
         maybePath <- tryIn' model HP.getPagePath
         case maybePath of
             Left err ->
@@ -989,8 +991,9 @@ findNextButton model guiCtx@GUICtx{guiCode = txtCode,
                 infoDialog win "Find Results" $ s ++ " not found."
             Just ip ->
                 do
-                    textCtrlSetSelection txtCode (length s + ip) ip
+                    textCtrlSetInsertionPoint txtCode ip
                     refreshExpr model guiCtx 
+                    textCtrlSetSelection txtCode ip (length s + ip)
 
 findReplaceButton model guiCtx@GUICtx{guiCode = txtCode,
                                       guiWin = win,
@@ -1007,8 +1010,9 @@ findReplaceButton model guiCtx@GUICtx{guiCode = txtCode,
             Just ip ->
                 do
                     textCtrlReplace txtCode ip (length s + ip) r
-                    textCtrlSetSelection txtCode (length r + ip) ip
-                    refreshExpr model guiCtx
+                    textCtrlSetInsertionPoint txtCode ip
+                    refreshExpr model guiCtx 
+                    textCtrlSetSelection txtCode ip (length r + ip)
         
 findReplaceAllButton _model GUICtx{guiCode = txtCode,
                                    guiSearch = search} =
