@@ -206,7 +206,7 @@ openPage file = do
                     liftTraceIO $ "opening: " ++ file
                     s <- liftIO $ Str.readFile file
                     let str = Str.unpack s
-                    let (newExprs, curExpr) = fromString' str $ length str
+                    let (newExprs, curExpr) = exprFromString' str $ length str
                         newPage = emptyPage{expressions = newExprs, 
                                             currentExpr = curExpr,
                                             filePath    = Just file,
@@ -322,7 +322,7 @@ clearPage = setPageText "" 0 >> return ()
 setPageText :: String -> Int -> HPage Bool
 setPageText s ip = 
     do
-        let (exprs, ix) = fromString' s ip
+        let (exprs, ix) = exprFromString' s ip
         page <- getPage
         if exprs /= expressions page || ix /= currentExpr page
             then
@@ -361,7 +361,7 @@ setExprNthText nth expr = withExprIndex nth $
                                     page <- getPage
                                     liftTraceIO ("setExprNthText",nth,expr,expressions page, currentExpr page)
                                     modifyWithUndo (\p ->
-                                                        let newExprs = insertAt nth (fromString expr) $ expressions p
+                                                        let newExprs = insertAt nth (exprFromString expr) $ expressions p
                                                             curExpr  = currentExpr p
                                                          in p{expressions = newExprs,
                                                               currentExpr = if curExpr < length newExprs then
@@ -374,7 +374,7 @@ addExpr expr = do
                     liftTraceIO ("addExpr",expr,expressions p, currentExpr p)
                     modifyWithUndo (\page ->
                                         let exprs = expressions page
-                                            newExprs = insertAt (length exprs) (fromString expr) exprs
+                                            newExprs = insertAt (length exprs) (exprFromString expr) exprs
                                         in  page{expressions = newExprs,
                                                  currentExpr = length newExprs - 1})
 
@@ -808,19 +808,19 @@ apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
 apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =
     c{ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
 
-fromString :: String -> [Expression]
-fromString s = map Exp $ splitOn "\n\n" s
+exprFromString :: String -> [Expression]
+exprFromString s = map Exp $ splitOn "\n\n" s
 
 isNamedExpr :: Expression -> Bool
 isNamedExpr e = case Parser.parseDecl (exprText e) of
                     Parser.ParseOk _ -> True
                     _ -> False 
 
-fromString' :: String -> Int -> ([Expression], Int)
-fromString' "" 0 = ([], -1)
-fromString' s 0 = (fromString s, 0)
-fromString' s i = (fromString s,
-                   flip (-) 1 . length . splitOn "\n\n" $ take i s)
+exprFromString' :: String -> Int -> ([Expression], Int)
+exprFromString' "" 0 = ([], -1)
+exprFromString' s 0 = (exprFromString s, 0)
+exprFromString' s i = (exprFromString s,
+                        flip (-) 1 . length . splitOn "\n\n" $ take i s)
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions

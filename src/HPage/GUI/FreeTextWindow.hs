@@ -303,7 +303,8 @@ gui =
 charFiller :: GUIContext -> Process String ()
 charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
                                       resErrors= varErrors},
-                  guiChrVar  = chv} =
+                  guiChrVar  = chv,
+                  guiStatus  = status} =
     forever $ do
          t <- recv
          liftIO $ do
@@ -317,7 +318,8 @@ charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
 valueFiller :: GUIContext -> Process (String, IO ()) ()
 valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                                 resErrors = varErrors,
-                                                resValue  = txtValue}} =
+                                                resValue  = txtValue},
+                          guiStatus    = status} =
     forever $ do
                 liftDebugIO "Waiting for a new value to interpret"
                 (val, poc) <- recv
@@ -331,19 +333,31 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                 then do
                                         debugIO "didn't work... going char by char..."
                                         varSet varErrors []
-                                        valueFiller' guiCtx val
+                                        statusText <- valueFiller' guiCtx val
+                                        errs <- varGet varErrors
+                                        case (statusText, errs) of
+                                            ("", []) ->
+                                                set status [text := ""] >>
+                                                set txtValue [enabled := True,
+                                                              bgcolor := white]
+                                            ("", _) ->
+                                                set status [text := "Expression interpreted with errors: Check them by right-clicking on each one"] >>
+                                                set txtValue [enabled := True,
+                                                              bgcolor := yellow]
+                                            (msg, _) ->
+                                                set status [text := "Expression interpreted with errors: " ++ msg] >>
+                                                set txtValue [enabled := True,
+                                                              bgcolor := yellow]
                                 else do
                                         debugIO "It worked!!"
                                         textCtrlAppendText txtValue res
+                                        set status [text := ""]
+                                        set txtValue [enabled := True,
+                                                      bgcolor := white]
                             set btnInterpret [on command := poc,
                                               text := "Interpret"]
-                            errs <- varGet varErrors
-                            set txtValue [enabled := True,
-                                          bgcolor := case errs of
-                                                        [] -> white
-                                                        _  -> yellow]
 
-valueFiller' :: GUIContext -> String -> IO ()
+valueFiller' :: GUIContext -> String -> IO String
 valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
                                                resErrors = varErrors}} val =
       do
@@ -352,11 +366,9 @@ valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
                       (c:_) -> return [c])
         case h of
             Left (ErrorCall desc) ->
-                do
-                   varUpdate varErrors (++ [GUIBtm desc val])
-                   textCtrlAppendText txtValue bottomString
+                return desc
             Right [] ->
-                return ()
+                return ""
             Right t ->
                 do
                     valueFill guiCtx t >>= textCtrlAppendText txtValue
@@ -852,7 +864,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                               guiWin        = win,
                               guiChrVar     = chv,
                               guiValFiller  = vfv,
-                              guiChrFiller  = chfv} =
+                              guiChrFiller  = chfv,
+                              guiStatus     = status} =
     do
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
@@ -860,8 +873,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         sl -> runTxtHPSelection sl
         refreshExpr model guiCtx
         liftTraceIO "running..."
+        set status [text := "interpreting..."]
         set txtValue [enabled := False,
-                      bgcolor := dimgrey]
+                      bgcolor := lightgrey]
         res <- runner model HP.interpret
         liftTraceIO "ready"
         case res of
@@ -870,6 +884,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
             Right interp ->
                 if HP.isIntType interp
                     then do
+                        set status [text := ""]
                         set txtValue [enabled := True,
                                       bgcolor := white,
                                       text := HP.intKind interp]
@@ -893,6 +908,9 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                         swapMVar vfv newvf >>= kill
                                         debugIO "Ready"
                                         errs <- varGet varErrors
+                                        set status [text := case errs of
+                                                    [] -> ""
+                                                    _  -> "Expression interpreted with errors: Check them by right-clicking on each one"]
                                         set txtValue [enabled := True,
                                                       bgcolor := case errs of
                                                                      [] -> white
