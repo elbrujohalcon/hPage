@@ -51,8 +51,18 @@
     \newpage
 
 \tableofcontents
-\newpage
 
+\newpage
+\section{Estructura del Informe}
+\paragraph{}El presente informe pretende presentar a \hpage, una herramienta para facilitar el trabajo de los desarrolladores \haskell.  El mismo se encuentra dividido en cuatro secciones.
+\paragraph{}La primera es una secci'on en la que describiremos los motivos que nos llevaron a desarrollar esta herramienta, hablaremos tambi'en de otras herramientas similares y presentaremos \hpage\ de modo general, mostrando principalmente el lugar que pretendemos que ocupe dentro del mundo \haskell.
+\paragraph{}En la siguiente secci'on intetaremos mostrar, a trav'es de dos tutoriales, c'omo utilizar \hpage\ y daremos a conocer sus virtudes y capacidades.  Para comenzar, aprenderemos c'omo instalarlo, de modo que el lector pueda, una vez instalado el sistema, seguir los tutoriales paso a paso y realizar sus propias experiencias.
+\subparagraph{}Luego, presentaremos un tutorial destinado al p'ublico ``acad'emico'' que nos mostrar'a c'omo utilizar la herramienta para resolver ejercicios pr'acticos t'ipicos de varias materias de la facultad.  Veremos all'i la facilidad de trabajo que brinda \hpage\ al alumno permiti'endole descubrir paso a paso el lenguaje y sus caracter'isticas principales.
+\subparagraph{}El segundo tutorial que presentaremos est'a apuntado a aquellos desarrolladores que trabajan con proyectos \haskell\ de dimensiones mayores a lo visto en el 'ambito acad'emico.  La idea de este tutorial es mostrar c'omo \hpage\ puede ayudarlos a entender c'odigo existente y tambi'en a generar y testear nuevo c'odigo de manera sencilla y veloz.
+\paragraph{}Una vez observado \hpage\ en funcionamiento y destacadas sus caracter'isticas principales, observaremos c'omo ha sido dise'nado y constru'ido.  Podremos ver los requerimientos que guiaron su dise'no, la arquitectura conceptual que lo subyace y las principales decisiones de dise'no e implementaci'on que se han tomado durante su desarrollo.
+\paragraph{}Finalmente observaremos los resultados obtenidos y los contrastaremos con los objetivos planteados al inicio de este desarrollo.  Estableceremos el estado del proyecto en general, cu'ales son los siguientes pasos a dar y qu'e otras tareas pueden llevarse a cabo a partir de ahora.
+
+\newpage
 \section{Introducci'on}
 \subsection{Motivaci'on}
 \begin{epigraphs}
@@ -93,7 +103,7 @@
 \paragraph{} \htmladdnormallink{\hpage}{http://haskell.hpage.com}~\cite{hpage} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y su clase.
 \subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallink{\cabal}{http://www.haskell.org/cabal}~\cite{cabal} y \htmladdnormallink{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}~\cite{hayoo} y se encuentra ya disponible en \htmladdnormallink{HackageDB}{http://hackage.haskell.org/package/hpage}~\cite{hackage}.
 \subparagraph{}\hpage\ presenta una interfaz simple e intuitiva, desarrollada utilizando \htmladdnormallink{wxHaskell}{http://haskell.org/haskellwiki/WxHaskell}~\cite{wxhaskell}, lo que lo convierte en una aplicaci'on multiplataforma.
-\subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado fuerte (que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas) y la evaluaci'on perezosa (que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente).
+\subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado est'atico (que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas) y la evaluaci'on perezosa (que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente).
 \subparagraph{}A diferencia de \textsl{GHCi} que es una herramienta ``de consola'', \hpage\ permite visualizar resultados de manera m'as din'amica, permitiendo que errores intermedios, detectados durante la evaluaci'on de una expresi'on no impidan continuar con la misma hasta llegar a un resultado m'as completo.
 \subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos (o m'as precisamente, c'alculos que demoran demasiado) e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
 \newpage
