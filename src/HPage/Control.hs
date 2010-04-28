@@ -901,7 +901,7 @@ emptyPage = Page [] (-1) [] [] [] Nothing
 
 letsToString :: [Expression] -> String
 letsToString [] = ""
-letsToString exs = "let " ++ joinWith ";\n    " (map (joinWith "\n    " . lines . exprText) exs) ++ "\n in "
+letsToString exs = "let\n " ++ joinWith ";\n " (map (joinWith "\n  " . lines . exprText) exs) ++ "\n in "
 
 moduleElemDesc :: Hint.ModuleElem -> Hint.InterpreterT IO ModuleElemDesc
 moduleElemDesc (Hint.Fun fn) = do
