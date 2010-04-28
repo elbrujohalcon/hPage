@@ -77,6 +77,7 @@ import Distribution.Package
 import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
+import qualified HPage.IOServer as HPIO
 
 data Interpretation = Type {intKind ::  String} |
                       Expr {intValue :: String, intType :: String}
@@ -159,7 +160,9 @@ data Context = Context { -- Package --
                          ghcOptions :: String,
                          server :: HS.ServerHandle,
                          running :: Maybe InFlightData,
-                         recoveryLog :: Hint.InterpreterT IO () -- To allow cancelation of actions
+                         recoveryLog :: Hint.InterpreterT IO (), -- To allow cancelation of actions
+                         -- IO Server --
+                         ioServer :: HPIO.ServerHandle
                        }
  
 instance Show Context where
@@ -189,8 +192,9 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
+                    hpios <- liftIO $ HPIO.start
                     let nop = return ()
-                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop
+                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop hpios
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -451,7 +455,23 @@ interpretNth i =
                                         in "No instance for (GHC.Show" `isPrefixOf` errMsg
               
 valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-valueOfNth = runInExprNthWithLets Hint.eval
+valueOfNth i =
+        do
+            res <- runInExprNthWithLets Hint.typeOf i
+            case res of
+                Right ('I':'O':' ':_:_) -> -- An IO Action
+                    do
+                        res2 <- getIOFromExprNth i
+                        case res2 of
+                            Right ioAction ->
+                                do
+                                    ctx <- get
+                                    iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
+                                    return $ Right iores
+                            Left err ->
+                                return $ Left err
+                _ ->
+                    runInExprNthWithLets Hint.eval i
 kindOfNth = runInExprNth Hint.kindOf
 typeOfNth = runInExprNthWithLets Hint.typeOf
 
@@ -711,10 +731,13 @@ cancel = do
             liftTraceIO $ "canceling"
             ctx <- get
             liftIO $ HS.stop $ server ctx
+            liftIO $ HPIO.stop $ ioServer ctx
             hs <- liftIO $ HS.start
+            hpios <- liftIO $ HPIO.start
             liftIO $ HS.runIn hs $ recoveryLog ctx
-            modify (\c -> c{server = hs,
-                            running = Nothing})
+            modify (\c -> c{server      = hs,
+                            ioServer    = hpios,
+                            running     = Nothing})
 
 prettyPrintError :: Hint.InterpreterError -> String
 prettyPrintError (Hint.WontCompile ghcerrs)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerrs)
@@ -763,6 +786,16 @@ runInExprNth action i = do
                                                                         then return ""
                                                                         else action expr
 
+getIOFromExprNth :: Int -> HPage (Either Hint.InterpreterError (IO String))
+getIOFromExprNth i =
+    do
+        page <- getPage
+        let exprs = expressions page
+        flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
+                                       lets = filter isNamedExpr $ b ++ a
+                                       expr = "(" ++ letsToString lets ++ exprText item ++ ") >>= return . show"
+                                    in syncRun $ Hint.interpret expr (Hint.as :: IO String)
+
 runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNthWithLets action i = do
                                     page <- getPage
@@ -770,9 +803,11 @@ runInExprNthWithLets action i = do
                                     flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
                                                                    lets = filter isNamedExpr $ b ++ a
                                                                    expr = letsToString lets ++ exprText item
-                                                                in syncRun $ if "" == exprText item
-                                                                                then return ""
-                                                                                else action expr
+                                                                in do
+                                                                        liftDebugIO expr
+                                                                        syncRun $ if "" == exprText item
+                                                                                    then return ""
+                                                                                    else action expr
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do
@@ -866,7 +901,7 @@ emptyPage = Page [] (-1) [] [] [] Nothing
 
 letsToString :: [Expression] -> String
 letsToString [] = ""
-letsToString exs = "let " ++ joinWith "; " (map exprText exs) ++ " in "
+letsToString exs = "let " ++ joinWith ";\n    " (map (joinWith "\n    " . lines . exprText) exs) ++ "\n in "
 
 moduleElemDesc :: Hint.ModuleElem -> Hint.InterpreterT IO ModuleElemDesc
 moduleElemDesc (Hint.Fun fn) = do

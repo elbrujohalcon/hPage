@@ -1,5 +1,5 @@
 name: hpage
-version: 0.6.2
+version: 0.6.3
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -50,5 +50,5 @@ Executable hpage
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
-    other-modules:  HPage.GUI.IDs, HPage.GUI.FreeTextWindow, HPage.GUI.Dialogs, HPage.Control, HPage.Server, HPage.Utils.Log, HPage.GUI.Constants
+    other-modules:  HPage.GUI.IDs, HPage.GUI.FreeTextWindow, HPage.GUI.Dialogs, HPage.Control, HPage.Server, HPage.Utils.Log, HPage.GUI.Constants, HPage.IOServer
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns
