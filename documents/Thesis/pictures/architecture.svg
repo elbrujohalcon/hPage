@@ -22,6 +22,19 @@
   <defs
      id="defs4">
     <marker
+       inkscape:stockid="Arrow2Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow2Mend"
+       style="overflow:visible;">
+      <path
+         id="path4489"
+         style="font-size:12.0;fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round;"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         transform="scale(0.6) rotate(180) translate(0,0)" />
+    </marker>
+    <marker
        inkscape:stockid="Arrow1Mend"
        orient="auto"
        refY="0.0"
@@ -1357,6 +1370,105 @@
            in="fbSourceGraphic" />
       </feMerge>
     </filter>
+    <inkscape:perspective
+       id="perspective3243"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3281"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <filter
+       color-interpolation-filters="sRGB"
+       id="filter3689-7-7"
+       inkscape:label="Drop shadow"
+       width="1.5"
+       height="1.5"
+       x="-0.25"
+       y="-0.25">
+      <feGaussianBlur
+         id="feGaussianBlur3691-9-9"
+         in="SourceAlpha"
+         stdDeviation="2.000000"
+         result="blur" />
+      <feColorMatrix
+         id="feColorMatrix3693-3-3"
+         result="bluralpha"
+         type="matrix"
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.500000 0 " />
+      <feOffset
+         id="feOffset3695-8-8"
+         in="bluralpha"
+         dx="4.000000"
+         dy="4.000000"
+         result="offsetBlur" />
+      <feMerge
+         id="feMerge3697-0-0"
+         result="fbSourceGraphic">
+        <feMergeNode
+           id="feMergeNode3699-2-2"
+           in="offsetBlur" />
+        <feMergeNode
+           id="feMergeNode3701-4-4"
+           in="SourceGraphic" />
+      </feMerge>
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix3703-8-8" />
+      <feGaussianBlur
+         id="feGaussianBlur3705-3-39"
+         in="fbSourceGraphicAlpha"
+         stdDeviation="2.000000"
+         result="blur" />
+      <feColorMatrix
+         id="feColorMatrix3707-9-05"
+         result="bluralpha"
+         type="matrix"
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.500000 0 " />
+      <feOffset
+         id="feOffset3709-0-2"
+         in="bluralpha"
+         dx="4.000000"
+         dy="4.000000"
+         result="offsetBlur" />
+      <feMerge
+         id="feMerge3711-5-2">
+        <feMergeNode
+           id="feMergeNode3713-2-7"
+           in="offsetBlur" />
+        <feMergeNode
+           id="feMergeNode3715-2-3"
+           in="fbSourceGraphic" />
+      </feMerge>
+    </filter>
+    <inkscape:perspective
+       id="perspective3414"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-8"
+       style="overflow:visible">
+      <path
+         id="path4529-6"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -1365,9 +1477,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.1530794"
-     inkscape:cx="372.04724"
-     inkscape:cy="200"
+     inkscape:zoom="1.0379756"
+     inkscape:cx="231.09966"
+     inkscape:cy="240.72331"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -1375,7 +1487,7 @@
      inkscape:window-height="724"
      inkscape:window-x="0"
      inkscape:window-y="0"
-     inkscape:window-maximized="0" />
+     inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -1399,7 +1511,10 @@
        x="378.3696"
        y="112.08893"
        id="text4035"
-       transform="translate(0,652.36218)"><tspan
+       transform="translate(0,652.36218)"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><tspan
          sodipodi:role="line"
          id="tspan4037"
          x="378.3696"
@@ -1407,7 +1522,8 @@
     <g
        id="g10042"
        inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90">
+       inkscape:export-ydpi="90"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png">
       <rect
          y="802.104"
          x="52.672512"
@@ -1443,38 +1559,11 @@
            sodipodi:role="line">IO</tspan></text>
     </g>
     <g
-       id="g9801"
-       transform="translate(-244.56252,-13.875893)">
-      <rect
-         y="707.01855"
-         x="583.18225"
-         height="72.540413"
-         width="69.736015"
-         id="rect3685"
-         style="fill:#646464;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689)" />
-      <image
-         style="fill:none;stroke:#000000;stroke-opacity:1"
-         y="729.84839"
-         x="588.05023"
-         id="image2883"
-         height="43"
-         width="60"
-         xlink:href="file:///Users/elbrujohalcon/Documents/Thrashy/Haskell-logo-60.png" />
-      <text
-         sodipodi:linespacing="125%"
-         id="text4031-7"
-         y="720.44116"
-         x="618.0434"
-         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           y="720.44116"
-           x="618.0434"
-           id="tspan4507"
-           sodipodi:role="line">GHC</tspan></text>
-    </g>
-    <g
        id="g4370"
-       transform="translate(-57.805351,-32.894465)">
+       transform="translate(-57.805351,-32.894465)"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <rect
          y="727.20819"
          x="177.17459"
@@ -1515,7 +1604,10 @@
     </g>
     <g
        id="g5897"
-       transform="translate(-144.65999,-14.413691)">
+       transform="translate(-144.65999,-14.413691)"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <rect
          y="708.72742"
          x="373.65448"
@@ -1558,9 +1650,12 @@
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-end:url(#Arrow1Mend)"
        d="m 109.98321,149.74185 21.81135,-35.24989"
        id="path4475"
-       transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
-       inkscape:connection-end="#g4370" />
+       transform="translate(0,652.36218)"
+       inkscape:connection-end="#g4370"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1, 1;stroke-dashoffset:0;marker-start:none;marker-end:url(#Arrow1Mend);display:inline"
        d="m 298.73051,77.849277 39.88922,-0.426114"
@@ -1568,7 +1663,9 @@
        inkscape:connector-type="polyline"
        transform="translate(0,652.36218)"
        inkscape:connection-start="#g5897"
-       inkscape:connection-end="#g9801" />
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:none;marker-mid:none;marker-end:url(#Arrow1Mend-6)"
        d="m 189.10526,78.221752 39.88923,0"
@@ -1576,10 +1673,16 @@
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
        inkscape:connection-start="#g4370"
-       inkscape:connection-end="#g5897" />
+       inkscape:connection-end="#g5897"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <g
        id="g4362-8"
-       transform="translate(151.9168,141.98684)">
+       transform="translate(151.9168,141.98684)"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <g
          id="g6787">
         <rect
@@ -1618,122 +1721,48 @@
       </g>
     </g>
     <g
-       id="g7718"
+       id="g7579"
        transform="translate(-25.1373,19.228396)">
-      <g
-         id="g7579">
-        <rect
-           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.43858036;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689-7-8-3)"
-           id="rect3685-7-4-9"
-           width="69.736015"
-           height="72.540413"
-           x="227.31686"
-           y="865.67181" />
-        <text
-           xml:space="preserve"
-           style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
-           x="262.48907"
+      <rect
+         y="865.67181"
+         x="227.31686"
+         height="72.540413"
+         width="69.736015"
+         id="rect3685-7-4-9"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.43858036;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689-7-8-3)" />
+      <text
+         sodipodi:linespacing="100%"
+         id="text4031-7-5-4"
+         y="900.16125"
+         x="262.48907"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
            y="900.16125"
-           id="text4031-7-5-4"
-           sodipodi:linespacing="100%"><tspan
-             sodipodi:role="line"
-             id="tspan7575"
-             x="262.48907"
-             y="900.16125">Value</tspan><tspan
-             sodipodi:role="line"
-             id="tspan7577"
-             x="262.48907"
-             y="914.16125">Filler</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:110.00000238%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
-           x="255.59212"
-           y="874.45667"
-           id="text4084-0-6-1"
-           sodipodi:linespacing="110%"><tspan
-             sodipodi:role="line"
-             id="tspan7573"
-             x="255.59212"
-             y="874.45667">Process</tspan></text>
-      </g>
-      <g
-         id="g7579-7"
-         transform="translate(-6.7226828,-7.1428636)">
-        <rect
-           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.43858036;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689-7-8-3-1)"
-           id="rect3685-7-4-9-5"
-           width="69.736015"
-           height="72.540413"
-           x="227.31686"
-           y="865.67181" />
-        <text
-           xml:space="preserve"
-           style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
            x="262.48907"
-           y="900.16125"
-           id="text4031-7-5-4-7"
-           sodipodi:linespacing="100%"><tspan
-             sodipodi:role="line"
-             id="tspan7575-5"
-             x="262.48907"
-             y="900.16125">Value</tspan><tspan
-             sodipodi:role="line"
-             id="tspan7577-0"
-             x="262.48907"
-             y="914.16125">Filler</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:110.00000238%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
-           x="255.59212"
-           y="874.45667"
-           id="text4084-0-6-1-6"
-           sodipodi:linespacing="110%"><tspan
-             sodipodi:role="line"
-             id="tspan7573-4"
-             x="255.59212"
-             y="874.45667">Process</tspan></text>
-      </g>
-      <g
-         id="g7579-9"
-         transform="translate(-13.445376,-14.285722)">
-        <rect
-           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.43858036;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689-7-8-3-8)"
-           id="rect3685-7-4-9-9"
-           width="69.736015"
-           height="72.540413"
-           x="227.31686"
-           y="865.67181" />
-        <text
-           xml:space="preserve"
-           style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+           id="tspan7575"
+           sodipodi:role="line">Value</tspan><tspan
+           y="914.16125"
            x="262.48907"
-           y="900.16125"
-           id="text4031-7-5-4-3"
-           sodipodi:linespacing="100%"><tspan
-             sodipodi:role="line"
-             id="tspan7575-3"
-             x="262.48907"
-             y="900.16125">Value</tspan><tspan
-             sodipodi:role="line"
-             id="tspan7577-7"
-             x="262.48907"
-             y="914.16125">Filler</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:110.00000238%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
-           x="255.59212"
+           id="tspan7577"
+           sodipodi:role="line">Filler</tspan></text>
+      <text
+         sodipodi:linespacing="110%"
+         id="text4084-0-6-1"
+         y="874.45667"
+         x="255.59212"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:110.00000238%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
            y="874.45667"
-           id="text4084-0-6-1-7"
-           sodipodi:linespacing="110%"><tspan
-             sodipodi:role="line"
-             id="tspan7573-3"
-             x="255.59212"
-             y="874.45667">Process</tspan></text>
-      </g>
+           x="255.59212"
+           id="tspan7573"
+           sodipodi:role="line">Process</tspan></text>
     </g>
     <g
        id="g7987"
-       transform="translate(-81.643714,-73.949577)">
+       transform="translate(-81.643714,-73.949577)"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <rect
          y="879.53735"
          x="421.43451"
@@ -1778,15 +1807,20 @@
        id="path7998"
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
-       inkscape:connection-start="#g7718"
-       inkscape:connection-end="#g7987" />
+       inkscape:connection-end="#g7987"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
        d="m 122.40853,186.43513 217.38227,2.6376"
        id="path8000"
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
-       inkscape:connection-end="#g7987" />
+       inkscape:connection-end="#g7987"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
        d="m 374.6588,297.56472 0,-71.79871"
@@ -1794,21 +1828,113 @@
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
        inkscape:connection-start="#g4362-8"
-       inkscape:connection-end="#g7987" />
+       inkscape:connection-end="#g7987"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
        d="m 122.40853,204.48663 79.77103,42.26614"
        id="path9368"
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
-       inkscape:connection-end="#g7718" />
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
        d="m 271.91558,282.46147 67.87521,33.93883"
        id="path9807"
        transform="translate(0,652.36218)"
        inkscape:connector-type="polyline"
-       inkscape:connection-start="#g7718"
-       inkscape:connection-end="#g4362-8" />
+       inkscape:connection-end="#g4362-8"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <g
+       id="g3267"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="693.14264"
+         x="338.61972"
+         height="72.540413"
+         width="69.736015"
+         id="rect3685"
+         style="fill:#646464;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689)" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text4031-7"
+         y="706.56525"
+         x="373.48087"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="706.56525"
+           x="373.48087"
+           id="tspan4507"
+           sodipodi:role="line">GHC</tspan></text>
+      <image
+         y="703.51038"
+         x="341.52023"
+         id="image3233"
+         height="64"
+         width="64"
+         xlink:href="file:///Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/haskell.png" />
+    </g>
+    <g
+       id="g3369"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="600.81042"
+         x="229.89326"
+         height="72.540413"
+         width="69.736015"
+         id="rect3685-7-9"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.43858036;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;filter:url(#filter3689-7-7)" />
+      <text
+         sodipodi:linespacing="100%"
+         id="text4031-7-5-6-0"
+         y="644.81128"
+         x="264.3067"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan4473-3"
+           sodipodi:role="line"
+           x="264.3067"
+           y="644.81128">IO</tspan><tspan
+           id="tspan3367"
+           sodipodi:role="line"
+           x="264.3067"
+           y="644.81128">Server</tspan></text>
+      <text
+         sodipodi:linespacing="100%"
+         id="text4084-0-6-0-9"
+         y="610.56799"
+         x="277.62198"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans;-inkscape-font-specification:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="610.56799"
+           x="277.62198"
+           id="tspan4356-4-9"
+           sodipodi:role="line">Process</tspan><tspan
+           y="620.56799"
+           x="277.62198"
+           id="tspan4358-8-7"
+           sodipodi:role="line">(IO)</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-8)"
+       d="m 189.10526,48.723425 40.788,-34.506647"
+       id="path3447"
+       transform="translate(0,652.36218)"
+       inkscape:connector-type="polyline"
+       inkscape:connection-start="#g4370"
+       inkscape:connection-end="#g3369"
+       inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
   </g>
 </svg>

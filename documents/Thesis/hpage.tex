@@ -101,11 +101,11 @@
     \qitem{La programaci'on intensiva y el uso prolongado de Tetris s'olo lleva a ver estructuras de orden y secuencias en la verduler'ia y a querer apilar los autos para formar l'ineas s'olidas}{Dar'io Ruellan}
 \end{epigraphs}
 \paragraph{} \htmladdnormallink{\hpage}{http://haskell.hpage.com}~\cite{hpage} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y su clase.
-\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallink{\cabal}{http://www.haskell.org/cabal}~\cite{cabal} y \htmladdnormallink{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}~\cite{hayoo} y se encuentra ya disponible en \htmladdnormallink{HackageDB}{http://hackage.haskell.org/package/hpage}~\cite{hackage}.
+\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallink{Cabal}{http://www.haskell.org/cabal}~\cite{cabal} y \htmladdnormallink{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}~\cite{hayoo} y se encuentra ya disponible en \htmladdnormallink{HackageDB}{http://hackage.haskell.org/package/hpage}~\cite{hackage}.
 \subparagraph{}\hpage\ presenta una interfaz simple e intuitiva, desarrollada utilizando \htmladdnormallink{wxHaskell}{http://haskell.org/haskellwiki/WxHaskell}~\cite{wxhaskell}, lo que lo convierte en una aplicaci'on multiplataforma.
-\subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado est'atico (que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas) y la evaluaci'on perezosa (que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente).
+\subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado est'atico, que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas, y la evaluaci'on perezosa, que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente.
 \subparagraph{}A diferencia de \textsl{GHCi} que es una herramienta ``de consola'', \hpage\ permite visualizar resultados de manera m'as din'amica, permitiendo que errores intermedios, detectados durante la evaluaci'on de una expresi'on no impidan continuar con la misma hasta llegar a un resultado m'as completo.
-\subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos (o m'as precisamente, c'alculos que demoran demasiado) e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
+\subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
 \newpage
 
 \section{Descubriendo \hpage}
@@ -114,7 +114,7 @@
 	\qitem{As a rule, software systems do not work well until they have been used, and have failed repeatedly, in real applications.}{Dave Parnas}
 	\qitem{The \#1 programmer excuse for legitimately slacking off: ``My code is compiling''}{David Knutz}
 \end{epigraphs}
-\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, sin embargo,como se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
+\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, pero, como ya se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{center}\begin{lstlisting}
 $ cabal install hpage
@@ -157,7 +157,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 	xs = [1,2,3]::[Float]
 	ys = map (+) xs
 \end{lstlisting}\end{center}
-\subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno debe reformular el c'odigo provisto por la c'atedra para que \hpage\ lo interprete correctamente.  Para ello debe ``encerrar'' entre par'entesis la primera expresi'on y quitar el nombre de la segunda de modo que el resultado obtenido al presionar el bot'on \textsl{Interpret} corresponda al valor de \texttt{ys}.  Adem'as debe insertar un rengl'on en blanco luego de la definici'on de \texttt{xs} para que \hpage\ pueda observar que se trata de dos expresiones diferentes.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
+\subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno simplemente ingresa el c'odigo provisto por la c'atedra en la p'agina de \hpage, separando ambas expresiones por un rengl'on en blanco y agregando la expresi'on de la que desea conocer el tipo (\texttt{ys}) al final.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/01}
@@ -184,8 +184,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 
 \paragraph{Ejercicio 5}Una tripla pitag'orica es una tripla $(a,b,c)$ de enteros positivos tal que $a^{2} + b^{2} = c^{2}$.  La siguiente es una definici'on de una lista (infinita) de triplas pitag'oricas.  Explicar por qu'e esta definici'on no es muy 'util.  Dar una definici'on mejor.
 \begin{center}\begin{lstlisting}
-	pitagorica :: [(Integer,Integer,Integer)] 
-	pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2]
+	
 \end{lstlisting}\end{center}
 \subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la figura \ref{tut103} y presionar'a el bot'on \textsl{Interpret}.
 \begin{figure}[hp]
@@ -246,6 +245,7 @@ $ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
 \end{figure}
 \subparagraph{}Cabe aclarar que lo hecho en este ejercicio no es (ni pretende tampoco) ser un completo test de las funciones creadas.  Es simplemente lo que hemos llamado \textsl{micro-testing}: El ejercicio de realizar peque'nas pruebas ``a mano'' utilizando expresiones cuyo resultado de evaluaci'on es previsible.
 
+\newpage
 \paragraph{Ejercicio 23}Definimos el siguiente tipo:
 \begin{center}\begin{lstlisting}
 	data Agenda p t = Vacia | Telefonos p [t] (Agenda p t)
@@ -314,7 +314,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
 	\qitem{Look behind you, a Three-Headed Monkey!}{Guybrush Threepwood}
 \end{epigraphs}
-\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos c'omo trabajar con herramientas tales como \cabal, \textsl{Hayoo!} y \textsl{wxhaskell}.  Veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
+\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos c'omo trabajar con herramientas tales como \cabal, \textsl{Hayoo!} y \textsl{wxHaskell}.  Veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
 \subsubsection{Introducci'on}
 \paragraph{}La historia comienza cuando nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima}\footnote{El nombre lo hemos elegido en honor a quien, hace ya casi 15 a'nos y utilizando el sobrenombre \textsl{Pers'efone}, fue la \textsl{maestra} y principal rival de 4 en L'inea de Fernando Benavides en \htmladdnormallink{CyberJuegos}{http://www.cyberjuegos.com}} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
 \subparagraph{}Como es de suponer, F'atima no conoce al creador del juego y no puede contactarlo por lo que sus 'unicas herramientas, m'as all'a de su conocimiento de \haskell\ y del juego en s'i, son el c'odigo fuente de \textsl{hfiar} y \hpage.
@@ -335,8 +335,7 @@ $ git clone git://github.com/elbrujohalcon/hfiar.git
 \paragraph{}Una vez hecho eso, puede observar la estructura del proyecto, tal como se ve en la figura \ref{tut200}.  Conociendo la estructura b'asica de los proyectos desarrollados en \haskell, podemos describir los archivos all'i presentes de la siguiente manera:
 \begin{description}
 \item[hfiar.cabal] Archivo de descripci'on de proyecto \cabal.  F'atima puede obtener de 'el informaci'on general del proyecto, sus m'odulos, las extensiones que se necesitan para compilarlo y dem'as.  
-\lstset{language=haskell, frame=single, tabsize=4}
-\item[Setup.hs] Archivo \haskell utilizado por \cabal para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las instrucciones de la figura \ref{tut201}.
+\item[Setup.hs] Archivo \haskell\ utilizado por \cabal\ para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las instrucciones de la figura \ref{tut201}.
 \begin{figure}[hp]
 	\begin{center}
 		\begin{center}\begin{lstlisting}
@@ -470,7 +469,7 @@ OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
 \end{lstlisting}\end{center}
 \newpage
-\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha conclu'ido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.  Cabe notar que los resultados de tipo \texttt{Left HFiaRError} se exhiben como texto porque el desarrollador de \textsl{hfiar} ha decidido utilizar la funci'on \texttt{show} para describir los errores en lugar de exhibir su constructor.
+\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha concluido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.  Cabe notar que los resultados de tipo \texttt{Left HFiaRError} se exhiben como texto porque el desarrollador de \textsl{hfiar} ha decidido utilizar la funci'on \texttt{show} para describir los errores en lugar de exhibir su constructor.
 
 \lstset{language=haskell, frame=none, tabsize=4}
 	\begin{table}[hp]
@@ -573,7 +572,7 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 		\label{tut207}
 	\end{center}
 \end{figure}
-\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya conclu'ido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
+\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/06}
@@ -657,12 +656,19 @@ wins t b c =
 \end{figure}
 \paragraph{}Resta pues modificar la interfaz gr'afica para que permita al usuario jugar contra la computadora, utilizando la funci'on \texttt{aiDropIn} en los turnos correspondientes a la m'aquina.  Para ello, F'atima abre el m'odulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.  Estos cambios puede realizarlos utilizando \hpage\ o cualquier otro editor, pues por la naturaleza ``imperativa'' del c'odigo a modificar, \hpage\ no representar'a un beneficio importante.  Por el mismo motivo, no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p'agina web del proyecto hfiar en github}{http://github.com/elbrujohalcon/hfiar/commit/88a59a61d3dff930a96a1a51ab1daff4fcac9ef8\#diff-2}~\cite{hfiar}
 \paragraph{}El 'ultimo paso que F'atima debe realizar es incluir su nuevo m'odulo en la lista de m'odulos del ejecutable \textsl{hfiar} dentro del archivo \textbf{hfiar.cabal}.  Una vez hechas estas modificaciones, puede ejecutar los siguientes comandos y disfrutar de un partido de su juego favorito contra la computadora:
+\lstset{language=sh, frame=single, tabsize=4}
 \begin{center}\begin{lstlisting}
 $ cabal configure --user
 $ cabal build
 $ cabal install
 $ ~/.cabal/bin/hfiar &
 \end{lstlisting}\end{center}
+
+\newpage
+\subsubsection{Conclusiones}
+\paragraph{}A lo largo de este tutorial hemos podido ver c'omo utilizar \hpage\ para \textsl{comprender} c'odigo \haskell\ a trav'es de \textsl{micro-testing}.  Hemos visto tambi'en como, utilizando esa misma t'ecnica, podemos construir paso a paso m'odulos \haskell\ medianamente complejos.  Pudimos ver c'omo \hpage\ nos permite editar los m'odulos al tiempo que los testeamos, de modo de utilizar un 'unico aplicativo para ambas cosas y no necesitar recurrir a la consola.
+\paragraph{}Hemos podido ver c'omo \hpage\ se encuentra integrado con \cabal\ para permitir cargar proyectos previamente configurados y evitar al desarrollador lidiar con el manejo de extensiones, carpetas y m'odulos manualmente.  Esto es una importante ventaja que ofrece \hpage\, dado que la mayor'ia de los proyectos desarrollados en \haskell\ se encuentran organizados en paquetes \cabal.
+\paragraph{}Tambi'en hemos observado la forma gr'afica con la que \hpage\ describe y permite navegar los m'odulos cargados, sus funciones y sus estructuras de datos para luego utilizarlas en nuestro c'odigo.
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
@@ -675,10 +681,19 @@ $ ~/.cabal/bin/hfiar &
 \item[Conexi'on con GHC] \hpage\ deb'ia conectarse con el motor de GHC a trav'es de su API de modo de poder detectar e interpretar expresiones.  Para ello se utiliz'o \htmladdnormallink{hint}{http://projects.haskell.org/hint}~\cite{hint}
 \item[Paralelismo] \hpage\ deb'ia permitir al usuario editar sus documentos mientras esperaba el resultado de la evaluaci'on de alguna expresi'on.  Para ello se cre'o \textsl{eprocess} y se implement'o un modelo de procesos utiliz'andolo.
 \item[Errores Controlados] \hpage\ no deb'ia fallar si la evaluaci'on de una expresi'on fallaba.  M'as a'un, tambi'en deb'ia detectar posibles evaluaciones infinitas e informar estas situaciones al usuario
+\item[Compatibilidad con GHCi] \hpage\ deb'ia ser capaz de reemplazar a \textsl{GHCi} y, por lo tanto, brindar toda las funcionalidades que esta aplicaci'on brinda.  En particular, deb'ia:
+	\begin{itemize}
+		\item ser multiplataforma
+		\item detectar expresiones sint'acticamente inv'alidas
+		\item identificar el tipo de cualquier expresi'on sint'acticamente v'alida
+		\item identificar la clase de cualquier tipo sint'acticamente v'alido
+		\item interpretar expresiones de cualquier tipo que sea instancia de la clase \textbf{Show}
+		\item ejecutar e imprimir el resultado de expresiones de tipo \textbf{Show a $\Rightarrow$ IO a}
+	\end{itemize}
 \end{description}
 \begin{figure}[hp]
 	\begin{center}
-        	\fbox{\includegraphics[]{pictures/architecture}}
+        	\fbox{\includegraphics{pictures/architecture}}
 		\caption{Arquitectura de \hpage}
 		\label{arq1}
 	\end{center}
