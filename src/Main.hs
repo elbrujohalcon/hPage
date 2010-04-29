@@ -5,4 +5,4 @@ import HPage.GUI.FreeTextWindow
 import System.Environment
 
 main :: IO ()
-main = getArgs >>= start . gui
+main = getArgs >>= start . gui . filter (\arg -> head arg /= '-')

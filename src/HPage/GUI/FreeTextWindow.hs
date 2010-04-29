@@ -29,12 +29,18 @@ import HPage.GUI.Dialogs
 import HPage.GUI.IDs
 import HPage.GUI.Constants
 import HPage.Utils.Log
-
-import Paths_hpage -- cabal locations of data files
+import System.Environment.FindBin
+import Paths_hpage
 
 imageFile :: FilePath -> IO FilePath
 imageFile fp = do
-                path <- getDataFileName $ "res/images/" ++ fp
+                progPath <- getProgPath
+                infoIO progPath
+                path <- case takeBaseName progPath of
+                            "MacOS" ->
+                                return $ dropFileName progPath </> "Resources" </> (takeFileName fp)
+                            _ ->
+                                getDataFileName $ "res/images/" ++ fp
                 real <- doesFileExist path
                 if real then return path
                         else do
@@ -42,7 +48,14 @@ imageFile fp = do
                                 fail (path ++ " does not exist")
 
 helpFile :: IO FilePath
-helpFile = getDataFileName "res/help/helpPage.hs"
+helpFile =
+    do
+        progPath <- getProgPath
+        case takeBaseName progPath of
+            "MacOS" ->
+                return $ dropFileName progPath </> "Resources" </> "helpPage.hs"
+            _ ->
+                getDataFileName "res/help/helpPage.hs"
 
 data GUIBottom = GUIBtm { bottomDesc :: String,
                           bottomSource :: String }

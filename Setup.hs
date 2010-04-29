@@ -1,76 +1,37 @@
-{-# LANGUAGE CPP #-}
-
-import Control.Monad (foldM_, forM_)
-import System.Cmd
-import System.Exit
-import System.Info (os)
-import System.FilePath
-import System.Directory ( doesFileExist, copyFile, removeFile, createDirectoryIfMissing )
-
-import Distribution.PackageDescription
-import Distribution.Simple.Setup
+import Distribution.MacOSX
 import Distribution.Simple
-import Distribution.Simple.LocalBuildInfo
+import System.Directory
+import System.FilePath
+import Control.Monad
 
 main :: IO ()
 main = do
-            putStrLn $ "Setting up hpage for " ++ os
-            defaultMainWithHooks $ addMacHook simpleUserHooks
- where
-  addMacHook h =
-   case os of
-    "darwin" -> h { postInst = appBundleHook,
-                    runTests = hPageTestRunner }
-    _        -> h { runTests = hPageTestRunner }
+         resources <- getAllDirectoryContents "res"
+         let usefulres = flip filter resources $ \r -> r /= ("res" </> "images" </> "icon" </> "hpage.icns")
+         putStrLn "Resources: "
+         forM_ usefulres $ putStrLn . ('\t':)
+         defaultMainWithHooks $ simpleUserHooks {
+                postBuild = appBundleBuildHook $ guiApps usefulres -- no-op if not MacOS X
+         }
 
-appBundleHook :: Args -> InstallFlags -> PackageDescription -> LocalBuildInfo -> IO ()
-appBundleHook _ _ pkg localb =
- forM_ exes $ \app ->
-   do createAppBundle theBindir (buildDir localb </> app </> app)
-      removeFile (theBindir </> app)
-      createAppBundleWrapper theBindir app
-      return ()
- where
-  theBindir = bindir $ absoluteInstallDirs pkg localb NoCopyDest
-  exes = map exeName $ executables pkg
-
--- ----------------------------------------------------------------------
--- helper code for application bundles
--- ----------------------------------------------------------------------
-
--- | 'createAppBundle' @d p@ - creates an application bundle in @d@
---   for program @p@, assuming that @d@ already exists and is a directory.
---   Note that only the filename part of @p@ is used.
-createAppBundle :: FilePath -> FilePath -> IO ()
-createAppBundle dir p =
- do createDirectoryIfMissing False $ bundle
-    createDirectoryIfMissing True  $ bundleBin
-    createDirectoryIfMissing True  $ bundleRsrc
-    copyFile p (bundleBin </> takeFileName p)
- where
-  bundle     = appBundlePath dir p
-  bundleBin  = bundle </> "Contents/MacOS"
-  bundleRsrc = bundle </> "Contents/Resources"
-
--- | 'createAppBundleWrapper' @d p@ - creates a script in @d@ that calls
---   @p@ from the application bundle @d </> takeFileName p <.> "app"@
-createAppBundleWrapper :: FilePath -> FilePath -> IO ExitCode
-createAppBundleWrapper bindir p =
-  do writeFile scriptFile scriptTxt
-     makeExecutable scriptFile
- where
-  scriptFile = bindir </> takeFileName p
-  scriptTxt = "`dirname $0`" </> appBundlePath "." p </> "Contents/MacOS" </> takeFileName p ++ " \"$@\""
-
-appBundlePath :: FilePath -> FilePath -> FilePath
-appBundlePath dir p = dir </> takeFileName p <.> "app"
-
--- ----------------------------------------------------------------------
--- utilities
--- ----------------------------------------------------------------------
-
-makeExecutable :: FilePath -> IO ExitCode
-makeExecutable f = system $ "chmod a+x " ++ f 
-
-hPageTestRunner :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
-hPageTestRunner _ _ _ _ = system "runhaskell -isrc -idist/build/autogen HPage.Test.Server" >> return ()
+guiApps :: [FilePath] -> [MacApp]
+guiApps rs = [MacApp "hpage"
+                  (Just $ "res" </> "images" </> "icon" </> "hpage.icns")
+                  Nothing -- Build a default Info.plist for the icon.
+                  rs
+                  [] -- No other binaries.
+                  ChaseWithDefaults
+             ]
+          
+getAllDirectoryContents :: FilePath -> IO [FilePath]
+getAllDirectoryContents p =
+  do
+    allContents <- getDirectoryContents p
+    let nonHidden = map (\path -> p </> path) $ flip filter allContents $ \path -> head path /= '.'
+    recContents <- forM nonHidden $ \path -> do
+                                        exists <- doesDirectoryExist path
+                                        if exists
+                                          then getAllDirectoryContents path
+                                          else return [path]
+    return $ concat recContents
+                                        
