@@ -1,0 +1,10 @@
+#!/bin/sh
+cd dist/build
+hdiutil create -megabytes 80 -layout NONE hpage.dmg
+hdid -nomount hpage.dmg
+newfs_hfs -v hpage /dev/disk1
+hdiutil eject /dev/disk1
+hdid hpage.dmg
+cp -r hpage.app /Volumes/hpage/
+echo "eject using finder"
+cd -
