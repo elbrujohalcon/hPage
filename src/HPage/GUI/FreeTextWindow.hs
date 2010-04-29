@@ -67,8 +67,8 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
                            guiChrFiller :: MVar (Handle String),
                            guiValFiller :: MVar (Handle (String, IO ()))} 
 
-gui :: IO ()
-gui =
+gui :: [String] -> IO ()
+gui args =
     do
         -- Server context
         model <- HPS.start
@@ -296,6 +296,31 @@ gui =
         refreshPage model guiCtx
         onCmd "start" openHelpPage
         set win [visible := True]
+        case args of
+            [] ->
+                return ()
+            dir:_ ->
+                do
+                    setupConfig <- canonicalizePath $ dir </> "dist" </> "setup-config"
+                    pkgExists <- doesFileExist setupConfig
+                    case pkgExists of
+                        False ->
+                            warningDialog win "Error" $ setupConfig ++ " doesn't exist.\n  Maybe you have to reconfigure the package"
+                        True -> do
+                            loadres <- tryIn' model $ do
+                                                        lr <- HP.loadPackage setupConfig
+                                                        HP.addPage
+                                                        return lr
+                            case loadres of
+                                Left err ->
+                                    warningDialog win "Error" err
+                                Right (Left err) ->
+                                    warningDialog win "Error" err
+                                Right (Right pkg) ->
+                                    do
+                                        setCurrentDirectory dir
+                                        frameSetTitle win $ "\955Page - " ++ prettyShow pkg
+                            refreshPage model guiCtx
         set txtCode [font := fontFixed] -- again just to be sure
         focusOn txtCode
 
@@ -649,28 +674,26 @@ loadPackage model guiCtx@GUICtx{guiWin = win} =
         res <- fileOpenDialog win True True "Select the setup-config file for your project..."
                               [("setup-config",["setup-config"])] startDir "setup-config"
         case res of
-                Nothing ->
-                    return ()
-                Just setupConfig ->
-                    do
-                        loadres <- tryIn' model $ do
-                                                    lr <- HP.loadPackage setupConfig
-                                                    HP.addPage
-                                                    return lr
-                        case loadres of
-                            Left err ->
-                                warningDialog win "Error" err
-                            Right (Left err) ->
-                                warningDialog win "Error" err
-                            Right (Right pkg) ->
-                                do
-                                    absPath <- canonicalizePath setupConfig
-                                    let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
-                                    setCurrentDirectory dir
-                                    frameSetTitle win $ "\955Page - " ++ prettyShow pkg
-                        refreshPage model guiCtx
-  where prettyShow PackageIdentifier{pkgName = PackageName pkgname,
-                                     pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
+            Nothing ->
+                return ()
+            Just setupConfig ->
+                do
+                    loadres <- tryIn' model $ do
+                                                lr <- HP.loadPackage setupConfig
+                                                HP.addPage
+                                                return lr
+                    case loadres of
+                        Left err ->
+                            warningDialog win "Error" err
+                        Right (Left err) ->
+                            warningDialog win "Error" err
+                        Right (Right pkg) ->
+                            do
+                                absPath <- canonicalizePath setupConfig
+                                let dir = joinPath . reverse . drop 2 . reverse $ splitDirectories absPath
+                                setCurrentDirectory dir
+                                frameSetTitle win $ "\955Page - " ++ prettyShow pkg
+                    refreshPage model guiCtx
 
 loadModules model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
@@ -1110,3 +1133,7 @@ nextMatch from substring string | length substring > length string = (Nothing, T
     
 indexOf :: String -> String -> Maybe Int
 indexOf substring string = findIndex (isPrefixOf substring) $ tails string
+
+prettyShow :: PackageIdentifier -> String
+prettyShow PackageIdentifier{pkgName = PackageName pkgname,
+                             pkgVersion = pkgvsn} = pkgname ++ "-" ++ showVersion pkgvsn
