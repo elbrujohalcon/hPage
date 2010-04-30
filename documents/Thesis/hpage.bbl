@@ -4,6 +4,10 @@
 Couchdb [online].
 \newblock Available from: \url{http://couchdb.apache.org}.
 
+\bibitem{eclipsefp}
+Eclipsefp [online].
+\newblock Available from: \url{http://eclipsefp.sourceforge.net/}.
+
 \bibitem{ejabberd}
 ejabberd [online].
 \newblock Available from: \url{http://www.ejabberd.im}.
@@ -124,6 +128,12 @@ Paradigmas de~Lenguajes~de Programaci'on.
   \url{http://www.dc.uba.ar/materias/plp/cursos/2009/cuat2/descargas/guias/Pra%
 ctica-funcional.pdf/at_download/file}.
 
+\bibitem{giesl-automated}
+J.~Giesl, S.~Swiderski, P.~Schneider-Kamp, and R.~Thiemann.
+\newblock {Automated termination analysis for Haskell: From term rewriting to
+  programming languages}.
+\newblock {\em Term Rewriting and Applications}, pages 297--312.
+
 \bibitem{hint}
 Daniel Gor'in.
 \newblock Hint.
@@ -145,6 +155,19 @@ John~Hughes Koen~Claessen.
 Wilf~R. LaLonde and John~R. Pugh.
 \newblock {\em Inside Smalltalk: vol. 1}, volume~I, page~71.
 \newblock Prentice-Hall, Inc., Upper Saddle River, NJ, USA, 1990.
+
+\bibitem{wrangler}
+Huiqing Li.
+\newblock Wrangler [online].
+\newblock 2008.
+\newblock Available from:
+  \url{http://www.cs.kent.ac.uk/projects/forse/wrangler/doc/overview-summary.h%
+tml}.
+
+\bibitem{refactoring}
+Huiquing Li.
+\newblock {\em Refactoring Haskell Programs}.
+\newblock Philosophy, University of Kent, September 2006.
 
 \bibitem{wewantarock}
 Jeremy O'Donoghue.
