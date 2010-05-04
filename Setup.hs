@@ -1,27 +1,33 @@
 import Distribution.MacOSX
 import Distribution.Simple
+import System.Cmd
+import System.Exit
 import System.Directory
 import System.FilePath
+import System.Info (os)
 import Control.Monad
+
+import Distribution.PackageDescription
+import Distribution.Simple.Setup
+import Distribution.Simple
+import Distribution.Simple.LocalBuildInfo
 
 main :: IO ()
 main = do
          resources <- getAllDirectoryContents "res"
          let usefulres = flip filter resources $ \r -> r /= ("res" </> "images" </> "icon" </> "hpage.icns")
-         putStrLn "Resources: "
-         forM_ usefulres $ putStrLn . ('\t':)
          defaultMainWithHooks $ simpleUserHooks {
-                postBuild = appBundleBuildHook $ guiApps usefulres -- no-op if not MacOS X
+                postBuild = appBundleBuildHook $ [guiApp usefulres], -- no-op if not MacOS X
+                postInst = appBundleInstall $ guiApp usefulres
          }
 
-guiApps :: [FilePath] -> [MacApp]
-guiApps rs = [MacApp "hpage"
+guiApp :: [FilePath] -> MacApp
+guiApp rs = MacApp "hpage"
                   (Just $ "res" </> "images" </> "icon" </> "hpage.icns")
                   Nothing -- Build a default Info.plist for the icon.
                   rs
                   [] -- No other binaries.
-                  ChaseWithDefaults
-             ]
+                  (ChaseWith $ "libstdc++." : defaultExclusions)
           
 getAllDirectoryContents :: FilePath -> IO [FilePath]
 getAllDirectoryContents p =
@@ -34,4 +40,23 @@ getAllDirectoryContents p =
                                           then getAllDirectoryContents path
                                           else return [path]
     return $ concat recContents
-                                        
+
+appBundleInstall :: MacApp -> Args -> InstallFlags -> PackageDescription -> LocalBuildInfo -> IO ()
+appBundleInstall app _ _ pkg localb =
+    case os of
+        "darwin" ->
+            do
+                ExitSuccess <- copyDirectory appPath theBindir
+                writeFile scriptFile scriptText
+        _ ->
+            return ()
+    where
+        theBindir = bindir $ absoluteInstallDirs pkg localb NoCopyDest
+        appPath = buildDir localb </> appName app <.> "app"
+        scriptFile = theBindir </> appName app
+        finalAppPath = theBindir </> takeFileName appPath 
+        scriptText = finalAppPath </> "Contents/MacOS" </> appName app ++ " \"$@\""
+        -- scriptText = "open " ++ finalAppPath
+        
+copyDirectory :: FilePath -> FilePath -> IO ExitCode
+copyDirectory dir newLocation = rawSystem "cp" ["-rf", dir, newLocation]
