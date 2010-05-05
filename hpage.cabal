@@ -1,5 +1,5 @@
 name: hpage
-version: 0.7.5
+version: 0.7.6
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -47,7 +47,7 @@ Executable hpage
                    eprocess >= 1.1.0,           eprocess < 2,
                    hint-server >= 1.1.0,        hint-server < 2,
                    time >= 1.1.4,               time < 2,
-                   cabal-macosx >= 0.1.1,       cabal-macosx < 0.2,
+                   cabal-macosx >= 0.1.0,       cabal-macosx < 0.2,
                    FindBin >= 0.0.2,            FindBin < 0.1
     main-is: Main.hs
     buildable: True
