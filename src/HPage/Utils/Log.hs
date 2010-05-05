@@ -17,12 +17,12 @@ liftLogIO lvl = liftIO . (logIO lvl)
 traceIO, debugIO, infoIO, warnIO, errorIO, fatalIO :: Show a => a -> IO ()
 liftTraceIO, liftDebugIO, liftInfoIO, liftWarnIO, liftErrorIO, liftFatalIO :: (MonadIO m, Show a) => a -> m ()
 
-{- with log...
+{- with(out) log...
 traceIO = logIO Trace
-debugIO = logIO Debug
+debugIO _ = return ()
 -}
 traceIO _ = return ()
-debugIO _ = return ()
+debugIO = logIO Debug
 infoIO = logIO Info
 warnIO = logIO Warning
 errorIO = logIO Error

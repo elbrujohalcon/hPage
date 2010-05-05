@@ -25,6 +25,7 @@ import Graphics.UI.WX
 import Graphics.UI.WXCore hiding (kill, Process)
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
+import qualified HPage.GUI.SplashScreen as SS
 import HPage.GUI.Dialogs
 import HPage.GUI.IDs
 import HPage.GUI.Constants
@@ -35,7 +36,6 @@ import Paths_hpage
 imageFile :: FilePath -> IO FilePath
 imageFile fp = do
                 progPath <- getProgPath
-                infoIO progPath
                 path <- case takeBaseName progPath of
                             "MacOS" ->
                                 return $ dropFileName progPath </> "Resources" </> (takeFileName fp)
@@ -92,6 +92,10 @@ gui args =
         
         set win [on closing := HPS.stop model >> propagateEvent]
 
+        ssh <- SS.start win 
+        
+        SS.step ssh 20 "Starting up..."
+        
         -- Containers
         ntbkL <- notebook win []
         pnlPs <- panel ntbkL []
@@ -122,7 +126,7 @@ gui args =
         btnInterpret <- button pnlRes [text := "Interpret"]
         lblInterpret <- staticText pnlRes [text := "Value:"]
         lbl4Dots <- staticText pnlRes [text := " :: "]
-        set pnlRes [layout := fill $ 
+        set pnlRes [layout := fill $
                                 row 5 [widget btnInterpret,
                                        centre $ widget lblInterpret,
                                        fill $ widget txtValue,
@@ -296,30 +300,37 @@ gui args =
         set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
                  clientSize := sz 800 600]
                  
-        -- test the server...
-        runTxtHPSelection "1" model HP.interpret
-        
         --HACK: We need to keep a timer ticking just to refresh the screen when the user is doing nothing
         --      That's because the main C loop of wx only calls wxHaskell callbacks when something happens
         --      and we try to make things happen in this side but they're not reflected there until some-
         --      thing happens there
         timer win [interval := 50, on command := return ()]
-
+        
+        -- test the server...
+        SS.step ssh 40 "Preparing model..."
+        runTxtHPSelection "1" model HP.interpret
+        
+        SS.step ssh 60 "Loading first page..."
         -- ...and RUN!
         refreshPage model guiCtx
+        
+        SS.step ssh 80 "Loading help page..."
         onCmd "start" openHelpPage
-        set win [visible := True]
+        
+        SS.step ssh 90 "Loading UI..."
         case args of
             [] ->
                 return ()
             dir:_ ->
                 do
+                    SS.step ssh 92 "looking for package files..."
                     setupConfig <- canonicalizePath $ dir </> "dist" </> "setup-config"
                     pkgExists <- doesFileExist setupConfig
                     case pkgExists of
                         False ->
                             warningDialog win "Error" $ setupConfig ++ " doesn't exist.\n  Maybe you have to reconfigure the package"
                         True -> do
+                            SS.step ssh 95 "Loading package..."
                             loadres <- tryIn' model $ do
                                                         lr <- HP.loadPackage setupConfig
                                                         HP.addPage
@@ -332,8 +343,14 @@ gui args =
                                 Right (Right pkg) ->
                                     do
                                         setCurrentDirectory dir
+                                        SS.step ssh 97 "warming up..."
                                         frameSetTitle win $ "\955Page - " ++ prettyShow pkg
+                            
+                            SS.step ssh 99 "Cleaning UI..."
                             refreshPage model guiCtx
+        
+        SS.step ssh 100 "ready"
+        set win [visible := True]
         set txtCode [font := fontFixed] -- again just to be sure
         focusOn txtCode
 
