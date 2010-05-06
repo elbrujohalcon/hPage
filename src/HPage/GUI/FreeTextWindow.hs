@@ -40,7 +40,7 @@ imageFile fp = do
                             "MacOS" ->
                                 return $ dropFileName progPath </> "Resources" </> (takeFileName fp)
                             _ ->
-                                getDataFileName $ "res/images/" ++ fp
+                                getDataFileName $ "res" </> "images" </> fp
                 real <- doesFileExist path
                 if real then return path
                         else do
@@ -55,7 +55,7 @@ helpFile =
             "MacOS" ->
                 return $ dropFileName progPath </> "Resources" </> "helpPage.hs"
             _ ->
-                getDataFileName "res/help/helpPage.hs"
+                getDataFileName $ "res" </> "help" </> "helpPage.hs"
                 
 aboutFile :: IO FilePath
 aboutFile =
@@ -65,7 +65,7 @@ aboutFile =
             "MacOS" ->
                 return $ dropFileName progPath </> "Resources" </> "about.html"
             _ ->
-                getDataFileName "res/help/about.html"
+                getDataFileName $ "res" </> "help" </> "about.html"
 
 data GUIBottom = GUIBtm { bottomDesc :: String,
                           bottomSource :: String }
@@ -98,7 +98,7 @@ gui args =
         
         win <- frame [text := "\955Page",
                       visible := False]
-        imageFile "icon/hpage.tif" >>= topLevelWindowSetIconFromFile win 
+        imageFile ("icon" </> "hpage.tif") >>= topLevelWindowSetIconFromFile win 
         
         set win [on closing := HPS.stop model >> propagateEvent]
 

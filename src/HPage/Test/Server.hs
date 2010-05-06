@@ -237,12 +237,12 @@ prop_load_module hps hs mn =
                             hpsr <- HPS.runIn hps $ do
                                                         -- Save TestFiles/Test...hs
                                                         HP.setPageText ftxt 0
-                                                        HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
+                                                        HP.savePageAs $ testDir </> (show mn) ++ ".hs"
                                                         -- Save TestFiles/test.hs
                                                         HP.setPageText f2txt 0
-                                                        HP.savePageAs $ testDir ++ "/test.hs"
+                                                        HP.savePageAs $ testDir </> "test.hs"
                                                         -- Load TestFiles/test.hs by path
-                                                        HP.loadModules [testDir ++ "/test.hs"]
+                                                        HP.loadModules [testDir </> "test.hs"]
                                                         HP.setPageText "v" 0
                                                         fv <- HP.valueOf
                                                         fm <- HP.getLoadedModules >>= return . mN
@@ -253,7 +253,7 @@ prop_load_module hps hs mn =
                                                         sm <- HP.getLoadedModules >>= return . mN
                                                         return (fv, sv, fm, sm)
                             hsr <- HS.runIn hs $ do
-                                                    Hint.loadModules [testDir ++ "/test.hs"]
+                                                    Hint.loadModules [testDir </> "test.hs"]
                                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                     fv <- Hint.eval "v"
                                                     fm <- Hint.getLoadedModules
@@ -274,13 +274,13 @@ prop_reload_modules hps hs txt =
                         let expr = "test = show \"" ++ txt ++ "\"" 
                         hpsr <- HPS.runIn hps $ do
                                                     HP.setPageText expr 0
-                                                    HP.savePageAs $ testDir ++ "/test.hs"
+                                                    HP.savePageAs $ testDir </> "test.hs"
                                                     HP.setPageText "test" 0
-                                                    HP.loadModules [testDir ++ "/test.hs"]
+                                                    HP.loadModules [testDir </> "test.hs"]
                                                     HP.reloadModules
                                                     HP.valueOf
                         hsr <- HS.runIn hs $ do
-                                                Hint.loadModules [testDir ++ "/test.hs"]
+                                                Hint.loadModules [testDir </> "test.hs"]
                                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
                                                 Hint.eval "test"
                         return $ hpsr == hsr
@@ -291,9 +291,9 @@ prop_get_loaded_modules hps hs mn =
                         let expr1 = "ytest = show \"" ++ show mn ++ "\""
                         let expr2 = "module " ++ testDir ++ ".XX" ++ show mn ++ "2 where import " ++ testDir ++ ".XX" ++ show mn ++ "3; xtest = show \"" ++ show mn ++ "\""
                         let expr3 = "module " ++ testDir ++ ".XX" ++ show mn ++ "3 where xfact = (1,2,3)"
-                        let mnf1  = testDir ++ "/XX" ++ (show mn) ++ "1.hs"
-                        let mnf2  = testDir ++ "/XX" ++ (show mn) ++ "2.hs"
-                        let mnf3  = testDir ++ "/XX" ++ (show mn) ++ "3.hs"
+                        let mnf1  = testDir </> "XX" ++ (show mn) ++ "1.hs"
+                        let mnf2  = testDir </> "XX" ++ (show mn) ++ "2.hs"
+                        let mnf3  = testDir </> "XX" ++ (show mn) ++ "3.hs"
                         HPS.runIn hps $ do
                                             HP.setPageText expr1 0
                                             HP.savePageAs mnf1
@@ -318,8 +318,8 @@ prop_sequential hps txt =
                         let expr = "test = \"" ++ txt ++ "\""
                         HPS.runIn hps $ do
                                             HP.setPageText expr 0
-                                            HP.savePageAs $ testDir ++ "/test.hs"
-                                            HP.loadModules' [testDir ++ "/test.hs"]
+                                            HP.savePageAs $ testDir </> "test.hs"
+                                            HP.loadModules' [testDir </> "test.hs"]
                         Right hpsr <- HPS.runIn hps $ do
                                                         HP.setPageText "test" 0
                                                         HP.valueOf
@@ -333,15 +333,15 @@ prop_cancel_load hps mn =
                         HPS.runIn hps $ do
                                             HP.reset
                                             HP.setPageText expr2 0
-                                            HP.savePageAs $ testDir ++ "/" ++ show mn ++ "2.hs"
+                                            HP.savePageAs $ testDir </> (show mn) ++ "2.hs"
                                             HP.setPageText expr1 0
-                                            HP.savePageAs $ testDir ++ "/" ++ show mn ++ ".hs"
+                                            HP.savePageAs $ testDir </> (show mn) ++ ".hs"
                                             HP.setPageText "cancelLoadTest" 0
-                                            HP.loadModules [testDir ++ "/" ++ show mn ++ ".hs"]
+                                            HP.loadModules [testDir </> (show mn) ++ ".hs"]
                                             oldMs <- HP.getLoadedModules
                                             oldRes <- HP.valueOf
                                             oldCtx <- HP.ctxString
-                                            HP.loadModules' [testDir ++ "/" ++ show mn ++ "2.hs"]
+                                            HP.loadModules' [testDir </> (show mn) ++ "2.hs"]
                                             HP.cancel
                                             newMs <- HP.getLoadedModules
                                             newRes <- HP.valueOf
@@ -534,7 +534,7 @@ prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Property
 prop_open_page hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
-                                            let path = testDir ++ "/Test" ++ file
+                                            let path = testDir </> "Test" ++ file
                                             Hint.liftIO $ writeFile path file
                                             HP.closeAllPages
                                             HP.openPage path
@@ -543,7 +543,7 @@ prop_open_page hps file =
 prop_open_page_fail hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
-                                            let path = testDir ++ "/NO-Test" ++ file
+                                            let path = testDir </> "NO-Test" ++ file
                                             HP.closeAllPages
                                             shouldFail $ HP.openPage path
 
@@ -580,7 +580,7 @@ prop_save_page, prop_save_page_fail, prop_save_page_as :: HPS.ServerHandle -> St
 prop_save_page hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
-                                            let path = testDir ++ "/Test" ++ file
+                                            let path = testDir </> "Test" ++ file
                                             Hint.liftIO $ writeFile path file
                                             HP.closeAllPages
                                             HP.openPage path
@@ -602,7 +602,7 @@ prop_save_page_fail hps file =
 prop_save_page_as hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
-                                            let path = testDir ++ "/Test" ++ file
+                                            let path = testDir </> "Test" ++ file
                                             HP.closeAllPages
                                             HP.setPageText file 0
                                             HP.savePageAs path
@@ -656,7 +656,7 @@ prop_is_modified_page :: HPS.ServerHandle -> FilePath -> Property
 prop_is_modified_page hps file =
     file /= "" ==>
         unsafePerformIO $ HPS.runIn hps $ do
-                                            let path = testDir ++ "/Test" ++ file
+                                            let path = testDir </> "Test" ++ file
                                             HP.addPage
                                             f0 <- HP.isModifiedPage
                                             HP.setPageText file 0
@@ -698,7 +698,7 @@ prop_save_nth_page hps i =
                                             forM [1..i] $ \x ->
                                                             do
                                                                 let y = show $ i - x
-                                                                    path = testDir ++ "/Test" ++ y
+                                                                    path = testDir </> "Test" ++ y
                                                                 Hint.liftIO $ writeFile path y
                                                                 HP.openPage path
                                             forM [0..i-1] $ \x ->
@@ -708,7 +708,7 @@ prop_save_nth_page hps i =
                                             HP.closeAllPages
                                             (flip allM) [0..i-1] $ \x ->
                                                                     do
-                                                                        let path = testDir ++ "/Test" ++ show x
+                                                                        let path = testDir </> "Test" ++ show x
                                                                         HP.openPage path
                                                                         liftM ((show x) ==) $ HP.getPageText
 prop_save_nth_page_fail hps i =
@@ -733,12 +733,12 @@ prop_save_nth_page_as hps i =
                                                                 HP.setPageText y 0
                                             forM [0..i-1] $ \x ->
                                                                 do
-                                                                    let path = testDir ++ "/Test" ++ show x
+                                                                    let path = testDir </> "Test" ++ show x
                                                                     HP.savePageNthAs x path
                                             HP.closeAllPages
                                             (flip allM) [0..i-1] $ \x ->
                                                                     do
-                                                                        let path = testDir ++ "/Test" ++ show x
+                                                                        let path = testDir </> "Test" ++ show x
                                                                         HP.openPage path
                                                                         liftM ((show x) ==) $ HP.getPageText
 prop_save_nth_page_as_fail hps i =
@@ -762,7 +762,7 @@ prop_is_modified_nth_page hps i =
                                                                 HP.setPageText y 0
                                             t0 <- allM HP.isModifiedPageNth [0..i-1]
                                             f0 <- HP.isModifiedPageNth i 
-                                            let path = testDir ++ "/Test.page"
+                                            let path = testDir </> "Test.page"
                                             forM [0..i-1] $ flip HP.savePageNthAs $ path
                                             f1 <- allM HP.isModifiedPageNth [0..i-1]
                                             return $ t0 && not (f0 || f1)
@@ -855,7 +855,7 @@ prop_close_all_pages hps i =
 prop_safe_save_page_as :: HPS.ServerHandle -> ModuleName -> Bool
 prop_safe_save_page_as hps (MN file) =
     unsafePerformIO $ HPS.runIn hps $ do
-                                        let path = testDir ++ "/" ++ file
+                                        let path = testDir </> file
                                         Hint.liftIO $ removeFileMayNotExist path
                                         HP.closeAllPages
                                         HP.setPageText file 0
@@ -898,7 +898,7 @@ prop_safe_save_nth_page_as hps i =
                                                                 let y = show $ i - x
                                                                 HP.addPage
                                                                 HP.setPageText y 0
-                                            let path = testDir ++ "/Test"
+                                            let path = testDir </> "Test"
                                             Hint.liftIO $ Str.writeFile path $ Str.pack $ show i
                                             t0 <- (flip allM) [0..i-1] $ shouldFail . ((flip HP.safeSavePageNthAs) path)
                                             Hint.liftIO $ removeFile path
@@ -999,7 +999,7 @@ prop_get_set_extensions hps exs =
 prop_working_extensions :: HPS.ServerHandle -> WorkingExtension -> Bool
 prop_working_extensions hps (WEX es m) =
     unsafePerformIO $ HPS.runIn hps $ do
-                                        path <- Hint.liftIO . getDataFileName $ "res/test/" ++ m
+                                        path <- Hint.liftIO . getDataFileName $ "res" </> "test" </> m
                                         HP.setLanguageExtensions []
                                         before <- HP.loadModules [path]
                                         HP.setLanguageExtensions es
@@ -1032,7 +1032,7 @@ prop_get_set_source_dirs hps sds =
 prop_working_source_dirs :: HPS.ServerHandle -> ModuleName -> Bool
 prop_working_source_dirs hps (MN file) =
     unsafePerformIO $ HPS.runIn hps $ do
-                                        let path = testDir ++ "/" ++ file ++ ".hs"
+                                        let path = testDir </> file ++ ".hs"
                                         HP.setPageText ("module " ++ file ++ " where t = 1") 0
                                         HP.savePageAs path
                                         HP.setSourceDirs []
@@ -1068,7 +1068,7 @@ prop_get_set_ghc_opts_fail hps (CN ops) =
 prop_working_ghc_opts :: HPS.ServerHandle -> ModuleName -> Bool
 prop_working_ghc_opts hps (MN file) =
     unsafePerformIO $ HPS.runIn hps $ do
-                                        let path = testDir ++ "/" ++ file ++ ".hs"
+                                        let path = testDir </> file ++ ".hs"
                                         HP.setPageText ("module " ++ file ++ " where t = 1") 0
                                         HP.savePageAs path
                                         HP.setSourceDirs []

@@ -15,7 +15,7 @@ data Preferences = Prefs {languageExtensions :: [HP.Extension],
 
 aboutDialog :: Window a -> FilePath -> IO ()
 aboutDialog win aboutFile =
-    htmlDialog win "About \955Page" (sz 400 500) $ "file://" ++ aboutFile
+    htmlDialog win "About \955Page" (sz 400 500) aboutFile
 
 hayooDialog :: Window a -> String -> IO ()
 hayooDialog win query =

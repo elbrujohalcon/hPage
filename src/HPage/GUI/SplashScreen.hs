@@ -67,7 +67,7 @@ gui topWin =
         img <- imageFile
         htmlw <- htmlWindowCreate win idAny (rect (point 0 0) (sz 870 176)) wxHW_SCROLLBAR_NEVER ""
         htmlWindowSetBorders htmlw 0
-        htmlWindowSetPage htmlw $ "<img src='file://" ++ img ++ "' />"
+        htmlWindowSetPage htmlw $ "<img src='" ++ img ++ "' />"
         
         caption <- staticText win [text := "Loading..."]
         
