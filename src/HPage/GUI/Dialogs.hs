@@ -6,25 +6,32 @@ import Graphics.UI.WX
 import Graphics.UI.WXCore
 import HPage.GUI.IDs
 import qualified HPage.Control as HP
+import HPage.Utils.Log
 
 data Preferences = Prefs {languageExtensions :: [HP.Extension],
                           sourceDirs :: [FilePath],
                           ghcOptions :: String}
     deriving (Eq, Show)
 
+aboutDialog :: Window a -> FilePath -> IO ()
+aboutDialog win aboutFile =
+    htmlDialog win "About \955Page" (sz 400 500) $ "file://" ++ aboutFile
+
 hayooDialog :: Window a -> String -> IO ()
 hayooDialog win query =
-    htmlDialog win "Hayoo!" $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html?query=" ++ query
+    htmlDialog win "Hayoo!" (sz 640 480) $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html?query=" ++ query
 
-htmlDialog :: Window a -> String -> String -> IO ()
-htmlDialog win caption url =
+htmlDialog :: Window a -> String -> Size -> String -> IO ()
+htmlDialog win caption size url =
     do
         dlg <- dialog win [text := caption]
-        htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) (sz 640 480)) 0 ""
+        htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) size) 0 ""
+        debugIO ("url:", url)
         htmlWindowLoadPage htmlw url
         set dlg [layout := fill $ widget htmlw,
                  visible := True,
-                 clientSize := sz 640 480]
+                 clientSize := size]
+        windowCenter dlg wxCENTRE_ON_SCREEN
         return ()
 
 preferencesDialog :: Window a -> String -> Preferences -> IO (Maybe Preferences)

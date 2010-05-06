@@ -1,5 +1,5 @@
 name: hpage
-version: 0.7.6
+version: 0.8.0
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -21,6 +21,7 @@ data-files: LICENSE README
             res/images/icon/hpage.icns
             res/images/icon/hpage.tif
             res/help/helpPage.hs
+            res/help/about.html
             res/test/*.hs
 data-dir: ""
 extra-source-files: Setup.hs

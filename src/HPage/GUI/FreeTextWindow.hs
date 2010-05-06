@@ -56,6 +56,16 @@ helpFile =
                 return $ dropFileName progPath </> "Resources" </> "helpPage.hs"
             _ ->
                 getDataFileName "res/help/helpPage.hs"
+                
+aboutFile :: IO FilePath
+aboutFile =
+    do
+        progPath <- getProgPath
+        case takeBaseName progPath of
+            "MacOS" ->
+                return $ dropFileName progPath </> "Resources" </> "about.html"
+            _ ->
+                getDataFileName "res/help/about.html"
 
 data GUIBottom = GUIBtm { bottomDesc :: String,
                           bottomSource :: String }
@@ -228,7 +238,8 @@ gui args =
         
         mnuHelp <- menuHelp []
         menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
-        menuAbout mnuHelp [on command := infoDialog win "About \955Page" "Author: Fernando Brujo Benavides\nWebsite: http://haskell.hpage.com"]
+        about <- aboutFile
+        menuAbout mnuHelp [on command := aboutDialog win about]
         
         set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
         evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage

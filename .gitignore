@@ -1,6 +1,7 @@
 .DS_Store
 .directory
 .project
+.settings
 out
 bin
 bin/hPage.app/Contents/MacOS/hPage
