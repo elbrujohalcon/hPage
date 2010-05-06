@@ -467,7 +467,11 @@ valueOfNth i =
                                 do
                                     ctx <- get
                                     iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
-                                    return $ Right iores
+                                    case iores of
+                                        Left err ->
+                                            return . Left . Hint.UnknownError $ show err
+                                        Right r ->
+                                            return . Right $ r
                             Left err ->
                                 return $ Left err
                 _ ->
