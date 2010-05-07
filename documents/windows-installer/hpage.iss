@@ -36,11 +36,11 @@ Source: C:\Program Files\Haskell\hpage-0.8.5\*; DestDir: {app}; Flags: ignorever
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: {group}\λPage; Filename: {app}\hpage.exe; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
+Name: {group}\λPage; Filename: {app}\hpage.exe; IconFilename: {app}\res\images\icon\hpage.ico
 Name: {group}\{cm:ProgramOnTheWeb,λPage}; Filename: http://haskell.hpage.com/
 Name: {group}\{cm:UninstallProgram,λPage}; Filename: {uninstallexe}
-Name: {commondesktop}\λPage; Filename: {app}\hpage.exe; Tasks: desktopicon; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
-Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage; Filename: {app}\hpage.exe; Tasks: quicklaunchicon; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
+Name: {commondesktop}\λPage; Filename: {app}\hpage.exe; Tasks: desktopicon; IconFilename: {app}\res\images\icon\hpage.ico
+Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage; Filename: {app}\hpage.exe; Tasks: quicklaunchicon; IconFilename: {app}\res\images\icon\hpage.ico
 
 [Run]
 Filename: {app}\hpage.exe; Description: {cm:LaunchProgram,λPage}; Flags: nowait postinstall skipifsilent
