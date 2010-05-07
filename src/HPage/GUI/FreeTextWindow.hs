@@ -14,6 +14,7 @@ import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
+import System.Exit
 import GHC.Paths
 import Data.List
 import Data.Bits
@@ -110,9 +111,10 @@ gui args =
         
         if not ghcInstalled
             then do
-                errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
                 SS.step ssh 100 "failed"
+                errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
                 wxcAppExit
+                exitWith ExitSuccess
             else do
                 SS.step ssh 10 "Starting the hint-server..."
                 
