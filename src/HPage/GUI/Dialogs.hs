@@ -22,15 +22,15 @@ hayooDialog win query =
     htmlDialog win "Hayoo!" (sz 640 480) $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html?query=" ++ query
 
 htmlDialog :: Window a -> String -> Size -> String -> IO ()
-htmlDialog win caption size url =
+htmlDialog win caption winsize url =
     do
         dlg <- dialog win [text := caption]
-        htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) size) 0 ""
+        htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) winsize) 0 ""
         debugIO ("url:", url)
         htmlWindowLoadPage htmlw url
         set dlg [layout := fill $ widget htmlw,
                  visible := True,
-                 clientSize := size]
+                 clientSize := winsize]
         windowCenter dlg wxCENTRE_ON_SCREEN
         return ()
 

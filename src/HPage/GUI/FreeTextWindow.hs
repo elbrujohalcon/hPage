@@ -14,6 +14,10 @@ import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
+import System.Exit
+import System.Environment
+import System.Cmd
+import GHC.Paths
 import Data.List
 import Data.Bits
 import Data.Char (toLower)
@@ -101,280 +105,295 @@ gui args =
         
         ssh <- SS.start win
         
-        SS.step ssh 10 "Starting the hint-server..."
+        SS.step ssh 0 "Checking installation..."
         
-        -- Server context
-        model <- HPS.start
+        ghcPkgRunner <- catch (getEnv "GHC_PKGCONF")
+                              (\err -> if isDoesNotExistError err
+                                           then return ghc_pkg
+                                           else return "")
         
-        SS.step ssh 20 "Starting up..."
+        debugIO $ "ghcPkgRunner: " ++ ghcPkgRunner
         
-        set win [on closing := HPS.stop model >> propagateEvent]
-
-        -- Containers
-        ntbkL <- notebook win []
-        pnlPs <- panel ntbkL []
-        pnlMs <- panel ntbkL []
+        isCabalInstalled <- rawSystem ghcPkgRunner ["list"] >>= return . (ExitSuccess ==) 
         
-        -- Text page...
-    --  txtCode <- styledTextCtrl win []
-        txtCode <- textCtrl win [font := fontFixed, text := ""]
+        if not isCabalInstalled
+            then do
+                errorDialog win "Error" "Seems like you don't have the Haskell Platform installed.\nPlease install it from http://hackage.haskell.org/platform/"
+                SS.step ssh 100 "failed"
+                wxcAppExit
+            else do
+                SS.step ssh 10 "Starting the hint-server..."
+                
+                -- Server context
+                model <- HPS.start
+                
+                SS.step ssh 20 "Starting up..."
+                
+                set win [on closing := HPS.stop model >> propagateEvent]
         
-        -- Document Selector
-        lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
+                -- Containers
+                ntbkL <- notebook win []
+                pnlPs <- panel ntbkL []
+                pnlMs <- panel ntbkL []
+                
+                -- Text page...
+            --  txtCode <- styledTextCtrl win []
+                txtCode <- textCtrl win [font := fontFixed, text := ""]
+                
+                -- Document Selector
+                lstPages <- singleListBox pnlPs [style := wxLB_NEEDED_SB, outerSize := sz 400 600]
+                
+                -- Modules Lists
+                imageFiles <- mapM imageFile ["m_imported.ico", "m_interpreted.ico", "m_compiled.ico", "m_package.ico"]
+                imagePaths <- mapM getAbsoluteFilePath imageFiles
+                images     <- imageListFromFiles (sz 16 16) imagePaths
+                varModsSel <- varCreate $ -1
+                lstModules <- listCtrlEx pnlMs (wxLC_REPORT + wxLC_ALIGN_LEFT + wxLC_NO_HEADER + wxLC_SINGLE_SEL)
+                                               [columns := [("Module", AlignLeft, 200),
+                                                            ("Origin", AlignLeft, 1)]]
+                listCtrlSetImageList lstModules images wxIMAGE_LIST_SMALL
         
-        -- Modules Lists
-        imageFiles <- mapM imageFile ["m_imported.ico", "m_interpreted.ico", "m_compiled.ico", "m_package.ico"]
-        imagePaths <- mapM getAbsoluteFilePath imageFiles
-        images     <- imageListFromFiles (sz 16 16) imagePaths
-        varModsSel <- varCreate $ -1
-        lstModules <- listCtrlEx pnlMs (wxLC_REPORT + wxLC_ALIGN_LEFT + wxLC_NO_HEADER + wxLC_SINGLE_SEL)
-                                       [columns := [("Module", AlignLeft, 200),
-                                                    ("Origin", AlignLeft, 1)]]
-        listCtrlSetImageList lstModules images wxIMAGE_LIST_SMALL
-
-        -- Results panel
-        pnlRes <- panel win []
-        txtValue <- textEntry pnlRes [style := wxTE_READONLY]
-        varErrors <- varCreate []
-        txtType <- textEntry pnlRes [style := wxTE_READONLY]
-        btnInterpret <- button pnlRes [text := "Interpret"]
-        lblInterpret <- staticText pnlRes [text := "Value:"]
-        lbl4Dots <- staticText pnlRes [text := " :: "]
-        set pnlRes [layout := fill $
-                                row 5 [widget btnInterpret,
-                                       centre $ widget lblInterpret,
-                                       fill $ widget txtValue,
-                                       centre $ widget lbl4Dots,
-                                       fill $ widget txtType]]
-
-        -- Status bar...
-        status <- statusField [text := "hello... this is \955Page! type in your instructions :)"]
-        set win [statusBar := [status]]
-
-        -- Timers ...
-        refreshTimer <- timer win []
-        charTimer <- timer win []
+                -- Results panel
+                pnlRes <- panel win []
+                txtValue <- textEntry pnlRes [style := wxTE_READONLY]
+                varErrors <- varCreate []
+                txtType <- textEntry pnlRes [style := wxTE_READONLY]
+                btnInterpret <- button pnlRes [text := "Interpret"]
+                lblInterpret <- staticText pnlRes [text := "Value:"]
+                lbl4Dots <- staticText pnlRes [text := " :: "]
+                set pnlRes [layout := fill $
+                                        row 5 [widget btnInterpret,
+                                               centre $ widget lblInterpret,
+                                               fill $ widget txtValue,
+                                               centre $ widget lbl4Dots,
+                                               fill $ widget txtType]]
         
-        -- Search ...
-        search <- findReplaceDataCreate wxFR_DOWN
-
-        chv <- newEmptyMVar
-        chfv <- newEmptyMVar
-        vfv <- newEmptyMVar
+                -- Status bar...
+                status <- statusField [text := "hello... this is \955Page! type in your instructions :)"]
+                set win [statusBar := [status]]
         
-        let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
-        let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search chv chfv vfv 
-        let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
-
-        -- Helper processes
-        chf <- spawn $ charFiller guiCtx
-        putMVar chfv chf
-        vf <- spawn $ valueFiller guiCtx
-        putMVar vfv vf
+                -- Timers ...
+                refreshTimer <- timer win []
+                charTimer <- timer win []
+                
+                -- Search ...
+                search <- findReplaceDataCreate wxFR_DOWN
         
-        -- Events
-        timerOnCommand refreshTimer $ refreshExpr model guiCtx
-        timerOnCommand charTimer $ do
-                                     wasEmpty <- tryPutMVar chv Nothing
-                                     if wasEmpty
-                                         then do
-                                             newchf <- spawn $ charFiller guiCtx
-                                             swapMVar chfv newchf >>= kill
-                                         else return ()
-
-        set btnInterpret [on command := onCmd "interpret" interpret]
+                chv <- newEmptyMVar
+                chfv <- newEmptyMVar
+                vfv <- newEmptyMVar
+                
+                let guiRes = GUIRes btnInterpret lblInterpret txtValue lbl4Dots txtType varErrors
+                let guiCtx = GUICtx win lstPages (varModsSel, lstModules) txtCode guiRes status refreshTimer charTimer search chv chfv vfv 
+                let onCmd name acc = traceIO ("onCmd", name) >> acc model guiCtx
         
-        set lstPages [on select := onCmd "pageChange" pageChange]
-        set txtCode [on keyboard := onCmd "key" . keyEvent,
-                     on mouse :=  \e -> case e of
-                                            MouseLeftUp _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
-                                            MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
-                                            MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
-                                            _ -> propagateEvent]
-        set txtValue [on mouse := \e -> case e of
-                                            MouseRightDown _ _ -> onCmd "valueContextMenu" valueContextMenu
-                                            _ -> propagateEvent]
-        set txtType [on mouse := \e -> case e of
-                                            MouseRightDown _ _ -> onCmd "typeContextMenu" typeContextMenu
-                                            _ -> propagateEvent]
-        set lstModules [on listEvent := \e -> case e of
-                                                ListItemSelected idx -> varSet varModsSel idx
-                                                ListItemRightClick idx -> varSet varModsSel idx >> onCmd "moduleContextMenu" moduleContextMenu
-                                                _ -> propagateEvent]
+                -- Helper processes
+                chf <- spawn $ charFiller guiCtx
+                putMVar chfv chf
+                vf <- spawn $ valueFiller guiCtx
+                putMVar vfv vf
+                
+                -- Events
+                timerOnCommand refreshTimer $ refreshExpr model guiCtx
+                timerOnCommand charTimer $ do
+                                             wasEmpty <- tryPutMVar chv Nothing
+                                             if wasEmpty
+                                                 then do
+                                                     newchf <- spawn $ charFiller guiCtx
+                                                     swapMVar chfv newchf >>= kill
+                                                 else return ()
         
-        -- Menu bar...
-        mnuPage <- menuPane [text := "Page"]
-        menuAppend mnuPage wxId_NEW "&New\tCtrl-n" "New Page" False
-        menuAppend mnuPage wxId_CLOSE "&Close\tCtrl-w" "Close Page" False
-        menuAppend mnuPage wxId_CLOSE_ALL "&Close All\tCtrl-Shift-w" "Close All Pages" False
-        menuAppendSeparator mnuPage
-        menuAppend mnuPage wxId_OPEN "&Open...\tCtrl-o" "Open Page" False
-        menuAppend mnuPage wxId_SAVE "&Save\tCtrl-s" "Save Page" False
-        menuAppend mnuPage wxId_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
-        menuAppendSeparator mnuPage
-        menuQuit mnuPage [on command := wxcAppExit]
+                set btnInterpret [on command := onCmd "interpret" interpret]
+                
+                set lstPages [on select := onCmd "pageChange" pageChange]
+                set txtCode [on keyboard := onCmd "key" . keyEvent,
+                             on mouse :=  \e -> case e of
+                                                    MouseLeftUp _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
+                                                    MouseLeftDClick _ _ -> onCmd "mouseEvent" restartTimer >> propagateEvent
+                                                    MouseRightDown _ _ -> onCmd "textContextMenu" textContextMenu
+                                                    _ -> propagateEvent]
+                set txtValue [on mouse := \e -> case e of
+                                                    MouseRightDown _ _ -> onCmd "valueContextMenu" valueContextMenu
+                                                    _ -> propagateEvent]
+                set txtType [on mouse := \e -> case e of
+                                                    MouseRightDown _ _ -> onCmd "typeContextMenu" typeContextMenu
+                                                    _ -> propagateEvent]
+                set lstModules [on listEvent := \e -> case e of
+                                                        ListItemSelected idx -> varSet varModsSel idx
+                                                        ListItemRightClick idx -> varSet varModsSel idx >> onCmd "moduleContextMenu" moduleContextMenu
+                                                        _ -> propagateEvent]
+                
+                -- Menu bar...
+                mnuPage <- menuPane [text := "Page"]
+                menuAppend mnuPage wxId_NEW "&New\tCtrl-n" "New Page" False
+                menuAppend mnuPage wxId_CLOSE "&Close\tCtrl-w" "Close Page" False
+                menuAppend mnuPage wxId_CLOSE_ALL "&Close All\tCtrl-Shift-w" "Close All Pages" False
+                menuAppendSeparator mnuPage
+                menuAppend mnuPage wxId_OPEN "&Open...\tCtrl-o" "Open Page" False
+                menuAppend mnuPage wxId_SAVE "&Save\tCtrl-s" "Save Page" False
+                menuAppend mnuPage wxId_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
+                menuAppendSeparator mnuPage
+                menuQuit mnuPage [on command := wxcAppExit]
+                
+                mnuEdit <- menuPane [text := "Edit"]
+                menuAppend mnuEdit wxId_UNDO "&Undo\tCtrl-z" "Undo" False
+                menuAppend mnuEdit wxId_REDO "&Redo\tCtrl-Shift-z" "Redo" False
+                menuAppendSeparator mnuEdit
+                menuAppend mnuEdit wxId_CUT "C&ut\tCtrl-x" "Cut" False
+                menuAppend mnuEdit wxId_COPY "&Copy\tCtrl-c" "Copy" False
+                menuAppend mnuEdit wxId_PASTE "&Paste\tCtrl-v" "Paste" False
+                menuAppendSeparator mnuEdit
+                menuAppend mnuEdit wxId_FIND "&Find...\tCtrl-f" "Find" False
+                menuAppend mnuEdit wxId_FORWARD "Find &Next\tCtrl-g" "Find Next" False
+                menuAppend mnuEdit wxId_BACKWARD "Find &Previous\tCtrl-Shift-g" "Find Previous" False
+                menuAppend mnuEdit wxId_REPLACE "&Replace...\tCtrl-Shift-r" "Replace" False
+                menuAppendSeparator mnuEdit
+                menuAppend mnuEdit wxId_PREFERENCES "&Preferences...\tCtrl-," "Preferences" False
         
-        mnuEdit <- menuPane [text := "Edit"]
-        menuAppend mnuEdit wxId_UNDO "&Undo\tCtrl-z" "Undo" False
-        menuAppend mnuEdit wxId_REDO "&Redo\tCtrl-Shift-z" "Redo" False
-        menuAppendSeparator mnuEdit
-        menuAppend mnuEdit wxId_CUT "C&ut\tCtrl-x" "Cut" False
-        menuAppend mnuEdit wxId_COPY "&Copy\tCtrl-c" "Copy" False
-        menuAppend mnuEdit wxId_PASTE "&Paste\tCtrl-v" "Paste" False
-        menuAppendSeparator mnuEdit
-        menuAppend mnuEdit wxId_FIND "&Find...\tCtrl-f" "Find" False
-        menuAppend mnuEdit wxId_FORWARD "Find &Next\tCtrl-g" "Find Next" False
-        menuAppend mnuEdit wxId_BACKWARD "Find &Previous\tCtrl-Shift-g" "Find Previous" False
-        menuAppend mnuEdit wxId_REPLACE "&Replace...\tCtrl-Shift-r" "Replace" False
-        menuAppendSeparator mnuEdit
-        menuAppend mnuEdit wxId_PREFERENCES "&Preferences...\tCtrl-," "Preferences" False
-
-        mnuHask <- menuPane [text := "Haskell"]
-        menuAppend mnuHask wxId_HASK_LOAD_PKG "Load &package...\tCtrl-Alt-l" "Load Cabal Package" False
-        menuAppendSeparator mnuHask
-        menuAppend mnuHask wxId_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
-        menuAppend mnuHask wxId_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
-        menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-i" "Import Packaged Modules by Name" False
-        menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
-        menuAppendSeparator mnuHask
-        menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
-        menuAppend mnuHask wxId_HASK_NAVIGATE "Search on Ha&yoo!\tCtrl-y" "Search the Current Selection on Hayoo!" False
+                mnuHask <- menuPane [text := "Haskell"]
+                menuAppend mnuHask wxId_HASK_LOAD_PKG "Load &package...\tCtrl-Alt-l" "Load Cabal Package" False
+                menuAppendSeparator mnuHask
+                menuAppend mnuHask wxId_HASK_LOAD "&Load modules...\tCtrl-l" "Load Modules" False
+                menuAppend mnuHask wxId_HASK_LOADNAME "Load modules by &name...\tCtrl-Shift-l" "Load Modules by Name" False
+                menuAppend mnuHask wxId_HASK_ADD "Import modules...\tCtrl-Shift-i" "Import Packaged Modules by Name" False
+                menuAppend mnuHask wxId_HASK_RELOAD "&Reload\tCtrl-r" "Reload Modules" False
+                menuAppendSeparator mnuHask
+                menuAppend mnuHask wxId_HASK_INTERPRET "&Interpret\tCtrl-i" "Interpret the Current Expression" False
+                menuAppend mnuHask wxId_HASK_NAVIGATE "Search on Ha&yoo!\tCtrl-y" "Search the Current Selection on Hayoo!" False
+                
+                mnuHelp <- menuHelp []
+                menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
+                about <- aboutFile
+                menuAbout mnuHelp [on command := aboutDialog win about]
+                
+                set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
+                evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
+                evtHandlerOnMenuCommand win wxId_CLOSE $ onCmd "runHP' closePage" $ runHP' HP.closePage
+                evtHandlerOnMenuCommand win wxId_CLOSE_ALL $ onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages
+                evtHandlerOnMenuCommand win wxId_OPEN $ onCmd "openPage" openPage
+                evtHandlerOnMenuCommand win wxId_SAVE $ onCmd "savePage" savePage
+                evtHandlerOnMenuCommand win wxId_SAVEAS $ onCmd "savePageAs" savePageAs
+                evtHandlerOnMenuCommand win wxId_UNDO $ onCmd "runHP' undo" $ runHP' HP.undo
+                evtHandlerOnMenuCommand win wxId_REDO $ onCmd "runHP' redo" $ runHP' HP.redo
+                evtHandlerOnMenuCommand win wxId_CUT $ onCmd "cut" cut
+                evtHandlerOnMenuCommand win wxId_COPY $ onCmd "copy" copy
+                evtHandlerOnMenuCommand win wxId_PASTE $ onCmd "paste" paste
+                evtHandlerOnMenuCommand win wxId_FIND $ onCmd "justFind" justFind
+                evtHandlerOnMenuCommand win wxId_FORWARD $ onCmd "findNext" justFindNext
+                evtHandlerOnMenuCommand win wxId_BACKWARD $ onCmd "findPrev" justFindPrev
+                evtHandlerOnMenuCommand win wxId_REPLACE $ onCmd "findReplace" findReplace
+                evtHandlerOnMenuCommand win wxId_HASK_LOAD_PKG $ onCmd "loadPackage" loadPackage
+                evtHandlerOnMenuCommand win wxId_HASK_LOAD $ onCmd "loadModules" loadModules
+                evtHandlerOnMenuCommand win wxId_HASK_ADD $ onCmd "importModules" importModules
+                evtHandlerOnMenuCommand win wxId_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
+                evtHandlerOnMenuCommand win wxId_HASK_LOAD_FAST $ onCmd "loadModulesByNameFast" loadModulesByNameFast
+                evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
+                evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
+                evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
+                evtHandlerOnMenuCommand win wxId_HASK_NAVIGATE $ onCmd "hayoo" hayoo
+                evtHandlerOnMenuCommand win wxId_HASK_COPY $ onCmd "copyResult" copyResult
+                evtHandlerOnMenuCommand win wxId_HASK_COPY_TYPE $ onCmd "copyType" copyType
+                evtHandlerOnMenuCommand win wxId_HASK_EXPLAIN $ onCmd "explain" explain
+                evtHandlerOnMenuCommand win wxId_HELP $ onCmd "help" openHelpPage
+                
+                -- Tool bar...
+                tbMain <- toolBarEx win True True []
+                mitLoadPkg <- menuFindItem mnuHask wxId_HASK_LOAD_PKG
+                mitNew <- menuFindItem mnuPage wxId_NEW
+                mitOpen <- menuFindItem mnuPage wxId_OPEN
+                mitSave <- menuFindItem mnuPage wxId_SAVE
+                mitCut <- menuFindItem mnuEdit wxId_CUT
+                mitCopy <- menuFindItem mnuEdit wxId_COPY
+                mitPaste <- menuFindItem mnuEdit wxId_PASTE
+                mitReload <- menuFindItem mnuHask wxId_HASK_RELOAD
+                loadPath <- imageFile "load.png"
+                newPath <- imageFile "new.png"
+                openPath <- imageFile "open.png"
+                savePath <- imageFile "save.png"
+                cutPath <- imageFile "cut.png"
+                copyPath <- imageFile "copy.png"
+                pastePath <- imageFile "paste.png"
+                reloadPath <- imageFile "reload.png"
+                toolMenu tbMain mitLoadPkg "Load Package" loadPath [tooltip := "Load Cabal Package"]
+                toolBarAddSeparator tbMain
+                toolMenu tbMain mitNew "New" newPath [tooltip := "New Page"]
+                toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open Page"]
+                toolMenu tbMain mitSave "Save" savePath [tooltip := "Save Page"]
+                toolBarAddSeparator tbMain
+                toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
+                toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
+                toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
+                toolBarAddSeparator tbMain
+                toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
+                toolBarSetToolBitmapSize tbMain $ sz 32 32
         
-        mnuHelp <- menuHelp []
-        menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
-        about <- aboutFile
-        menuAbout mnuHelp [on command := aboutDialog win about]
-        
-        set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
-        evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
-        evtHandlerOnMenuCommand win wxId_CLOSE $ onCmd "runHP' closePage" $ runHP' HP.closePage
-        evtHandlerOnMenuCommand win wxId_CLOSE_ALL $ onCmd "runHP' closeAllPages" $ runHP' HP.closeAllPages
-        evtHandlerOnMenuCommand win wxId_OPEN $ onCmd "openPage" openPage
-        evtHandlerOnMenuCommand win wxId_SAVE $ onCmd "savePage" savePage
-        evtHandlerOnMenuCommand win wxId_SAVEAS $ onCmd "savePageAs" savePageAs
-        evtHandlerOnMenuCommand win wxId_UNDO $ onCmd "runHP' undo" $ runHP' HP.undo
-        evtHandlerOnMenuCommand win wxId_REDO $ onCmd "runHP' redo" $ runHP' HP.redo
-        evtHandlerOnMenuCommand win wxId_CUT $ onCmd "cut" cut
-        evtHandlerOnMenuCommand win wxId_COPY $ onCmd "copy" copy
-        evtHandlerOnMenuCommand win wxId_PASTE $ onCmd "paste" paste
-        evtHandlerOnMenuCommand win wxId_FIND $ onCmd "justFind" justFind
-        evtHandlerOnMenuCommand win wxId_FORWARD $ onCmd "findNext" justFindNext
-        evtHandlerOnMenuCommand win wxId_BACKWARD $ onCmd "findPrev" justFindPrev
-        evtHandlerOnMenuCommand win wxId_REPLACE $ onCmd "findReplace" findReplace
-        evtHandlerOnMenuCommand win wxId_HASK_LOAD_PKG $ onCmd "loadPackage" loadPackage
-        evtHandlerOnMenuCommand win wxId_HASK_LOAD $ onCmd "loadModules" loadModules
-        evtHandlerOnMenuCommand win wxId_HASK_ADD $ onCmd "importModules" importModules
-        evtHandlerOnMenuCommand win wxId_HASK_LOADNAME $ onCmd "loadModulesByName" loadModulesByName
-        evtHandlerOnMenuCommand win wxId_HASK_LOAD_FAST $ onCmd "loadModulesByNameFast" loadModulesByNameFast
-        evtHandlerOnMenuCommand win wxId_HASK_RELOAD $ onCmd "reloadModules" reloadModules
-        evtHandlerOnMenuCommand win wxId_PREFERENCES $ onCmd "preferences" configure
-        evtHandlerOnMenuCommand win wxId_HASK_INTERPRET $ onCmd "interpret" interpret
-        evtHandlerOnMenuCommand win wxId_HASK_NAVIGATE $ onCmd "hayoo" hayoo
-        evtHandlerOnMenuCommand win wxId_HASK_COPY $ onCmd "copyResult" copyResult
-        evtHandlerOnMenuCommand win wxId_HASK_COPY_TYPE $ onCmd "copyType" copyType
-        evtHandlerOnMenuCommand win wxId_HASK_EXPLAIN $ onCmd "explain" explain
-        evtHandlerOnMenuCommand win wxId_HELP $ onCmd "help" openHelpPage
-        
-        -- Tool bar...
-        tbMain <- toolBarEx win True True []
-        mitLoadPkg <- menuFindItem mnuHask wxId_HASK_LOAD_PKG
-        mitNew <- menuFindItem mnuPage wxId_NEW
-        mitOpen <- menuFindItem mnuPage wxId_OPEN
-        mitSave <- menuFindItem mnuPage wxId_SAVE
-        mitCut <- menuFindItem mnuEdit wxId_CUT
-        mitCopy <- menuFindItem mnuEdit wxId_COPY
-        mitPaste <- menuFindItem mnuEdit wxId_PASTE
-        mitReload <- menuFindItem mnuHask wxId_HASK_RELOAD
-        loadPath <- imageFile "load.png"
-        newPath <- imageFile "new.png"
-        openPath <- imageFile "open.png"
-        savePath <- imageFile "save.png"
-        cutPath <- imageFile "cut.png"
-        copyPath <- imageFile "copy.png"
-        pastePath <- imageFile "paste.png"
-        reloadPath <- imageFile "reload.png"
-        toolMenu tbMain mitLoadPkg "Load Package" loadPath [tooltip := "Load Cabal Package"]
-        toolBarAddSeparator tbMain
-        toolMenu tbMain mitNew "New" newPath [tooltip := "New Page"]
-        toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open Page"]
-        toolMenu tbMain mitSave "Save" savePath [tooltip := "Save Page"]
-        toolBarAddSeparator tbMain
-        toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
-        toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
-        toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
-        toolBarAddSeparator tbMain
-        toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
-        toolBarSetToolBitmapSize tbMain $ sz 32 32
-
-        -- Layout settings
-        let pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
-            modsTabL    = tab "Modules" $ container pnlMs $ fill $ margin 5 $ widget lstModules
-            leftL       = tabs ntbkL [modsTabL, pagesTabL]
-            resultsL    = hfill $ boxed "Expression" $ fill $ widget pnlRes
-            rightL      = minsize (sz 485 100) $ fill $ widget txtCode
-        set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
-                 clientSize := sz 800 600]
-                 
-        --HACK: We need to keep a timer ticking just to refresh the screen when the user is doing nothing
-        --      That's because the main C loop of wx only calls wxHaskell callbacks when something happens
-        --      and we try to make things happen in this side but they're not reflected there until some-
-        --      thing happens there
-        timer win [interval := 50, on command := return ()]
-        
-        -- test the server...
-        SS.step ssh 40 "Preparing model..."
-        runTxtHPSelection "1" model HP.interpret
-        
-        SS.step ssh 60 "Loading first page..."
-        -- ...and RUN!
-        refreshPage model guiCtx
-        
-        SS.step ssh 80 "Loading help page..."
-        onCmd "start" openHelpPage
-        
-        SS.step ssh 90 "Loading UI..."
-        case args of
-            [] ->
-                return ()
-            dir:_ ->
-                do
-                    SS.step ssh 92 "looking for package files..."
-                    setupConfig <- canonicalizePath $ dir </> "dist" </> "setup-config"
-                    pkgExists <- doesFileExist setupConfig
-                    case pkgExists of
-                        False ->
-                            warningDialog win "Error" $ setupConfig ++ " doesn't exist.\n  Maybe you have to reconfigure the package"
-                        True -> do
-                            SS.step ssh 95 "Loading package..."
-                            loadres <- tryIn' model $ do
-                                                        lr <- HP.loadPackage setupConfig
-                                                        HP.addPage
-                                                        return lr
-                            case loadres of
-                                Left err ->
-                                    warningDialog win "Error" err
-                                Right (Left err) ->
-                                    warningDialog win "Error" err
-                                Right (Right pkg) ->
-                                    do
-                                        setCurrentDirectory dir
-                                        SS.step ssh 97 "warming up..."
-                                        frameSetTitle win $ "\955Page - " ++ prettyShow pkg
-                            
-                            SS.step ssh 99 "Cleaning UI..."
-                            refreshPage model guiCtx
-        
-        SS.step ssh 100 "ready"
-        set win [visible := True]
-        set txtCode [font := fontFixed] -- again just to be sure
-        focusOn txtCode
+                -- Layout settings
+                let pagesTabL   = tab "Pages" $ container pnlPs $ fill $ margin 5 $ widget lstPages
+                    modsTabL    = tab "Modules" $ container pnlMs $ fill $ margin 5 $ widget lstModules
+                    leftL       = tabs ntbkL [modsTabL, pagesTabL]
+                    resultsL    = hfill $ boxed "Expression" $ fill $ widget pnlRes
+                    rightL      = minsize (sz 485 100) $ fill $ widget txtCode
+                set win [layout := column 5 [fill $ row 10 [leftL, rightL], resultsL],
+                         clientSize := sz 800 600]
+                         
+                --HACK: We need to keep a timer ticking just to refresh the screen when the user is doing nothing
+                --      That's because the main C loop of wx only calls wxHaskell callbacks when something happens
+                --      and we try to make things happen in this side but they're not reflected there until some-
+                --      thing happens there
+                timer win [interval := 50, on command := return ()]
+                
+                -- test the server...
+                SS.step ssh 40 "Preparing model..."
+                runTxtHPSelection "1" model HP.interpret
+                
+                SS.step ssh 60 "Loading first page..."
+                -- ...and RUN!
+                refreshPage model guiCtx
+                
+                SS.step ssh 80 "Loading help page..."
+                onCmd "start" openHelpPage
+                
+                SS.step ssh 90 "Loading UI..."
+                case args of
+                    [] ->
+                        return ()
+                    dir:_ ->
+                        do
+                            SS.step ssh 92 "looking for package files..."
+                            setupConfig <- canonicalizePath $ dir </> "dist" </> "setup-config"
+                            pkgExists <- doesFileExist setupConfig
+                            case pkgExists of
+                                False ->
+                                    warningDialog win "Error" $ setupConfig ++ " doesn't exist.\n  Maybe you have to reconfigure the package"
+                                True -> do
+                                    SS.step ssh 95 "Loading package..."
+                                    loadres <- tryIn' model $ do
+                                                                lr <- HP.loadPackage setupConfig
+                                                                HP.addPage
+                                                                return lr
+                                    case loadres of
+                                        Left err ->
+                                            warningDialog win "Error" err
+                                        Right (Left err) ->
+                                            warningDialog win "Error" err
+                                        Right (Right pkg) ->
+                                            do
+                                                setCurrentDirectory dir
+                                                SS.step ssh 97 "warming up..."
+                                                frameSetTitle win $ "\955Page - " ++ prettyShow pkg
+                                    
+                                    SS.step ssh 99 "Cleaning UI..."
+                                    refreshPage model guiCtx
+                
+                SS.step ssh 100 "ready"
+                set win [visible := True]
+                set txtCode [font := fontFixed] -- again just to be sure
+                focusOn txtCode
 
 -- PROCESSES -------------------------------------------------------------------
 charFiller :: GUIContext -> Process String ()
-charFiller GUICtx{guiResults = GUIRes{resValue = txtValue,
-                                      resErrors= varErrors},
-                  guiChrVar  = chv,
-                  guiStatus  = status} =
+charFiller GUICtx{guiResults = GUIRes{resErrors= varErrors},
+                  guiChrVar  = chv} =
     forever $ do
          t <- recv
          liftIO $ do
@@ -428,8 +447,7 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                               text := "Interpret"]
 
 valueFiller' :: GUIContext -> String -> IO String
-valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue,
-                                               resErrors = varErrors}} val =
+valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} val =
       do
         h <- try (case val of
                       [] -> return []
@@ -490,12 +508,12 @@ keyEvent eventKey model guiCtx@GUICtx{guiCode = txtCode} =
 refreshPage, savePageAs, savePage, openPage,
     pageChange, copy, copyResult, copyType, cut, paste,
     justFind, justFindNext, justFindPrev, findReplace,
-    textContextMenu, moduleContextMenu, valueContextMenu,
+    textContextMenu, moduleContextMenu, valueContextMenu, typeContextMenu,
     restartTimer, interpret, hayoo, explain,
     loadPackage, loadModules, importModules, loadModulesByName, loadModulesByNameFast, reloadModules,
     configure, openHelpPage :: HPS.ServerHandle -> GUIContext -> IO ()
 
-moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, lstModules)} =
+moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModules)} =
     do
         pointWithinWindow <- windowGetMousePosition win
         i <- varGet varModsSel
@@ -504,9 +522,9 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
             (-1) ->
                 do
                     return ()
-            i ->
+            j ->
                 do
-                    itm <- get lstModules $ item i
+                    itm <- get lstModules $ item j
                     case itm of
                         [_, "Package"] ->
                             menuAppend contextMenu wxId_HASK_LOAD_FAST "&Load" "Load Module" False
@@ -580,7 +598,7 @@ moduleContextMenu model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, ls
                 return itemMenu
 
 
-textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
+textContextMenu _model GUICtx{guiWin = win, guiCode = txtCode} =
     do
         contextMenu <- menuPane []
         sel <- textCtrlGetStringSelection txtCode
@@ -600,8 +618,8 @@ textContextMenu model guiCtx@GUICtx{guiWin = win, guiCode = txtCode} =
         menuPopup contextMenu pointWithinWindow win
         objectDelete contextMenu
 
-valueContextMenu model guiCtx@GUICtx{guiWin = win,
-                                     guiResults = GUIRes{resValue = txtValue}} =
+valueContextMenu _model GUICtx{guiWin = win,
+                               guiResults = GUIRes{resValue = txtValue}} =
     do
         contextMenu <- menuPane []
         sel <- textCtrlGetStringSelection txtValue
@@ -618,8 +636,8 @@ valueContextMenu model guiCtx@GUICtx{guiWin = win,
         menuPopup contextMenu pointWithinWindow win
         objectDelete contextMenu
         
-typeContextMenu model guiCtx@GUICtx{guiWin = win,
-                                    guiResults = GUIRes{resType = txtType}} =
+typeContextMenu _model GUICtx{guiWin = win,
+                              guiResults = GUIRes{resType = txtType}} =
     do
         contextMenu <- menuPane []
         sel <- textCtrlGetStringSelection txtType
@@ -762,14 +780,15 @@ loadModulesByName model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                     set status [text := "loading..."]
                     runHP (HP.loadModules $ words mns) model guiCtx
 
-loadModulesByNameFast model guiCtx@GUICtx{guiWin = win, guiModules = (varModsSel, lstModules), guiStatus = status} =
+loadModulesByNameFast model guiCtx@GUICtx{guiModules = (varModsSel, lstModules),
+                                          guiStatus = status} =
     do
         i <- varGet varModsSel
         case i of
             (-1) -> return ()
-            i ->
+            j ->
                 do
-                    mnText <- listCtrlGetItemText lstModules i
+                    mnText <- listCtrlGetItemText lstModules j
                     let mns = [mnText]
                     set status [text := "loading..."]
                     runHP (HP.loadModules mns) model guiCtx
@@ -897,9 +916,9 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
             Right () ->
                 refreshPage model guiCtx
 
-explain model guiCtx@GUICtx{guiWin = win,
-                            guiResults = GUIRes{resValue = txtValue,
-                                                resErrors = varErrors}} =
+explain _model GUICtx{guiWin = win,
+                      guiResults = GUIRes{resValue = txtValue,
+                                          resErrors = varErrors}} =
     do
         sel <- textCtrlGetStringSelection txtValue
         if sel == bottomChar || sel == bottomString
@@ -918,7 +937,7 @@ explain model guiCtx@GUICtx{guiWin = win,
                         else errorDialog win "Bottom String" err
             else return ()
 
-hayoo model guiCtx@GUICtx{guiCode = txtCode, guiWin = win} =
+hayoo _model GUICtx{guiCode = txtCode, guiWin = win} =
     textCtrlGetStringSelection txtCode >>= hayooDialog win
 
 interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
@@ -928,7 +947,6 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                   resType   = txtType,
                                                   resErrors = varErrors},
                               guiCode       = txtCode,
-                              guiCharTimer  = charTimer,
                               guiWin        = win,
                               guiChrVar     = chv,
                               guiValFiller  = vfv,
@@ -1001,7 +1019,7 @@ runTxtHPSelection s model hpacc =
                 Right () ->
                     do
                         let cpi = case piRes of
-                                        Left err -> 0
+                                        Left _err -> 0
                                         Right cp -> cp
                             newacc = HP.setPageText s (length s) >> hpacc
                         res <- tryIn model newacc
@@ -1009,9 +1027,9 @@ runTxtHPSelection s model hpacc =
                         return res
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> IO ()
-refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
-                                guiWin = win,
-                                guiTimer = refreshTimer} =
+refreshExpr model GUICtx{guiCode = txtCode,
+                         guiWin = win,
+                         guiTimer = refreshTimer} =
    do
         set txtCode [font := fontFixed] -- Just to be sure
         txt <- get txtCode text
@@ -1029,7 +1047,7 @@ refreshExpr model guiCtx@GUICtx{guiCode = txtCode,
 
 
 -- TIMER HANDLERS --------------------------------------------------------------
-restartTimer model guiCtx@GUICtx{guiWin = win, guiTimer = refreshTimer} =
+restartTimer _model GUICtx{guiTimer = refreshTimer} =
     do
         started <- timerStart refreshTimer 1000 True
         if started

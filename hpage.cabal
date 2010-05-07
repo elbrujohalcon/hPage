@@ -50,7 +50,8 @@ Executable hpage
                    hint-server >= 1.1.0,        hint-server < 2,
                    time >= 1.1.4,               time < 2,
                    cabal-macosx >= 0.1.0,       cabal-macosx < 0.2,
-                   FindBin >= 0.0.2,            FindBin < 0.1
+                   FindBin >= 0.0.2,            FindBin < 0.1,
+                   ghc-paths >= 0.1.0.6,        ghc-paths < 0.2
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src

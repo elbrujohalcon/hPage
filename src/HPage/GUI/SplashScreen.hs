@@ -26,11 +26,11 @@ newtype SplashHandle = SH {handle :: Handle (Int, String)}
 
 start :: Window a -> IO SplashHandle
 start topWin = (spawn $ guiRunner topWin) >>= return . SH
-  where guiRunner topWin = do
-            (caption, progress, win) <- liftIO $ gui topWin
+  where guiRunner tw = do
+            (caption, progress, win) <- liftIO $ gui tw
             forever $ do
                         myself <- self
-                        (percent, label) <- recv
+                        (percent, lbl) <- recv
                         liftIO $ case percent of
                                      100 ->
                                          do
@@ -40,8 +40,8 @@ start topWin = (spawn $ guiRunner topWin) >>= return . SH
                                              kill myself 
                                      _ ->
                                          do
-                                             debugIO ("progress", percent, label)
-                                             set caption [text := label]
+                                             debugIO ("progress", percent, lbl)
+                                             set caption [text := lbl]
                                              set progress [selection := percent]
                                              wxcAppSafeYield win
                                              return ()

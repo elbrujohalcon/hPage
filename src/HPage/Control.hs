@@ -445,10 +445,9 @@ interpretNth i =
                         valueRes <- valueOfNth i
                         case valueRes of
                             Left verr ->
-                                let verrStr = show verr
-                                in if isNotShowable verr
-                                        then return $ Right $ Expr{intValue = "", intType = t}
-                                        else return $ Left verr
+                                if isNotShowable verr
+                                    then return $ Right $ Expr{intValue = "", intType = t}
+                                    else return $ Left verr
                             Right v -> return $ Right $ Expr{intValue = v, intType = t}
         where isNotShowable (Hint.WontCompile ghcerrs) = any complainsAboutShow ghcerrs
               isNotShowable _ = False
@@ -505,8 +504,8 @@ importModules newms = do
                             res <- syncRun action
                             case res of
                                 Right _ ->
-                                    modify (\ctx -> ctx{importedModules = union (fromList newms) (importedModules ctx),
-                                                        recoveryLog = recoveryLog ctx >> action >> return ()})
+                                    modify (\c -> c{importedModules = union (fromList newms) (importedModules c),
+                                                    recoveryLog = recoveryLog c >> action >> return ()})
                                 Left e ->
                                     liftErrorIO $ ("Error importing modules", ms, e)
                             return res
@@ -609,8 +608,8 @@ loadPackage file = do
                                                     forM_ opts $ \opt -> Hint.unsafeSetGhcOption opt `catchError` (\_ -> return ())
                                                     return pkgname
                                     liftDebugIO mods
-                                    res <- syncRun action
-                                    case res of
+                                    res2 <- syncRun action
+                                    case res2 of
                                         Right x ->
                                             do
                                                 modify (\ctx -> ctx{activePackage       = Just pkgname,
@@ -662,7 +661,7 @@ importModules' newms = do
                                             liftTraceIO $ "importing': " ++ show newms
                                             Hint.setImports $ ms ++ newms
                             res <- asyncRun action
-                            modify (\ctx -> ctx{running = Just $ ImportModules (fromList newms) action})
+                            modify (\c -> c{running = Just $ ImportModules (fromList newms) action})
                             return res
 
 reloadModules' :: HPage (MVar (Either Hint.InterpreterError ()))
@@ -911,7 +910,7 @@ letsToString exs = "let\n " ++ joinWith ";\n " (map (joinWith "\n  " . lines . e
 
 moduleElemDesc :: Hint.ModuleElem -> Hint.InterpreterT IO ModuleElemDesc
 moduleElemDesc (Hint.Fun fn) = do
-                                    t <- (Hint.typeOf fn) `catchError` (\e -> return [])
+                                    t <- (Hint.typeOf fn) `catchError` (\_ -> return [])
                                     return MEFun{funName = fn, funType = t}
 moduleElemDesc (Hint.Class cn cfs) = do
                                         mcfs <- flip mapM cfs $ moduleElemDesc . Hint.Fun
@@ -947,7 +946,7 @@ tryGetConfigStateFile filename = do
     then return (Left missing)
     else withFileContents filename $ \str ->
       case lines str of
-        [headder, rest] -> case reads rest of
+        [_header, rest] -> case reads rest of
             [(bi,_)] -> return (Right bi)
             _        -> return (Left cantParse)
         _            -> return (Left cantParse)
