@@ -114,7 +114,9 @@ gui args =
         
         debugIO $ "ghcPkgRunner: " ++ ghcPkgRunner
         
-        isCabalInstalled <- rawSystem ghcPkgRunner ["list"] >>= return . (ExitSuccess ==) 
+        isCabalInstalled <- case ghcPkgRunner of
+                                "" -> return False
+                                _  -> rawSystem ghcPkgRunner ["list"] >>= return . (ExitSuccess ==) 
         
         if not isCabalInstalled
             then do
