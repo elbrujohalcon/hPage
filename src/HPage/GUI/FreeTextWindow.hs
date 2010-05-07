@@ -99,8 +99,6 @@ gui args =
         iconFile <- imageFile $ "icon" </> "hpage" <.> "ico"
 	iconCreateFromFile iconFile sizeNull >>= topLevelWindowSetIcon win
         
-        set win [on closing := HPS.stop model >> propagateEvent]
-
         ssh <- SS.start win
         
         SS.step ssh 10 "Starting the hint-server..."
@@ -110,6 +108,8 @@ gui args =
         
         SS.step ssh 20 "Starting up..."
         
+        set win [on closing := HPS.stop model >> propagateEvent]
+
         -- Containers
         ntbkL <- notebook win []
         pnlPs <- panel ntbkL []
