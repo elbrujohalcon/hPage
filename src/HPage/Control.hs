@@ -746,7 +746,7 @@ cancel = do
 
 prettyPrintError :: Hint.InterpreterError -> String
 prettyPrintError (Hint.WontCompile ghcerrs)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerrs)
-prettyPrintError (Hint.UnknownError errStr) = "Unknown Error: " ++ errStr
+prettyPrintError (Hint.UnknownError errStr) = "Error: " ++ errStr
 prettyPrintError (Hint.NotAllowed errStr)   = "Not Allowed Action: " ++ errStr
 prettyPrintError (Hint.GhcException errStr) = errStr
 
@@ -816,15 +816,17 @@ runInExprNthWithLets action i = do
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
 syncRun action = do
+                    liftTraceIO "sync - confirming"
+                    ctx <- confirmRunning
                     liftTraceIO "sync - running"
-                    page <- confirmRunning
-                    liftIO $ HS.runIn (server page) action
+                    liftIO $ catch (HS.runIn (server ctx) action)
+                                   (\exc -> return . Left . Hint.UnknownError . show $ exc) 
 
 asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
 asyncRun action = do
                     liftTraceIO "async - running"
-                    page <- confirmRunning
-                    liftIO $ HS.asyncRunIn (server page) action
+                    ctx <- confirmRunning
+                    liftIO $ HS.asyncRunIn (server ctx) action
 
 confirmRunning :: HPage Context
 confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
