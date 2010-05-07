@@ -17,32 +17,31 @@ DisableDirPage=yes
 DefaultGroupName=λPage
 AllowNoIcons=yes
 LicenseFile=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\LICENSE
-OutputDir=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\documents\windows-installer
-OutputBaseFilename=setup
+OutputDir=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\dist\build
+OutputBaseFilename=hpage-0.8.5
 SetupIconFile=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
 Compression=lzma
 SolidCompression=yes
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: english; MessagesFile: compiler:Default.isl
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
+Name: desktopicon; Description: {cm:CreateDesktopIcon}; GroupDescription: {cm:AdditionalIcons}; Flags: unchecked
+Name: quicklaunchicon; Description: {cm:CreateQuickLaunchIcon}; GroupDescription: {cm:AdditionalIcons}; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "C:\Program Files\Haskell\bin\hpage.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Program Files\Haskell\hpage-0.8.5\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: C:\Program Files\Haskell\bin\hpage.exe; DestDir: {app}; Flags: ignoreversion
+Source: C:\Program Files\Haskell\hpage-0.8.5\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\λPage"; Filename: "{app}\hpage.exe"
-Name: "{group}\{cm:ProgramOnTheWeb,λPage}"; Filename: "http://haskell.hpage.com/"
-Name: "{group}\{cm:UninstallProgram,λPage}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\λPage"; Filename: "{app}\hpage.exe"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage"; Filename: "{app}\hpage.exe"; Tasks: quicklaunchicon
+Name: {group}\λPage; Filename: {app}\hpage.exe; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
+Name: {group}\{cm:ProgramOnTheWeb,λPage}; Filename: http://haskell.hpage.com/
+Name: {group}\{cm:UninstallProgram,λPage}; Filename: {uninstallexe}
+Name: {commondesktop}\λPage; Filename: {app}\hpage.exe; Tasks: desktopicon; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
+Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage; Filename: {app}\hpage.exe; Tasks: quicklaunchicon; IconFilename: C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
 
 [Run]
-Filename: "{app}\hpage.exe"; Description: "{cm:LaunchProgram,λPage}"; Flags: nowait postinstall skipifsilent
-
+Filename: {app}\hpage.exe; Description: {cm:LaunchProgram,λPage}; Flags: nowait postinstall skipifsilent
 
