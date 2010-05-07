@@ -14,9 +14,6 @@ import Control.Concurrent.MVar
 import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
-import System.Exit
-import System.Environment
-import System.Cmd
 import GHC.Paths
 import Data.List
 import Data.Bits
@@ -107,20 +104,13 @@ gui args =
         
         SS.step ssh 0 "Checking installation..."
         
-        ghcPkgRunner <- catch (getEnv "GHC_PKGCONF")
-                              (\err -> if isDoesNotExistError err
-                                           then return ghc_pkg
-                                           else return "")
+        ghcInstalled <- doesFileExist ghc
         
-        debugIO $ "ghcPkgRunner: " ++ ghcPkgRunner
+        debugIO $ "ghc: " ++ ghc
         
-        isCabalInstalled <- case ghcPkgRunner of
-                                "" -> return False
-                                _  -> rawSystem ghcPkgRunner ["check"] >>= return . (ExitSuccess ==) 
-        
-        if not isCabalInstalled
+        if not ghcInstalled
             then do
-                errorDialog win "Error" "Seems like you don't have the Haskell Platform installed.\nPlease install it from http://hackage.haskell.org/platform/"
+                errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
                 SS.step ssh 100 "failed"
                 wxcAppExit
             else do
