@@ -98,7 +98,9 @@ gui args =
         
         win <- frame [text := "\955Page",
                       visible := False]
-        imageFile ("icon" </> "hpage.tif") >>= topLevelWindowSetIconFromFile win 
+
+        iconFile <- imageFile $ "icon" </> "hpage" <.> "ico"
+	iconCreateFromFile iconFile sizeNull >>= topLevelWindowSetIcon win
         
         set win [on closing := HPS.stop model >> propagateEvent]
 
