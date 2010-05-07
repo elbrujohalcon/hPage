@@ -819,8 +819,7 @@ syncRun action = do
                     liftTraceIO "sync - confirming"
                     ctx <- confirmRunning
                     liftTraceIO "sync - running"
-                    liftIO $ catch (HS.runIn (server ctx) action)
-                                   (\exc -> return . Left . Hint.UnknownError . show $ exc) 
+                    liftIO $ HS.runIn (server ctx) action 
 
 asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
 asyncRun action = do

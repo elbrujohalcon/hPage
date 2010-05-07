@@ -93,9 +93,6 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
 gui :: [String] -> IO ()
 gui args =
     do
-        -- Server context
-        model <- HPS.start
-        
         win <- frame [text := "\955Page",
                       visible := False]
 
@@ -104,7 +101,12 @@ gui args =
         
         set win [on closing := HPS.stop model >> propagateEvent]
 
-        ssh <- SS.start win 
+        ssh <- SS.start win
+        
+        SS.step ssh 10 "Starting the hint-server..."
+        
+        -- Server context
+        model <- HPS.start
         
         SS.step ssh 20 "Starting up..."
         
