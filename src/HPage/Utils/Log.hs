@@ -30,10 +30,10 @@ fatalIO = logIO Fatal
 
 {- with log...
 liftTraceIO = liftLogIO Trace
-liftDebugIO = liftLogIO Debug
+liftDebugIO _ = return ()
 -}
 liftTraceIO _ = return () 
-liftDebugIO _ = return ()
+liftDebugIO = liftLogIO Debug
 liftInfoIO = liftLogIO Info
 liftWarnIO = liftLogIO Warning
 liftErrorIO = liftLogIO Error

@@ -431,6 +431,7 @@ typeOf = getPage >>= typeOfNth . currentExpr
 interpretNth :: Int -> HPage (Either Hint.InterpreterError Interpretation)
 interpretNth i =
         do
+            liftDebugIO ("Interpreting", i)
             typeRes <- typeOfNth i
             case typeRes of
                 Left terr ->
