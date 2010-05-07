@@ -116,7 +116,7 @@ gui args =
         
         isCabalInstalled <- case ghcPkgRunner of
                                 "" -> return False
-                                _  -> rawSystem ghcPkgRunner ["list"] >>= return . (ExitSuccess ==) 
+                                _  -> rawSystem ghcPkgRunner ["check"] >>= return . (ExitSuccess ==) 
         
         if not isCabalInstalled
             then do
