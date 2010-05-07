@@ -1041,6 +1041,7 @@ tryIn' model hpacc = tryIn model $ hpacc >>= return . Right
 tryIn :: HPS.ServerHandle -> HP.HPage (Either HP.InterpreterError x) -> IO (Either ErrorString x)
 tryIn model hpacc =
     do
+        debugIO "Trying..."
         res <- HPS.runIn model $ catchError (hpacc >>= return . Right)
                                             (\ioerr -> return $ Left ioerr)
         case res of
