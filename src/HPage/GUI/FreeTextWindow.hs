@@ -113,11 +113,11 @@ gui args =
             then do
                 SS.step ssh 100 "failed"
                 set win [visible := True]
-                timer win [interval := 500,
-                           on command := do
-                                            errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
-                                            wxcAppExit
-                                            exitWith $ ExitFailure 1]
+                shutdownTimer <- timer win [on command := do
+                                                                errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
+                                                                wxcAppExit
+                                                                exitWith $ ExitFailure 1]
+                timerStart shutdownTimer 50 True
                 return ()
             else do
                 SS.step ssh 10 "Starting the hint-server..."
