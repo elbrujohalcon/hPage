@@ -7,18 +7,18 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{EA29B0BB-6525-416D-9D9D-3EC7C7BF2EB8}
 AppName=λPage
-AppVerName=λPage 0.8.5
+AppVerName=λPage 0.9.0
 AppPublisher=Fernando Benavides
 AppPublisherURL=http://haskell.hpage.com/
 AppSupportURL=http://haskell.hpage.com/
 AppUpdatesURL=http://haskell.hpage.com/
-DefaultDirName={pf}\hpage-0.8.5
+DefaultDirName={pf}\hpage-0.9.0
 DisableDirPage=yes
 DefaultGroupName=λPage
 AllowNoIcons=yes
 LicenseFile=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\LICENSE
 OutputDir=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\dist\build
-OutputBaseFilename=hpage-0.8.5
+OutputBaseFilename=hpage-0.9.0
 SetupIconFile=C:\Documents and Settings\elbrujohalcon\Projects\haskell\hpage\res\images\icon\hpage.ico
 Compression=lzma
 SolidCompression=yes
@@ -32,8 +32,9 @@ Name: quicklaunchicon; Description: {cm:CreateQuickLaunchIcon}; GroupDescription
 
 [Files]
 Source: C:\Program Files\Haskell\bin\hpage.exe; DestDir: {app}; Flags: ignoreversion
-Source: C:\Program Files\Haskell\hpage-0.8.5\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: C:\Program Files\Haskell\hpage-0.9.0\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+Source: system32\wxc-msw2.8.10-0.11.1.2.dll; DestDir: {sys}; Attribs: system; Flags: regserver sharedfile 32bit noregerror; Tasks: ; Languages: 
 
 [Icons]
 Name: {group}\λPage; Filename: {app}\hpage.exe; IconFilename: {app}\res\images\icon\hpage.ico
@@ -44,4 +45,6 @@ Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage; Filename: {
 
 [Run]
 Filename: {app}\hpage.exe; Description: {cm:LaunchProgram,λPage}; Flags: nowait postinstall skipifsilent
+
+
 
