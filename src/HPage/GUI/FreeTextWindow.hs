@@ -15,6 +15,7 @@ import System.FilePath
 import System.Directory
 import System.IO.Error hiding (try, catch)
 import System.Exit
+import System.Cmd
 import GHC.Paths
 import Data.List
 import Data.Bits
@@ -105,21 +106,10 @@ gui args =
         
         SS.step ssh 0 "Checking installation..."
         
-        ghcInstalled <- doesFileExist ghc
+        checkResult <- rawSystem "cabal" ["--version"]
         
-        debugIO $ "ghc: " ++ ghc
-        
-        if not ghcInstalled
-            then do
-                SS.step ssh 100 "failed"
-                set win [visible := True]
-                shutdownTimer <- timer win [on command := do
-                                                                errorDialog win "Error" "Seems like you don't have GHC installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
-                                                                wxcAppExit
-                                                                exitWith $ ExitFailure 1]
-                timerStart shutdownTimer 50 True
-                return ()
-            else do
+        case checkResult of
+            ExitSuccess -> do
                 SS.step ssh 10 "Starting the hint-server..."
                 
                 -- Server context
@@ -387,6 +377,15 @@ gui args =
                 set win [visible := True]
                 set txtCode [font := fontFixed] -- again just to be sure
                 focusOn txtCode
+            errRes -> do
+                SS.step ssh 100 "failed"
+                set win [visible := True]
+                shutdownTimer <- timer win [on command := do
+                                                                errorDialog win "Error" "Seems like you don't have Cabal installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
+                                                                wxcAppExit
+                                                                exitWith errRes]
+                timerStart shutdownTimer 50 True
+                return ()
 
 -- PROCESSES -------------------------------------------------------------------
 charFiller :: GUIContext -> Process String ()
