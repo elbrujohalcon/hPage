@@ -16,7 +16,6 @@ import System.Directory
 import System.IO.Error hiding (try, catch)
 import System.Exit
 import System.Cmd
-import GHC.Paths
 import Data.List
 import Data.Bits
 import Data.Char (toLower)
