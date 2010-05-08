@@ -3,7 +3,8 @@
              FlexibleInstances,
              FlexibleContexts,
              FunctionalDependencies,
-             UndecidableInstances #-}
+             UndecidableInstances,
+             ScopedTypeVariables #-}
              
 module HPage.GUI.FreeTextWindow ( gui ) where
 
@@ -70,7 +71,7 @@ aboutFile =
                 getDataFileName $ "res" </> "help" </> "about.html"
 
 data GUIBottom = GUIBtm { bottomDesc :: String,
-                          bottomSource :: String }
+                          _bottomSource :: String }
 
 data GUIResults = GUIRes { resButton :: Button (),
                            resLabel :: StaticText (),
@@ -105,7 +106,10 @@ gui args =
         
         SS.step ssh 0 "Checking installation..."
         
-        checkResult <- rawSystem "cabal" ["--version"]
+        checkResult <- catch (rawSystem "cabal" ["--version"])
+                             (\(_ :: SomeException) -> return $ ExitFailure 1)
+        
+        debugIO ("result", checkResult)
         
         case checkResult of
             ExitSuccess -> do
