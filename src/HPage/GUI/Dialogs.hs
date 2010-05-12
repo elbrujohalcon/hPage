@@ -27,7 +27,7 @@ htmlDialog win caption winsize url =
         dlg <- dialog win [text := caption]
         htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) winsize) 0 ""
         debugIO ("url:", url)
-        htmlWindowLoadPage htmlw url
+        True <- htmlWindowLoadPage htmlw url
         set dlg [layout := fill $ widget htmlw,
                  visible := True,
                  clientSize := winsize]
@@ -71,8 +71,8 @@ preferencesDialog win caption currentPrefs =
                                         buttonOnCommand btnnok $ stopFun Nothing
     where getCurrentPrefs e d g = do
                                     let availExts = sort HP.availableExtensions
-                                    les_ <- get e selections
-                                    let les = map (availExts !!) les_
+                                    les' <- get e selections
+                                    let les = map (availExts !!) les'
                                     sds <- get d items
                                     gos <- get g text
                                     return $ Prefs les sds gos

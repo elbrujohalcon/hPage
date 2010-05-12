@@ -521,7 +521,7 @@ reloadModules = do
 
 getLoadedModules :: HPage (Either Hint.InterpreterError [ModuleDescription])
 getLoadedModules = do
-                        confirmRunning
+                        confirmRunning_
                         syncRun $ do
                                     mns <- Hint.getLoadedModules
                                     mis <- mapM Hint.isModuleInterpreted mns
@@ -535,7 +535,7 @@ getPackageModules = confirmRunning >>= return . pkgModules
 
 getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [ModuleElemDesc])
 getModuleExports mn = do
-                            confirmRunning
+                            confirmRunning_
                             let action = do
                                             exs <- Hint.getModuleExports mn
                                             mapM moduleElemDesc exs
@@ -598,7 +598,13 @@ loadPackage file = do
                                         dirs = ("dist" </> "build" </> "autogen") : (uniq $ concatMap hsSourceDirs bldinfos)
                                         exts = uniq . map (read . show) $ concatMap extensions bldinfos
                                         opts = uniq $ concatMap (hcOptions GHC) bldinfos
-                                        mods = uniq . map (joinWith "." . components) $ exeModules pkgdesc ++ (libModules pkgdesc)
+                                        libmods = case library pkgdesc of
+                                        			Nothing ->
+                                        				[]
+                                        			Just l ->
+                                        				libModules l
+                                        exemods = concat (map exeModules $ executables pkgdesc)
+                                        mods = uniq . map (joinWith "." . components) $ exemods ++ libmods
                                         action = do
                                                     liftTraceIO $ "loading package: " ++ show pkgname
                                                     Hint.unsafeSetGhcOption "-i"
@@ -675,7 +681,7 @@ reloadModules' = do
 
 getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [ModuleDescription]))
 getLoadedModules' = do
-                        confirmRunning
+                        confirmRunning_
                         asyncRun $ do
                                         mns <- Hint.getLoadedModules
                                         mis <- mapM Hint.isModuleInterpreted mns
@@ -738,7 +744,7 @@ cancel = do
             liftIO $ HPIO.stop $ ioServer ctx
             hs <- liftIO $ HS.start
             hpios <- liftIO $ HPIO.start
-            liftIO $ HS.runIn hs $ recoveryLog ctx
+            _ <- liftIO $ HS.runIn hs $ recoveryLog ctx
             modify (\c -> c{server      = hs,
                             ioServer    = hpios,
                             running     = Nothing})
@@ -826,6 +832,9 @@ asyncRun action = do
                     ctx <- confirmRunning
                     liftIO $ HS.asyncRunIn (server ctx) action
 
+confirmRunning_ :: HPage ()
+confirmRunning_ = confirmRunning >> return ()
+ 
 confirmRunning :: HPage Context
 confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
 

@@ -224,7 +224,7 @@ gui args =
                 menuAppend mnuPage wxId_SAVE "&Save\tCtrl-s" "Save Page" False
                 menuAppend mnuPage wxId_SAVEAS "&Save as...\tCtrl-Shift-s" "Save Page as" False
                 menuAppendSeparator mnuPage
-                menuQuit mnuPage [on command := wxcAppExit]
+                _menuQuit <- menuQuit mnuPage [on command := wxcAppExit]
                 
                 mnuEdit <- menuPane [text := "Edit"]
                 menuAppend mnuEdit wxId_UNDO "&Undo\tCtrl-z" "Undo" False
@@ -255,7 +255,7 @@ gui args =
                 mnuHelp <- menuHelp []
                 menuAppend mnuHelp wxId_HELP "&Help page\tCtrl-h" "Open the Help Page" False
                 about <- aboutFile
-                menuAbout mnuHelp [on command := aboutDialog win about]
+                _menuAbout <- menuAbout mnuHelp [on command := aboutDialog win about]
                 
                 set win [menuBar := [mnuPage, mnuEdit, mnuHask, mnuHelp]]
                 evtHandlerOnMenuCommand win wxId_NEW $ onCmd "runHP' addPage" $ runHP' HP.addPage
@@ -305,17 +305,17 @@ gui args =
                 copyPath <- imageFile "copy.png"
                 pastePath <- imageFile "paste.png"
                 reloadPath <- imageFile "reload.png"
-                toolMenu tbMain mitLoadPkg "Load Package" loadPath [tooltip := "Load Cabal Package"]
+                _loadPackage <- toolMenu tbMain mitLoadPkg "Load Package" loadPath [tooltip := "Load Cabal Package"]
                 toolBarAddSeparator tbMain
-                toolMenu tbMain mitNew "New" newPath [tooltip := "New Page"]
-                toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open Page"]
-                toolMenu tbMain mitSave "Save" savePath [tooltip := "Save Page"]
+                _new <- toolMenu tbMain mitNew "New" newPath [tooltip := "New Page"]
+                _open <- toolMenu tbMain mitOpen "Open" openPath [tooltip := "Open Page"]
+                _save <- toolMenu tbMain mitSave "Save" savePath [tooltip := "Save Page"]
                 toolBarAddSeparator tbMain
-                toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
-                toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
-                toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
+                _cut <- toolMenu tbMain mitCut "Cut" cutPath [tooltip := "Cut"]
+                _copy <- toolMenu tbMain mitCopy "Copy" copyPath [tooltip := "Copy"]
+                _paste <- toolMenu tbMain mitPaste "Paste" pastePath [tooltip := "Paste"]
                 toolBarAddSeparator tbMain
-                toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
+                _reload <- toolMenu tbMain mitReload "Reload" reloadPath [tooltip := "Reload Modules"]
                 toolBarSetToolBitmapSize tbMain $ sz 32 32
         
                 -- Layout settings
@@ -331,11 +331,11 @@ gui args =
                 --      That's because the main C loop of wx only calls wxHaskell callbacks when something happens
                 --      and we try to make things happen in this side but they're not reflected there until some-
                 --      thing happens there
-                timer win [interval := 50, on command := return ()]
+                _tickingTimer <- timer win [interval := 50, on command := return ()]
                 
                 -- test the server...
                 SS.step ssh 40 "Preparing model..."
-                runTxtHPSelection "1" model HP.interpret
+                Right _ <- runTxtHPSelection "1" model HP.interpret
                 
                 SS.step ssh 60 "Loading first page..."
                 -- ...and RUN!
@@ -387,7 +387,7 @@ gui args =
                                                                 errorDialog win "Error" "Seems like you don't have Cabal installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
                                                                 wxcAppExit
                                                                 exitWith errRes]
-                timerStart shutdownTimer 50 True
+                True <- timerStart shutdownTimer 50 True
                 return ()
 
 -- PROCESSES -------------------------------------------------------------------
@@ -469,9 +469,9 @@ valueFill GUICtx{guiResults = GUIRes{resErrors = varErrors},
                  guiChrFiller = chfv} val =
     do
         debugIO "valueFill starting..."
-        tryTakeMVar chv --NOTE: empty the var
+        _ <- tryTakeMVar chv --NOTE: empty the var
         debugIO "timer starting..."
-        timerStart charTimer charTimeout True
+        True <- timerStart charTimer charTimeout True
         debugIO "sending msg to charFiller..."
         readMVar chfv >>= flip sendTo val
         debugIO "waiting for value toAdd..."
@@ -486,7 +486,7 @@ valueFill GUICtx{guiResults = GUIRes{resErrors = varErrors},
                     return txt
             Nothing -> --NOTE: Means "Timed Out"
                 do
-                    varUpdate varErrors (++ [GUIBtm "Timed Out" val])
+                    _newVal <- varUpdate varErrors (++ [GUIBtm "Timed Out" val])
                     debugIO $ "timed out"
                     return bottomChar
 
@@ -544,10 +544,10 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
                         menuAppend browseMenu idAny err "Error" False
                     Right mes ->
                         flip mapM_ mes $ createMenuItem browseMenu
-                menuItem contextMenu [text := "To Clipboard",
-                                      on command := addToClipboard mn]
-                menuItem contextMenu [text := "Search on Hayoo!",
-                                      on command := hayooDialog win mn]
+                _copy <- menuItem contextMenu [text := "To Clipboard",
+                         		               on command := addToClipboard mn]
+                _search <- menuItem contextMenu [text := "Search on Hayoo!",
+                           			             on command := hayooDialog win mn]
                 menuAppendSeparator contextMenu
                 menuAppendSub contextMenu wxId_HASK_BROWSE "&Browse" browseMenu ""
           addToClipboard txt =
@@ -591,10 +591,10 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
           createBasicMenuItem name =
             do
                 itemMenu <- menuPane []
-                menuItem itemMenu [text := "To Clipboard",
-                                   on command := addToClipboard name]
-                menuItem itemMenu [text := "Search on Hayoo!",
-                                   on command := hayooDialog win name]
+                _copy <- menuItem itemMenu [text := "To Clipboard",
+                                   			on command := addToClipboard name]
+                _search <- menuItem itemMenu [text := "Search on Hayoo!",
+                           			          on command := hayooDialog win name]
                 return itemMenu
 
 
@@ -826,8 +826,8 @@ configure model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
                             do
                                 set status [text := "setting..."]
                                 runHP (do
-                                            HP.setLanguageExtensions $ languageExtensions newps
-                                            HP.setSourceDirs $ sourceDirs newps
+                                            Right () <- HP.setLanguageExtensions $ languageExtensions newps
+                                            Right () <- HP.setSourceDirs $ sourceDirs newps
                                             case ghcOptions newps of
                                                 "" -> return $ Right ()
                                                 newopts -> HP.setGhcOpts newopts
@@ -867,7 +867,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                 do
                     -- Refresh the pages list
                     itemsDelete lstPages
-                    (flip mapM) ps $ \pd ->
+                    (flip mapM_) ps $ \pd ->
                                         let prefix = if HP.pIsModified pd
                                                         then "*"
                                                         else ""
@@ -888,7 +888,7 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                         flip filter pms $ \pm -> all (\xm -> HP.modName xm /= pm) ms
                         allms = zip [0..] (ims' ++ ms' ++ pms')
                     itemsDelete lstModules
-                    (flip mapM) allms $ \(idx, (img, m@(mn:_))) ->
+                    (flip mapM_) allms $ \(idx, (img, m@(mn:_))) ->
                                                 listCtrlInsertItemWithLabel lstModules idx mn img >>                                                
                                                 set lstModules [item idx := m]
                     varSet varModsSel $ -1
@@ -985,7 +985,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         poc <- liftIO $ get btnInterpret $ on command
                         let revert = do
                                         debugIO "Cancelling..."
-                                        tryTakeMVar chv --NOTE: empty the var
+                                        _ <- tryTakeMVar chv --NOTE: empty the var
                                         debugIO "Killing the char filler..."
                                         newchf <- spawn $ charFiller guiCtx
                                         swapMVar chfv newchf >>= kill
@@ -1023,7 +1023,7 @@ runTxtHPSelection s model hpacc =
                                         Right cp -> cp
                             newacc = HP.setPageText s (length s) >> hpacc
                         res <- tryIn model newacc
-                        tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
+                        Right () <- tryIn' model $ HP.closePage >> HP.setPageIndex cpi 
                         return res
 
 refreshExpr :: HPS.ServerHandle -> GUIContext -> IO ()

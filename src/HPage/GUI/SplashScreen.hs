@@ -7,7 +7,6 @@ import Control.Concurrent.Process
 import Data.Bits
 import Graphics.UI.WX hiding (start)
 import Graphics.UI.WXCore hiding (kill)
-import Graphics.UI.WXCore.WxcDefs
 import System.FilePath
 import System.Environment.FindBin
 import Paths_hpage
@@ -36,14 +35,14 @@ start topWin = (spawn $ guiRunner topWin) >>= return . SH
                                          do
                                              debugIO "closing the window"
                                              set win [visible := False]
-                                             windowDestroy win
+                                             True <- windowDestroy win
                                              kill myself 
                                      _ ->
                                          do
                                              debugIO ("progress", percent, lbl)
                                              set caption [text := lbl]
                                              set progress [selection := percent]
-                                             wxcAppSafeYield win
+                                             _int <- wxcAppSafeYield win
                                              return ()
 
 step :: SplashHandle -> Int -> String -> IO ()
@@ -62,7 +61,7 @@ gui topWin =
                                                        wxCLOSE_BOX .|.
                                                        wxCAPTION)
         win <- frameEx frameStyle [] topWin
-        timer win [interval := 5, on command := putStr ":"]
+        _timer <- timer win [interval := 5, on command := putStr ":"]
         
         img <- imageFile
         htmlw <- htmlWindowCreate win idAny (rect (point 0 0) (sz 870 176)) wxHW_SCROLLBAR_NEVER ""
