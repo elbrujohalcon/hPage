@@ -35,6 +35,7 @@ Source: C:\Documents and Settings\Fernando Benavides\Application Data\cabal\bin\
 Source: C:\Documents and Settings\Fernando Benavides\Application Data\cabal\hpage-0.10.0\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 Source: system32\wxmsw28u_gcc_custom.dll; DestDir: {sys}; Attribs: system; Flags: regserver sharedfile 32bit noregerror; Tasks: ; Languages:
+Source: system32\mingwm10.dll; DestDir: {sys}; Attribs: system; Flags: regserver sharedfile 32bit noregerror; Tasks: ; Languages:
 
 [Icons]
 Name: {group}\λPage; Filename: {app}\hpage.exe; IconFilename: {app}\res\images\icon\hpage.ico
@@ -45,4 +46,5 @@ Name: {userappdata}\Microsoft\Internet Explorer\Quick Launch\λPage; Filename: {
 
 [Run]
 Filename: {app}\hpage.exe; Description: {cm:LaunchProgram,λPage}; Flags: nowait postinstall skipifsilent
+
 
