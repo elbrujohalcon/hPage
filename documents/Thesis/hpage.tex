@@ -7,6 +7,7 @@
 \usepackage[left=2cm,right=2cm]{geometry}
 \usepackage{ulem} %Para tachar cosas
 \usepackage{epigraph}
+\usepackage{enumerate}
 \usepackage{listings}
 \usepackage{html}
 \usepackage{booktabs}
@@ -114,7 +115,7 @@
 	\qitem{As a rule, software systems do not work well until they have been used, and have failed repeatedly, in real applications.}{Dave Parnas}
 	\qitem{The \#1 programmer excuse for legitimately slacking off: ``My code is compiling''}{David Knutz}
 \end{epigraphs}
-\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en el sitio web de \hpage, pero, como ya se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
+\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en \htmladdnormallink{el sitio web de \hpage}{http://github.com/elbrujohalcon/hPage/downloads}, pero, como ya se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{center}\begin{lstlisting}
 $ cabal install hpage
@@ -124,13 +125,87 @@ $ cabal install hpage
 	\item[\htmladdnormallink{wxWidgets 2.8.10+}{http://www.wxwidgets.org/downloads/}~\cite{wxwidgets}] El framework de desarrollo para interfaces de usuario que utiliza \textsl{wxHaskell}.  Debe ser instalado con los m'odulos unicode, cmdline, config, log, stl, richtext y clipboard, al menos y con el m'odulo odbc desactivado.
 	\item[\htmladdnormallink{Haskell Platform}{http://hackage.haskell.org/platform/}~\cite{platform}] Una distribuci'on de \haskell\ que incluye todo lo necesario para compilar e instalar programas desarrollados en este lenguaje (de particular inter'es para \hpage: GHC y happy).
 \end{description}
-\subsubsection{Windows}
-\paragraph{}Para el correcto funcionamiento de \hpage\ los usuarios de \textsl{Windows XP} deben instalar el \htmladdnormallink{C++ 2008 SP1}{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2}~\cite{cppsp1}.
+\paragraph{}El proceso de instalaci'on de estas librer'ias y \hpage, a trav'es de \cabal\ var'ia seg'un la plataforma en la que se lo desee instalar.  Detallamos a continuaci'on los procedimientos necesarios para instalar \hpage\ en OSX, Linux y Windows.
+
+\subsubsection{OSX}
+\paragraph{}Para instalar \hpage\ en \textsl{OSX Leopard}, una vez instaladas las herramientas de desarrollo que vienen en el CD de instalaci'on del sistema operativo, se deben seguir estos pasos:
+\begin{enumerate}
+	\item Descargar e instalar \htmladdnormallink{WxMac 2.8.10}{http://www.wxwidgets.org/docs/faqmac.htm}
+	\item Descargar y compilar los fuentes de \htmladdnormallink{The Haskell Platform 2010.1.0.1}{http://hackage.haskell.org/platform/mac} (En el caso de \textsl{OSX Snow Leopard} se puede utilizar directamente el instalador).
+	\item Actualizar cabal y, finalmente, instalar \hpage:
+		\begin{center}\begin{lstlisting}
+$ cabal update
+$ cabal install hpage
+		\end{lstlisting}\end{center}
+\end{enumerate}
+	
 \subsubsection{Linux}
-\paragraph{}En algunas distribuciones de Linux es conveniente, adem'as de la instalaci'on de \textsl{Haskell Platform} instalar las librer'ias de \textit{Monad Transformers} ejecutando, por ejemplo:
-\begin{center}\begin{lstlisting}
-$ sudo aptitude install libghc6-mtl-dev libghc6-mtl-doc
-\end{lstlisting}\end{center}
+\paragraph{}Para instalar \hpage\ en \textsl{Ubuntu Lucid Lynx} se deben seguir los siguientes pasos:
+\begin{enumerate}
+	\item Instalar \htmladdnormallink{WxWidgets 2.8.10 for GTK+}{http://wiki.wxpython.org/InstallingOnUbuntuOrDebian}:
+		\begin{center}\begin{lstlisting}
+$ sudo apt-get install wx-common libwxbase2.8-0 libwxbase2.8-dev wx2.8-doc
+	gettext
+$ sudo apt-get install libwxgtk2.8-0 libwxgtk2.8-dev
+		\end{lstlisting}\end{center}
+	\item Instalar \htmladdnormallink{GHC}{http://www.haskell.org/ghc}~\cite{ghc}:
+		\begin{center}\begin{lstlisting}
+$ sudo apt-get install ghc6 ghc6-prof ghc6-doc haddock haskell-doc
+		\end{lstlisting}\end{center}
+	\item Instalar los paquetes necesarios para compilar \textsl{The Haskell Platform}:
+		\begin{center}\begin{lstlisting}
+$ sudo apt-get install libghc6-opengl-dev libghc6-zlib-dev libghc6-glut-dev
+	libghc6-opengl-prof libghc6-zlib-prof libghc6-glut-prof
+		\end{lstlisting}\end{center}
+	\item Descargar y descomprimir la versi—n \textsl{2010.1.0.0} de \htmladdnormallink{The Haskell Platform}{http://hackage.haskell.org/platform/linux}:
+		\begin{center}\begin{lstlisting}
+$ tar -xzf haskell-platform-2010.1.0.0.tar.gz
+		\end{lstlisting}\end{center}
+	\item Instalarlo
+		\begin{center}\begin{lstlisting}
+$ cd haskell-platform-2010.1.0.0
+$ ./configure
+$ make
+$ sudo make install
+		\end{lstlisting}\end{center}
+	\item Asegurarse de que \texttt{~/.cabal/bin} est'e en el \textsl{path}:
+		\begin{center}\begin{lstlisting}
+$ export PATH=~/.cabal/bin:$PATH
+		\end{lstlisting}\end{center}
+	\item Actualizar cabal y, finalmente, instalar \hpage:
+		\begin{center}\begin{lstlisting}
+$ cabal update
+$ cabal install hpage
+		\end{lstlisting}\end{center}
+\end{enumerate}
+
+\subsubsection{Windows}
+\paragraph{}Para instalar \hpage\ en \textsl{Windows XP} se deben seguir las instrucciones que se listan a continuaci'on:
+\begin{enumerate}
+	\item Descargar e instalar \htmladdnormallink{WxWidgets 2.8.10 for MSW}{http://ufpr.dl.sourceforge.net/project/wxwindows/wxMSW/2.8.10/wxMSW-2.8.10-Setup.exe}
+	\item Descargar y ubicar en el \textsl{path} (de modo que pueda ser ejecutado desde la l'inea de comandos) \htmladdnormallink{wx-config para Windows}{http://wxconfig.googlepages.com/}
+	\item Crear dos nuevas variables de entorno:
+		\begin{enumerate}[i.]
+			\item Abrir \textsl{Men'u Inicio $\rightarrow$ Panel de Control $\rightarrow$ Sistema  $\rightarrow$ Opciones Avanzadas  $\rightarrow$ Variables de Entorno}
+			\item Crear la variable \textbf{WXWIN} cuyo valor debe ser la carpeta en la que se encuentre instalado \textsl{WxWidgets} (por ejemplo \texttt{c:\textbackslash wxWidgets-2.8.10})
+			\item Crear la variable \textbf{WXCFG} cuyo valor debe ser \texttt{gcc\_dll/mswu}
+		\end{enumerate}
+	\item Descargar e instalar \htmladdnormallink{MinGW}{http://sourceforge.net/projects/mingw/files/Automated\%20MinGW\%20Installer} con soporte para \textbf{gcc}
+	\item Descargar e instalar \htmladdnormallink{MSYS}{http://downloads.sourceforge.net/mingw/MSYS-1.0.11.exe}
+	\item Usando la consola de MSYS, ejecutar:
+		\begin{center}\begin{lstlisting}
+$ cd /c/path/to/wxWidgets-2.8.10/build/msw
+$ mingw32-make -f makefile.gcc BUILD=release MONOLITHIC=1 SHARED=1 UNICODE=1
+		\end{lstlisting}\end{center}
+	\item Instalar el \htmladdnormallink{C++ 2008 SP1}{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2}~\cite{cppsp1}.
+	\item Descargar e instalar la versi—n \textsl{2010.1.0.0} de \htmladdnormallink{The Haskell Platform}{http://hackage.haskell.org/platform/windows}
+	\item Actualizar cabal y, finalmente, instalar \hpage:
+		\begin{center}\begin{lstlisting}
+$ cabal update
+$ cabal install hpage
+		\end{lstlisting}\end{center}
+\end{enumerate}
+
 \newpage
 \subsection{Caso de Uso: Aprobando PLP con \hpage}
 \begin{epigraphs}
