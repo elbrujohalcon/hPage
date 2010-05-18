@@ -397,8 +397,8 @@ charFiller GUICtx{guiResults = GUIRes{resErrors= varErrors},
     forever $ do
          t <- recv
          liftIO $ do
-                    txt <- catch (eval t) $ \(ErrorCall desc) ->
-                                                    varUpdate varErrors (++ [GUIBtm desc t]) >>
+                    txt <- flip handle (eval t) $ \(ex :: SomeException) ->
+                                                    varUpdate varErrors (++ [GUIBtm (show ex) t]) >>
                                                     return bottomChar
                     debugIO $ "Writing chv := " ++ txt
                     tryPutMVar chv $ Just txt
@@ -449,12 +449,12 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
 valueFiller' :: GUIContext -> String -> IO String
 valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} val =
       do
-        h <- try (case val of
+      	h <- try (case val of
                       [] -> return []
                       (c:_) -> return [c])
         case h of
-            Left (ErrorCall desc) ->
-                return desc
+            Left (ex :: SomeException) ->
+                return $ show ex
             Right [] ->
                 return ""
             Right t ->
@@ -953,6 +953,11 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                               guiChrFiller  = chfv,
                               guiStatus     = status} =
     do
+    	-- Cancel if needed...
+    	btnText <- get btnInterpret text
+    	if btnText == "Cancel"
+    		then get btnInterpret (on command) >>= liftIO 
+    		else return ()
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
                         "" -> tryIn
@@ -1001,7 +1006,8 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                       bgcolor := case errs of
                                                                      [] -> white
                                                                      _  -> yellow]
-                                        set btnInterpret [on command := poc, text := "Interpret"]
+                                        set btnInterpret [text := "Interpret",
+                                        				  on command := poc]
                          in liftIO $ set btnInterpret [text := "Cancel",
                                                        on command := revert]
                         liftDebugIO "sending the value to the Value Filler..."
