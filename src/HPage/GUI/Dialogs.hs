@@ -27,10 +27,13 @@ htmlDialog win caption winsize url =
         dlg <- dialog win [text := caption]
         htmlw <- htmlWindowCreate dlg idAny (rect (point 0 0) winsize) 0 ""
         debugIO ("url:", url)
-        True <- htmlWindowLoadPage htmlw url
+        opened <- htmlWindowLoadPage htmlw url
+        if opened
+            then return ()
+            else htmlWindowSetPage htmlw $ "The browser could not open the page: <a href='" ++ url ++ "'>" ++ url ++ "</a>"
         set dlg [layout := fill $ widget htmlw,
-                 visible := True,
-                 clientSize := winsize]
+                    visible := True,
+                    clientSize := winsize]
         windowCenter dlg wxCENTRE_ON_SCREEN
         return ()
 
