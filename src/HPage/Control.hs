@@ -29,7 +29,8 @@ module HPage.Control (
     -- EDITION CONTROLS --
     undo, redo,
     -- HINT CONTROLS --
-    interpret, interpretNth, Interpretation, intKind, intValue, intType, isIntType,
+    interpret, interpretNth, Interpretation, intKind, intValue, intValues,
+    intType, isIntType, isIntExprs,
     valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
     loadModules,
     reloadModules, getLoadedModules,
@@ -69,7 +70,7 @@ import qualified Language.Haskell.Interpreter.Server as HS
 import HPage.Utils.Log
 import Data.List (isPrefixOf)
 import qualified Data.ByteString.Char8 as Str
-import qualified Language.Haskell.Exts.Parser as Parser
+import qualified Language.Haskell.Exts as Xs
 import Distribution.Simple.Configure hiding (tryGetConfigStateFile)
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Utils
@@ -79,13 +80,20 @@ import Distribution.ModuleName
 import Distribution.Compiler
 import qualified HPage.IOServer as HPIO
 
-data Interpretation = Type {intKind ::  String} |
-                      Expr {intValue :: String, intType :: String}
+data Interpretation = Type  {intKind   :: String} |
+                      Expr  {intValue  :: String,   intType :: String} |
+                      Exprs {intValues :: [String], intType :: String} 
     deriving (Eq, Show)
     
 isIntType :: Interpretation -> Bool
-isIntType Type{} = True
-isIntType Expr{} = False
+isIntType Type{}  = True
+isIntType Expr{}  = False
+isIntType Exprs{} = False
+
+isIntExprs :: Interpretation -> Bool
+isIntExprs Type{}  = False
+isIntExprs Expr{}  = False
+isIntExprs Exprs{} = True
 
 data ModuleDescription = ModDesc {modName :: String,
                                   modInterpreted :: Bool}
@@ -439,43 +447,45 @@ interpretNth i =
                         kindRes <- kindOfNth i
                         case kindRes of
                             Left _ -> return $ Left terr
-                            Right k -> return $ Right $ Type{intKind = k}
+                            Right k -> return . Right $ Type{intKind = k}
                 Right t ->
                     do
-                        valueRes <- valueOfNth i
-                        case valueRes of
-                            Left verr ->
-                                if isNotShowable verr
-                                    then return $ Right $ Expr{intValue = "", intType = t}
-                                    else return $ Left verr
-                            Right v -> return $ Right $ Expr{intValue = v, intType = t}
+                        if isIO t
+                            then do
+                                valueRes <- getIOFromExprNth i
+                                case valueRes of
+                                    Right ioAction ->
+                                        do
+                                            ctx <- get
+                                            iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
+                                            case iores of
+                                                Left err ->
+                                                    return . Left . Hint.UnknownError $ show err
+                                                Right r ->
+                                                    return . Right $ Expr{intValue = r, intType = t}
+                                    Left err ->
+                                        return $ Left err
+                            else if isList t
+                                    then do
+                                            valueRes <- getListFromExprNth i
+                                            case valueRes of
+                                                Left verr -> return $ Left verr
+                                                Right list -> return . Right $ Exprs{intValues = list, intType = t}
+                                    else do
+                                            valueRes <- valueOfNth i
+                                            case valueRes of
+                                                Left verr ->
+                                                    if isNotShowable verr
+                                                        then return $ Right $ Expr{intValue = "", intType = t}
+                                                        else return $ Left verr
+                                                Right v -> return $ Right $ Expr{intValue = v, intType = t}
         where isNotShowable (Hint.WontCompile ghcerrs) = any complainsAboutShow ghcerrs
               isNotShowable _ = False
               complainsAboutShow err = let errMsg = Hint.errMsg err
                                         in "No instance for (GHC.Show" `isPrefixOf` errMsg
               
 valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-valueOfNth i =
-        do
-            res <- runInExprNthWithLets Hint.typeOf i
-            case res of
-                Right ('I':'O':' ':_:_) -> -- An IO Action
-                    do
-                        res2 <- getIOFromExprNth i
-                        case res2 of
-                            Right ioAction ->
-                                do
-                                    ctx <- get
-                                    iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
-                                    case iores of
-                                        Left err ->
-                                            return . Left . Hint.UnknownError $ show err
-                                        Right r ->
-                                            return . Right $ r
-                            Left err ->
-                                return $ Left err
-                _ ->
-                    runInExprNthWithLets Hint.eval i
+valueOfNth i = runInExprNthWithLets Hint.eval i
 kindOfNth = runInExprNth Hint.kindOf
 typeOfNth = runInExprNthWithLets Hint.typeOf
 
@@ -599,10 +609,8 @@ loadPackage file = do
                                         exts = uniq . map (read . show) $ concatMap extensions bldinfos
                                         opts = uniq $ concatMap (hcOptions GHC) bldinfos
                                         libmods = case library pkgdesc of
-                                        			Nothing ->
-                                        				[]
-                                        			Just l ->
-                                        				libModules l
+                                                    Nothing -> []
+                                                    Just l ->  libModules l
                                         exemods = concat (map exeModules $ executables pkgdesc)
                                         mods = uniq . map (joinWith "." . components) $ exemods ++ libmods
                                         action = do
@@ -806,6 +814,16 @@ getIOFromExprNth i =
                                        expr = "(" ++ letsToString lets ++ exprText item ++ ") >>= return . show"
                                     in syncRun $ Hint.interpret expr (Hint.as :: IO String)
 
+getListFromExprNth :: Int -> HPage (Either Hint.InterpreterError [String])
+getListFromExprNth i =
+    do
+        page <- getPage
+        let exprs = expressions page
+        flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
+                                       lets = filter isNamedExpr $ b ++ a
+                                       expr = "map show (" ++ letsToString lets ++ exprText item ++ ")"
+                                    in syncRun $ Hint.interpret expr (Hint.as :: [String])
+
 runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNthWithLets action i = do
                                     page <- getPage
@@ -861,9 +879,45 @@ exprFromString :: String -> [Expression]
 exprFromString s = map Exp $ splitOn "\n\n" s
 
 isNamedExpr :: Expression -> Bool
-isNamedExpr e = case Parser.parseDecl (exprText e) of
-                    Parser.ParseOk _ -> True
-                    _ -> False 
+isNamedExpr e = case Xs.parseDecl (exprText e) of
+                    Xs.ParseOk _ -> True
+                    _ -> False
+
+isType :: (Xs.Type -> Bool) -> String -> Bool
+isType f t = case Xs.parseType t of
+                    Xs.ParseOk ty -> f ty
+                    _ -> False -- couldn't parse
+
+isList :: String -> Bool
+isList = isType isList'
+
+isChar, isList' :: Xs.Type -> Bool
+isList' (Xs.TyForall _ _ intType)          = isList' intType
+isList' (Xs.TyParen intType)               = isList' intType
+isList' (Xs.TyList intType)                = not $ isChar intType 
+isList' (Xs.TyCon (Xs.Special Xs.ListCon)) = True
+isList' _                                  = False
+
+isChar (Xs.TyForall _ _ intType)                = isChar intType
+isChar (Xs.TyParen intType)                     = isChar intType
+isChar (Xs.TyCon (Xs.Qual _ (Xs.Ident "Char"))) = True 
+isChar (Xs.TyCon (Xs.UnQual (Xs.Ident "Char"))) = True
+isChar _                                        = False
+
+isIO :: String -> Bool
+isIO = isType isIO'
+
+isIO'', isIO' :: Xs.Type -> Bool
+isIO' (Xs.TyForall _ _ intType) = isIO' intType
+isIO' (Xs.TyParen intType)      = isIO' intType
+isIO' (Xs.TyApp intType _)      = isIO'' intType
+isIO' _                         = False
+
+isIO'' (Xs.TyForall _ _ intType)              = isIO'' intType
+isIO'' (Xs.TyParen intType)                   = isIO'' intType
+isIO'' (Xs.TyCon (Xs.Qual _ (Xs.Ident "IO"))) = True 
+isIO'' (Xs.TyCon (Xs.UnQual (Xs.Ident "IO"))) = True
+isIO'' _                                      = False
 
 exprFromString' :: String -> Int -> ([Expression], Int)
 exprFromString' "" 0 = ([], -1)

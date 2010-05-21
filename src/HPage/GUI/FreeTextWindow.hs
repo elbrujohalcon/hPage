@@ -91,7 +91,7 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
                            guiSearch    :: FindReplaceData (),
                            guiChrVar    :: MVar (Maybe String),
                            guiChrFiller :: MVar (Handle String),
-                           guiValFiller :: MVar (Handle (String, IO ()))} 
+                           guiValFiller :: MVar (Handle (HP.Interpretation, IO ()))} 
 
 gui :: [String] -> IO ()
 gui args =
@@ -100,7 +100,7 @@ gui args =
                       visible := False]
 
         iconFile <- imageFile $ "icon" </> "hpage" <.> "ico"
-	iconCreateFromFile iconFile sizeNull >>= topLevelWindowSetIcon win
+        iconCreateFromFile iconFile sizeNull >>= topLevelWindowSetIcon win
         
         ssh <- SS.start win
         
@@ -184,16 +184,18 @@ gui args =
                 vf <- spawn $ valueFiller guiCtx
                 putMVar vfv vf
                 
-                -- Events
+                -- Timers
                 timerOnCommand refreshTimer $ refreshExpr model guiCtx
-                timerOnCommand charTimer $ do
-                                             wasEmpty <- tryPutMVar chv Nothing
-                                             if wasEmpty
-                                                 then do
-                                                     newchf <- spawn $ charFiller guiCtx
-                                                     swapMVar chfv newchf >>= kill
-                                                 else return ()
+                let killCharFiller = do
+                                         wasEmpty <- tryPutMVar chv Nothing
+                                         if wasEmpty
+                                             then do
+                                                 newchf <- spawn $ charFiller guiCtx
+                                                 swapMVar chfv newchf >>= kill
+                                             else return ()
+                timerOnCommand charTimer killCharFiller
         
+                -- Events
                 set btnInterpret [on command := onCmd "interpret" interpret]
                 
                 set lstPages [on select := onCmd "pageChange" pageChange]
@@ -384,15 +386,15 @@ gui args =
                 SS.step ssh 100 "failed"
                 set win [visible := True]
                 shutdownTimer <- timer win [on command := do
-                                                                errorDialog win "Error" "Seems like you don't have Cabal installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
-                                                                wxcAppExit
-                                                                exitWith errRes]
+                                                            errorDialog win "Error" "Seems like you don't have Cabal installed.\nPlease install the Haskelll Platform from http://hackage.haskell.org/platform/"
+                                                            wxcAppExit
+                                                            exitWith errRes]
                 True <- timerStart shutdownTimer 50 True
                 return ()
 
 -- PROCESSES -------------------------------------------------------------------
 charFiller :: GUIContext -> Process String ()
-charFiller GUICtx{guiResults = GUIRes{resErrors= varErrors},
+charFiller GUICtx{guiResults = GUIRes{resErrors = varErrors},
                   guiChrVar  = chv} =
     forever $ do
          t <- recv
@@ -404,52 +406,90 @@ charFiller GUICtx{guiResults = GUIRes{resErrors= varErrors},
                     tryPutMVar chv $ Just txt
     where eval t = t `seq` length t `seq` return t
 
-valueFiller :: GUIContext -> Process (String, IO ()) ()
+-- | Process that receives an interpretation, computes the value(s) of it
+--   and fills the txtValue and varErrors with it...
+valueFiller :: GUIContext -> Process (HP.Interpretation, IO ()) ()
 valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                                 resErrors = varErrors,
                                                 resValue  = txtValue},
                           guiStatus    = status} =
     forever $ do
-                liftDebugIO "Waiting for a new value to interpret"
-                (val, poc) <- recv
-                liftDebugIO "Value received in valueFiller"
-                liftDebugIO "Trying to evaluate the whole value first..."
+                liftDebugIO "Waiting for a new interpretation to display"
+                (interp, poc) <- recv
                 liftIO $ do
                             set txtValue [text := ""]
                             varSet varErrors []
-                            res <- valueFill guiCtx val
-                            if res == bottomChar
-                                then do
-                                        debugIO "didn't work... going char by char..."
-                                        varSet varErrors []
-                                        statusText <- valueFiller' guiCtx val
-                                        errs <- varGet varErrors
-                                        case (statusText, errs) of
-                                            ("", []) ->
-                                                set status [text := ""] >>
-                                                set txtValue [enabled := True,
-                                                              bgcolor := white]
-                                            ("", _) ->
-                                                set status [text := "Expression interpreted with errors: Check them by right-clicking on each one"] >>
-                                                set txtValue [enabled := True,
-                                                              bgcolor := yellow]
-                                            (msg, _) ->
-                                                set status [text := "Expression interpreted with errors: " ++ msg] >>
-                                                set txtValue [enabled := True,
-                                                              bgcolor := yellow]
-                                else do
-                                        debugIO "It worked!!"
-                                        textCtrlAppendText txtValue res
-                                        set status [text := ""]
-                                        set txtValue [enabled := True,
-                                                      bgcolor := white]
+                            statusText <-
+                                if HP.isIntExprs interp
+                                    then do
+                                        liftDebugIO "Values received in valueFiller"
+                                        set txtValue [text := "["]
+                                        listValueFiller guiCtx $ HP.intValues interp
+                                        return "" -- It can't be a string error as
+                                                  -- we're generating the string
+                                    else do
+                                        liftDebugIO "Value received in valueFiller"
+                                        singleValueFiller guiCtx $ HP.intValue interp
+                            errs <- varGet varErrors
+                            case (statusText, errs) of
+                                ("", []) -> -- No errors
+                                    set status [text := ""] >>
+                                    set txtValue [enabled := True,
+                                                  bgcolor := white]
+                                ("", _) -> -- Char errors
+                                    set status [text := "Expression interpreted with errors: Check them by right-clicking on each one"] >>
+                                    set txtValue [enabled := True,
+                                                  bgcolor := yellow]
+                                (msg, _) -> -- String error
+                                    set status [text := "Expression interpreted with errors: " ++ msg] >>
+                                    set txtValue [enabled := True,
+                                                  bgcolor := yellow]
                             set btnInterpret [on command := poc,
                                               text := "Interpret"]
 
-valueFiller' :: GUIContext -> String -> IO String
-valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} val =
-      do
-      	h <- try (case val of
+-- | Processes the string, computes its value and appends it to the txtValue
+--    or appends the errors generated by its computation to varErrors, returning
+--    the error description if there was an error.
+listValueFiller :: GUIContext -> [String] -> IO ()
+listValueFiller _ [] = return ()
+listValueFiller guiCtx@GUICtx{guiResults =
+                                   GUIRes{resErrors = varErrors,
+                                          resValue = txtValue}} (v:vs) =
+    do
+        status <- singleValueFiller guiCtx v
+        _errs <- case status of
+                    ""  -> return []
+                    err -> textCtrlAppendText txtValue bottomString >>
+                           varUpdate varErrors (++ [GUIBtm err v])
+        textCtrlAppendText txtValue $ if vs /= [] then  ", " else "]"
+        listValueFiller guiCtx vs
+
+-- | Processes the string, computes its value and appends it to the txtValue
+--    or appends the errors generated by its computation to varErrors, returning
+--    the error description if there was an error.
+singleValueFiller :: GUIContext -> String -> IO String
+singleValueFiller guiCtx@GUICtx{guiResults   = GUIRes{resErrors = varErrors,
+                                                      resValue  = txtValue}} val =
+    do
+        liftDebugIO "Trying to evaluate the whole value first..."
+        res <- valueFill guiCtx val
+        if res == bottomChar
+            then do
+                debugIO "didn't work... going char by char..."
+                varSet varErrors []
+                recursiveValueFiller guiCtx val
+            else do
+                debugIO "It worked!!"
+                textCtrlAppendText txtValue res
+                set txtValue [enabled := True,
+                              bgcolor := white]
+                return "" -- No errors
+
+-- | Same as singleValueFiller but going char by char
+recursiveValueFiller :: GUIContext -> String -> IO String
+recursiveValueFiller guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} val =
+    do
+        h <- try (case val of
                       [] -> return []
                       (c:_) -> return [c])
         case h of
@@ -460,7 +500,7 @@ valueFiller' guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} val =
             Right t ->
                 do
                     valueFill guiCtx t >>= textCtrlAppendText txtValue
-                    valueFiller' guiCtx $ tail val
+                    recursiveValueFiller guiCtx $ tail val
 
 valueFill :: GUIContext -> String -> IO String
 valueFill GUICtx{guiResults = GUIRes{resErrors = varErrors},
@@ -543,11 +583,11 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
                     Left err ->
                         menuAppend browseMenu idAny err "Error" False
                     Right mes ->
-                        flip mapM_ mes $ createMenuItem browseMenu
-                _copy <- menuItem contextMenu [text := "To Clipboard",
-                         		               on command := addToClipboard mn]
+                        forM_ mes $ createMenuItem browseMenu
+                _copy <- menuItem contextMenu [text := "Copy",
+                                                on command := addToClipboard mn]
                 _search <- menuItem contextMenu [text := "Search on Hayoo!",
-                           			             on command := hayooDialog win mn]
+                                                    on command := hayooDialog win mn]
                 menuAppendSeparator contextMenu
                 menuAppendSub contextMenu wxId_HASK_BROWSE "&Browse" browseMenu ""
           addToClipboard txt =
@@ -576,7 +616,7 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
             do
                 subMenu <- createBasicMenuItem cn
                 menuAppendSeparator subMenu
-                flip mapM_ cfs $ createMenuItem subMenu
+                forM_ cfs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
           createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = []} =
             do
@@ -586,15 +626,15 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
             do
                 subMenu <- createBasicMenuItem dn
                 menuAppendSeparator subMenu
-                flip mapM_ dcs $ createMenuItem subMenu
+                forM_ dcs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) subMenu ""
           createBasicMenuItem name =
             do
                 itemMenu <- menuPane []
-                _copy <- menuItem itemMenu [text := "To Clipboard",
-                                   			on command := addToClipboard name]
+                _copy <- menuItem itemMenu [text := "Copy",
+                                               on command := addToClipboard name]
                 _search <- menuItem itemMenu [text := "Search on Hayoo!",
-                           			          on command := hayooDialog win name]
+                                                 on command := hayooDialog win name]
                 return itemMenu
 
 
@@ -673,7 +713,7 @@ openPage model guiCtx@GUICtx{guiWin = win,
             fs ->
                 do
                     set status [text := "opening..."]
-                    flip mapM_ fs $ \f -> runHP' (HP.openPage f) model guiCtx
+                    forM_ fs $ \f -> runHP' (HP.openPage f) model guiCtx
 
 savePageAs model guiCtx@GUICtx{guiWin = win, guiStatus = status} =
     do
@@ -867,14 +907,14 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                 do
                     -- Refresh the pages list
                     itemsDelete lstPages
-                    (flip mapM_) ps $ \pd ->
-                                        let prefix = if HP.pIsModified pd
-                                                        then "*"
-                                                        else ""
-                                            name   = case HP.pPath pd of
-                                                         Nothing -> "new page"
-                                                         Just fn -> takeFileName $ dropExtension fn
-                                         in itemAppend lstPages $ prefix ++ name
+                    forM_ ps $ \pd ->
+                                    let prefix = if HP.pIsModified pd
+                                                    then "*"
+                                                    else ""
+                                        name   = case HP.pPath pd of
+                                                     Nothing -> "new page"
+                                                     Just fn -> takeFileName $ dropExtension fn
+                                     in itemAppend lstPages $ prefix ++ name
                     set lstPages [selection := i]
                     
                     -- Refresh the modules lists
@@ -888,9 +928,9 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                                         flip filter pms $ \pm -> all (\xm -> HP.modName xm /= pm) ms
                         allms = zip [0..] (ims' ++ ms' ++ pms')
                     itemsDelete lstModules
-                    (flip mapM_) allms $ \(idx, (img, m@(mn:_))) ->
-                                                listCtrlInsertItemWithLabel lstModules idx mn img >>                                                
-                                                set lstModules [item idx := m]
+                    forM_ allms $ \(idx, (img, m@(mn:_))) ->
+                                            listCtrlInsertItemWithLabel lstModules idx mn img >>                                                
+                                            set lstModules [item idx := m]
                     varSet varModsSel $ -1
                     
                     -- Refresh the current text
@@ -953,11 +993,11 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                               guiChrFiller  = chfv,
                               guiStatus     = status} =
     do
-    	-- Cancel if needed...
-    	btnText <- get btnInterpret text
-    	if btnText == "Cancel"
-    		then get btnInterpret (on command) >>= liftIO 
-    		else return ()
+        -- Cancel if needed...
+        btnText <- get btnInterpret text
+        if btnText == "Cancel"
+            then get btnInterpret (on command) >>= liftIO 
+            else return ()
         sel <- textCtrlGetStringSelection txtCode
         let runner = case sel of
                         "" -> tryIn
@@ -1007,11 +1047,11 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                                                                      [] -> white
                                                                      _  -> yellow]
                                         set btnInterpret [text := "Interpret",
-                                        				  on command := poc]
+                                                          on command := poc]
                          in liftIO $ set btnInterpret [text := "Cancel",
                                                        on command := revert]
-                        liftDebugIO "sending the value to the Value Filler..."
-                        readMVar vfv >>= flip sendTo ((HP.intValue interp), poc)
+                        liftDebugIO "sending the value to the Value(s) Filler..."
+                        readMVar vfv >>= flip sendTo (interp, poc)
 
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
                      HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
