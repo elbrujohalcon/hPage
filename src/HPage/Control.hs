@@ -469,7 +469,10 @@ interpretNth i =
                                     then do
                                             valueRes <- getListFromExprNth i
                                             case valueRes of
-                                                Left verr -> return $ Left verr
+                                                Left verr ->
+                                                    if isNotShowable verr
+                                                        then return $ Right $ Expr{intValue = "", intType = t}
+                                                        else return $ Left verr
                                                 Right list -> return . Right $ Exprs{intValues = list, intType = t}
                                     else do
                                             valueRes <- valueOfNth i
@@ -892,14 +895,14 @@ isList :: String -> Bool
 isList = isType isList'
 
 isChar, isList' :: Xs.Type -> Bool
-isList' (Xs.TyForall _ _ intType)          = isList' intType
-isList' (Xs.TyParen intType)               = isList' intType
-isList' (Xs.TyList intType)                = not $ isChar intType 
+isList' (Xs.TyForall _ _ inttype)          = isList' inttype
+isList' (Xs.TyParen inttype)               = isList' inttype
+isList' (Xs.TyList inttype)                = not $ isChar inttype 
 isList' (Xs.TyCon (Xs.Special Xs.ListCon)) = True
 isList' _                                  = False
 
-isChar (Xs.TyForall _ _ intType)                = isChar intType
-isChar (Xs.TyParen intType)                     = isChar intType
+isChar (Xs.TyForall _ _ inttype)                = isChar inttype
+isChar (Xs.TyParen inttype)                     = isChar inttype
 isChar (Xs.TyCon (Xs.Qual _ (Xs.Ident "Char"))) = True 
 isChar (Xs.TyCon (Xs.UnQual (Xs.Ident "Char"))) = True
 isChar _                                        = False
@@ -908,13 +911,13 @@ isIO :: String -> Bool
 isIO = isType isIO'
 
 isIO'', isIO' :: Xs.Type -> Bool
-isIO' (Xs.TyForall _ _ intType) = isIO' intType
-isIO' (Xs.TyParen intType)      = isIO' intType
-isIO' (Xs.TyApp intType _)      = isIO'' intType
+isIO' (Xs.TyForall _ _ inttype) = isIO' inttype
+isIO' (Xs.TyParen inttype)      = isIO' inttype
+isIO' (Xs.TyApp inttype _)      = isIO'' inttype
 isIO' _                         = False
 
-isIO'' (Xs.TyForall _ _ intType)              = isIO'' intType
-isIO'' (Xs.TyParen intType)                   = isIO'' intType
+isIO'' (Xs.TyForall _ _ inttype)              = isIO'' inttype
+isIO'' (Xs.TyParen inttype)                   = isIO'' inttype
 isIO'' (Xs.TyCon (Xs.Qual _ (Xs.Ident "IO"))) = True 
 isIO'' (Xs.TyCon (Xs.UnQual (Xs.Ident "IO"))) = True
 isIO'' _                                      = False
