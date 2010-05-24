@@ -969,6 +969,7 @@ runHP hpacc model guiCtx@GUICtx{guiWin = win} =
         res <- tryIn model hpacc
         case res of
             Left err ->
+                errorIO ("runHP", err) >>
                 warningDialog win "Error" err
             Right () ->
                 refreshPage model guiCtx
@@ -1028,6 +1029,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
         liftTraceIO "ready"
         case res of
             Left err ->
+                errorIO ("interpret", err) >>
                 warningDialog win "Error" err
             Right interp ->
                 if HP.isIntType interp
@@ -1132,9 +1134,9 @@ tryIn model hpacc =
         res <- HPS.runIn model $ catchError (hpacc >>= return . Right)
                                             (\ioerr -> return $ Left ioerr)
         case res of
-            Left err          -> return . Left  $ ioeGetErrorString err
-            Right (Left err)  -> return . Left  $ HP.prettyPrintError err
-            Right (Right val) -> return . Right $ val
+            Left err          -> errorIO ("IOError", ioeGetErrorString err) >> (return . Left $ ioeGetErrorString err)
+            Right (Left err)  -> errorIO ("HintError", HP.prettyPrintError err) >> (return . Left $ HP.prettyPrintError err)
+            Right (Right val) -> debugIO "Result OK" >> (return . Right $ val)
 
 -- FIND/REPLACE UTILS ----------------------------------------------------------
 data FRFlags = FRFlags {frfGoingDown :: Bool,

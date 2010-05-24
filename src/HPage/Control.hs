@@ -467,6 +467,7 @@ interpretNth i =
                                         return $ Left err
                             else if isList t
                                     then do
+                                            liftDebugIO "interpreting a list"
                                             valueRes <- getListFromExprNth i
                                             case valueRes of
                                                 Left verr ->
@@ -475,6 +476,7 @@ interpretNth i =
                                                         else return $ Left verr
                                                 Right list -> return . Right $ Exprs{intValues = list, intType = t}
                                     else do
+                                            liftDebugIO "interpreting a value"
                                             valueRes <- valueOfNth i
                                             case valueRes of
                                                 Left verr ->
@@ -835,7 +837,7 @@ runInExprNthWithLets action i = do
                                                                    lets = filter isNamedExpr $ b ++ a
                                                                    expr = letsToString lets ++ exprText item
                                                                 in do
-                                                                        liftDebugIO expr
+                                                                        liftDebugIO ("runInExprNthWithLets", expr)
                                                                         syncRun $ if "" == exprText item
                                                                                     then return ""
                                                                                     else action expr
