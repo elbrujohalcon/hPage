@@ -47,7 +47,7 @@
 	    \par\vspace{\stretch{2}}
          {\Large \textbf{Abstract}}\\[0.5em]
     \end{center}
-    El presente documento describe una herramienta para desarrolladores \haskell\ que pretende facilitar la tarea de ``debuggear'', analizar y entender c'odigo, llamada \hpage.  Con ella el usuario puede manipular ``p'aginas'' de texto libre que contengan expresiones \haskell, intentar interpretar 'estas expresiones independientemente y analizar los resultados obtenidos.
+    El presente documento describe una herramienta para desarrolladores \haskell\ que pretende facilitar la tarea de ``debuggear'', analizar y entender c'odigo, llamada \hpage.  Con ella el usuario puede manipular ``p'aginas'' de texto libre que contengan expresiones \haskell, intentar interpretar estas expresiones independientemente y analizar los resultados obtenidos.
     \vspace*{\stretch{3}}
     \newpage
 
@@ -58,7 +58,7 @@
 \paragraph{}El presente informe pretende presentar a \hpage, una herramienta para facilitar el trabajo de los desarrolladores \haskell.  El mismo se encuentra dividido en cuatro secciones.
 \paragraph{}La primera es una secci'on en la que describiremos los motivos que nos llevaron a desarrollar esta herramienta, hablaremos tambi'en de otras herramientas similares y presentaremos \hpage\ de modo general, mostrando principalmente el lugar que pretendemos que ocupe dentro del mundo \haskell.
 \paragraph{}En la siguiente secci'on intetaremos mostrar, a trav'es de dos tutoriales, c'omo utilizar \hpage\ y daremos a conocer sus virtudes y capacidades.  Para comenzar, aprenderemos c'omo instalarlo, de modo que el lector pueda, una vez instalado el sistema, seguir los tutoriales paso a paso y realizar sus propias experiencias.
-\subparagraph{}Luego, presentaremos un tutorial destinado al p'ublico ``acad'emico'' que nos mostrar'a c'omo utilizar la herramienta para resolver ejercicios pr'acticos t'ipicos de varias materias de la facultad.  Veremos all'i la facilidad de trabajo que brinda \hpage\ al alumno permiti'endole descubrir paso a paso el lenguaje y sus caracter'isticas principales.
+\subparagraph{}Luego, presentaremos un tutorial destinado al p'ublico acad'emico que nos mostrar'a c'omo utilizar la herramienta para ayudar al alumno a resolver ejercicios pr'acticos t'ipicos de varias materias de la facultad.  Veremos all'i la facilidad de trabajo que brinda \hpage\ al alumno permiti'endole descubrir paso a paso el lenguaje y sus caracter'isticas principales.
 \subparagraph{}El segundo tutorial que presentaremos est'a apuntado a aquellos desarrolladores que trabajan con proyectos \haskell\ de dimensiones mayores a lo visto en el 'ambito acad'emico.  La idea de este tutorial es mostrar c'omo \hpage\ puede ayudarlos a entender c'odigo existente y tambi'en a generar y testear nuevo c'odigo de manera sencilla y veloz.
 \paragraph{}Una vez observado \hpage\ en funcionamiento y destacadas sus caracter'isticas principales, observaremos c'omo ha sido dise'nado y constru'ido.  Podremos ver los requerimientos que guiaron su dise'no, la arquitectura conceptual que lo subyace y las principales decisiones de dise'no e implementaci'on que se han tomado durante su desarrollo.
 \paragraph{}Finalmente observaremos los resultados obtenidos y los contrastaremos con los objetivos planteados al inicio de este desarrollo.  Estableceremos el estado del proyecto en general, cu'ales son los siguientes pasos a dar y qu'e otras tareas pueden llevarse a cabo a partir de ahora.
@@ -71,8 +71,8 @@
     \qitem{Essstamo mo-ti-va-do, nene}{El ``Bambino'' Veira}
 \end{epigraphs}
 \paragraph{}Actualmente estamos presenciando un importante cambio en el desarrollo de sistemas, gracias al 'exito de proyectos como \htmladdnormallink{CouchDB}{http://couchdb.apache.org}~\cite{couchdb}, \htmladdnormallink{ejabberd}{http://www.ejabberd.im}~\cite{ejabberd} y el chat de \htmladdnormallink{Facebook}{http://www.facebook.com/}~\cite{facebook}, todos ellos desarrollados utilizando lenguajes del paradigma funcional.
-\paragraph{}Ejemplos de 'estos lenguajes de programaci'on, como \htmladdnormallink{Haskell}{http://www.haskell.org}~\cite{haskell} o \htmladdnormallink{Erlang}{http://www.erlang.org}~\cite{erlang}, demuestran ser maduros, confiables y presentan claras ventajas en comparaci'on con los lenguajes tradicionales del paradigma imperativo.  Sin embargo, los desarrolladores que deciden realizar el cambio de paradigma se encuentran con el problema de la escasez de ciertas herramientas que les permitan realizar su trabajo m'as eficientemente.  Por el contrario, 'estas herramientas abundan en el desarrollo de proyectos utilizando lenguajes orientados a objetos.  En particular, nuestro foco de atenci'on se centra sobre aquellas herramientas que permiten realizar \textsl{debugging} y \textsl{entendimiento} de c'odigo a trav'es de \textsl{``micro-testing''}\footnote{Enti'endase \textsl{micro-testing} como la tarea de realizar tests eventuales para entender o evaluar alg'un aspecto de un programa} .
-\paragraph{}Los desarrolladores Haskell cuentan actualmente con dos herramientas de este tipo:
+\paragraph{}Ejemplos de 'estos lenguajes de programaci'on, como \htmladdnormallink{Haskell}{http://www.haskell.org}~\cite{haskell} o \htmladdnormallink{Erlang}{http://www.erlang.org}~\cite{erlang}, demuestran ser maduros, confiables y se presentan como una alternativa a los lenguajes tradicionales del paradigma imperativo.  Sin embargo, los desarrolladores que deciden realizar el cambio de paradigma se encuentran con el problema de la escasez de ciertas herramientas que les permitan realizar su trabajo m'as eficientemente.  Por el contrario, 'estas herramientas abundan en el desarrollo de proyectos utilizando lenguajes orientados a objetos.  En particular, nuestro foco de atenci'on se centra sobre aquellas herramientas que permiten realizar \textsl{debugging} y \textsl{entendimiento} de c'odigo a trav'es de \textsl{``micro-testing''}\footnote{Enti'endase \textsl{micro-testing} como la tarea de realizar tests eventuales para entender o evaluar alg'un aspecto de un programa} .
+\paragraph{}Los desarrolladores \haskell\ cuentan actualmente con las siguientes herramientas para realizar esta tarea:
 \begin{description}
 	\item[\htmladdnormallink{GHCi}{http://www.haskell.org/ghc/docs/latest/html/users\_guide/ghci.html}~\cite{ghci}]
 		La consola que provee \htmladdnormallink{GHC}{http://www.haskell.org/ghc}~\cite{ghc} permite a los desarrolladores evaluar expresiones, verificar su tipo o su clase.  Cuenta tambi'en con un \htmladdnormallink{mecanismo de debugging}{http://www.haskell.org/ghc/docs/6.10-latest/html/users\_guide/ghci-debugger.html}~\cite{ghcdebug} integrado que permite realizar la evaluaci'on de expresiones paso a paso.  Pese a ser la herramienta m'as utilizada por los desarrolladores, \textit{GHCi} tiene varias limitaciones.  En particular:
@@ -82,6 +82,8 @@
 			\item	Si bien permite utilizar definiciones, 'estas se pierden al recargar m'odulos
 			\item No es sencillo utilizar en una sesi'on las definiciones y/o expresiones creadas en sesiones anteriores
 		\end{itemize}
+	\item[\htmladdnormallink{Hugs}{http://www.haskell.org/hugs/}~\cite{hugs}]
+		\textsl{Hugs98} es un int'erprete peque'no y port'atil de Haskell escrito en C, de modo que funciona en casi cualquier m'aquina. \textsl{Hugs98}, que se utiliza mejor como un sistema de desarrollo de programas para Haskell, se jacta de compilar extremadamente r'apido, soportar compilaci'on incremental, y tener la ventaja de un int'erprete interactivo (en el que uno puede pasar de un m'odulo a otro para probar diferentes partes de un programa).  Sin embargo, al ser un int'erprete, ni siquiera se acerca a igualar el rendimiento en tiempo de ejecuci'on de, por ejemplo, GHC.  Es, sin duda, el mejor sistema para los reci'en llegados a aprender Haskell.  Provee muchas librer'ias, inclu'idas las de Win32, un mecanismo de interfaz externa para facilitar la interoperabilidad con C y la versi'on de Windows tiene una interfaz de usuario gr'afica llamada \textsl{WinHugs}.
 	\item[\htmladdnormallink{Hat}{http://www.haskell.org/hat}~\cite{hat}]
 		Un herramienta para realizar seguimiento a nivel de c'odigo fuente.  A trav'es de la generaci'on de trazas de ejecuci'on, \textit{Hat} ayuda a localizar errores en los programas y es 'util para entender su funcionamiento.  Sin embargo, por estar basado en la generaci'on de trazas, requiere la compilaci'on y ejecuci'on de un programa para poder utilizarlo y esto no siempre es c'omodo para el desarrollador que puede querer simplemente analizar una expresi'on particular que incluso quiz'a no compile a'un.  Adem'as, su mantenimiento activo parece haber cesado hace m'as de un a'no y en su p'agina se observa una importante lista de problemas conocidos y caracter'isticas deseadas.
 \end{description}
@@ -101,116 +103,37 @@
     \qitem{Ancorch'e lo ingegno umano faccia invenzioni varie, rispondendo con vari strumenti a un medesimo fine, mai esso trover\`a invenzione pi\`u bella, n'e pi\`u facile n'e pi\`u brieve della natura, perch'e nelle sue invenzioni nulla manca e nulla \`e superfluo}{Leonardo da Vinci}
     \qitem{La programaci'on intensiva y el uso prolongado de Tetris s'olo lleva a ver estructuras de orden y secuencias en la verduler'ia y a querer apilar los autos para formar l'ineas s'olidas}{Dar'io Ruellan}
 \end{epigraphs}
-\paragraph{} \htmladdnormallink{\hpage}{http://haskell.hpage.com}~\cite{hpage} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y su clase.
-\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallink{Cabal}{http://www.haskell.org/cabal}~\cite{cabal} y \htmladdnormallink{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}~\cite{hayoo} y se encuentra ya disponible en \htmladdnormallink{HackageDB}{http://hackage.haskell.org/package/hpage}~\cite{hackage}.
+\paragraph{} \htmladdnormallink{\hpage}{http://haskell.hpage.com}~\cite{hpage} se presenta como una herramienta  similar al Workspace de \textit{Smalltalk}, que permite a los desarrolladores trabajar con documentos de texto libre que incluyan expresiones y definiciones.  \hpage\ es capaz de identificar las expresiones y definiciones v'alidas y permite al desarrollador inspeccionarlas, evaluarlas, conocer su tipo y, en el caso de expresiones de tipo, conocer su g'enero (o \textsl{kind}).
+\subparagraph{}En el esp'iritu de las herramientas provistas por la comunidad de desarrolladores \haskell, \hpage\ se integra con \htmladdnormallink{Cabal}{http://www.haskell.org/cabal}~\cite{cabal} y \htmladdnormallink{Hayoo!}{http://holumbus.fh-wedel.de/hayoo}~\cite{hayoo} y se encuentra ya disponible en \htmladdnormallink{HackageDB}{http://hackage.haskell.org/package/hpage}~\cite{hackage}.  \cabal\ (Common Architecture for Building Applications and Libraries) es una API distribuida con GHC que permite a un desarrollador agrupar f'acilmente un conjunto de m'odulos para producir un paquete. Es el sistema de compilaci'on est'andar para las aplicaciones y librer'ias de \haskell.  \textsl{Hayoo!} es un motor de b'usqueda especializado en la documentaci'on de la API de \haskell.  El objetivo de \textsl{Hayoo!} es proporcionar una interfaz de b'usqueda interactiva y f'acil de usar para la documentaci'on de varios paquetes y librer'ias.  Por su parte, \textsl{HackageDB} es 
+un repositorio en internet de versiones de software desarrollado en \haskell, almacenadas en paquetes \cabal.
 \subparagraph{}\hpage\ presenta una interfaz simple e intuitiva, desarrollada utilizando \htmladdnormallink{wxHaskell}{http://haskell.org/haskellwiki/WxHaskell}~\cite{wxhaskell}, lo que lo convierte en una aplicaci'on multiplataforma.
 \subparagraph{}Por ser una herramienta desarrollada con \haskell\ para \haskell, \hpage\ se diferencia de sus pares del mundo de objetos, al aprovechar conceptos claves como son el tipado est'atico, que permite detectar errores de tipo velozmente, evitando el costo de evaluar expresiones complejas, y la evaluaci'on perezosa, que permite evaluar expresiones infinitas e ir exhibiendo resultados progresivamente.
 \subparagraph{}A diferencia de \textsl{GHCi} que es una herramienta ``de consola'', \hpage\ permite visualizar resultados de manera m'as din'amica, permitiendo que errores intermedios, detectados durante la evaluaci'on de una expresi'on no impidan continuar con la misma hasta llegar a un resultado m'as completo.
-\subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Gracias al uso de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Tambi'en gracias al uso de \textsl{eprocess}, \hpage\ permite detectar c'alculos infinitos e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
-\newpage
+\subparagraph{}\hpage\ se encuentra desarrollado utilizando \htmladdnormallink{\textsl{eprocess}}{http://hackage.haskell.org/package/eprocess}~\cite{eprocess}, una librer'ia que facilita el manejo de ``threads'' en un estilo similar al de los procesos \textsl{Erlang}.  Utilizando de esta librer'ia, \hpage\ puede realizar tareas en paralelo y por lo tanto permitir al usuario continuar editando los documentos en los que est'a trabajando mientras espera que se eval'ue una expresi'on e incluso cancelar una evaluaci'on conservando la porci'on del resultado obtenida hasta ese momento.  Por otra parte, \hpage\ utiliza \textsl{eprocess} para detectar c'alculos infinitos e informar sobre este hecho al usuario para que ya no siga esperando indefinidamente el resultado de la evaluaci'on solicitada.
 
+\newpage
 \section{Descubriendo \hpage}
 \subsection{Instalaci'on}
 \begin{epigraphs}
 	\qitem{As a rule, software systems do not work well until they have been used, and have failed repeatedly, in real applications.}{Dave Parnas}
 	\qitem{The \#1 programmer excuse for legitimately slacking off: ``My code is compiling''}{David Knutz}
 \end{epigraphs}
-\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en \htmladdnormallink{el sitio web de \hpage}{http://github.com/elbrujohalcon/hPage/downloads}, pero, como ya se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
+\paragraph{}Para instalar \hpage\ en \textsl{OSX} o \textsl{Windows}, se proveen instaladores en \htmladdnormallink{el sitio web de \hpage}{http://github.com/elbrujohalcon/hPage/downloads}~\cite{hpage}, pero, como ya se ha dicho, \hpage\ se encuentra en \textsl{HackageDB} y por lo tanto el modo oficial de instalarlo es utilizando \cabal, con el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{center}\begin{lstlisting}
 $ cabal install hpage
 \end{lstlisting}\end{center}
 \subparagraph{}Sin embargo, para ello, previamente se deben satisfacer las siguientes dependencias:
 \begin{description}
-	\item[\htmladdnormallink{wxWidgets 2.8.10+}{http://www.wxwidgets.org/downloads/}~\cite{wxwidgets}] El framework de desarrollo para interfaces de usuario que utiliza \textsl{wxHaskell}.  Debe ser instalado con los m'odulos unicode, cmdline, config, log, stl, richtext y clipboard, al menos y con el m'odulo odbc desactivado.
-	\item[\htmladdnormallink{Haskell Platform}{http://hackage.haskell.org/platform/}~\cite{platform}] Una distribuci'on de \haskell\ que incluye todo lo necesario para compilar e instalar programas desarrollados en este lenguaje (de particular inter'es para \hpage: GHC y happy).
+	\item[\htmladdnormallink{wxWidgets 2.8.10+}{http://www.wxwidgets.org/downloads/}~\cite{wxwidgets}] El framework de desarrollo para interfaces de usuario que utiliza \textsl{wxHaskell}.
+	\item[\htmladdnormallink{Haskell Platform}{http://hackage.haskell.org/platform/}~\cite{platform}] Una distribuci'on de \haskell\ que incluye todo lo necesario para compilar e instalar programas desarrollados en este lenguaje (de particular inter'es para \hpage: \textsl{GHC} y \cabal).
 \end{description}
-\paragraph{}El proceso de instalaci'on de estas librer'ias y \hpage, a trav'es de \cabal\ var'ia seg'un la plataforma en la que se lo desee instalar.  Detallamos a continuaci'on los procedimientos necesarios para instalar \hpage\ en OSX, Linux y Windows.
-
-\subsubsection{OSX}
-\paragraph{}Para instalar \hpage\ en \textsl{OSX Leopard}, una vez instaladas las herramientas de desarrollo que vienen en el CD de instalaci'on del sistema operativo, se deben seguir estos pasos:
-\begin{enumerate}
-	\item Descargar e instalar \htmladdnormallink{WxMac 2.8.10}{http://www.wxwidgets.org/docs/faqmac.htm}
-	\item Descargar y compilar los fuentes de \htmladdnormallink{The Haskell Platform 2010.1.0.1}{http://hackage.haskell.org/platform/mac} (En el caso de \textsl{OSX Snow Leopard} se puede utilizar directamente el instalador).
-	\item Actualizar cabal y, finalmente, instalar \hpage:
-		\begin{center}\begin{lstlisting}
-$ cabal update
-$ cabal install hpage
-		\end{lstlisting}\end{center}
-\end{enumerate}
-	
-\subsubsection{Linux}
-\paragraph{}Para instalar \hpage\ en \textsl{Ubuntu Lucid Lynx} se deben seguir los siguientes pasos:
-\begin{enumerate}
-	\item Instalar \htmladdnormallink{WxWidgets 2.8.10 for GTK+}{http://wiki.wxpython.org/InstallingOnUbuntuOrDebian}:
-		\begin{center}\begin{lstlisting}
-$ sudo apt-get install wx-common libwxbase2.8-0 libwxbase2.8-dev wx2.8-doc
-	gettext
-$ sudo apt-get install libwxgtk2.8-0 libwxgtk2.8-dev
-		\end{lstlisting}\end{center}
-	\item Instalar \htmladdnormallink{GHC}{http://www.haskell.org/ghc}~\cite{ghc}:
-		\begin{center}\begin{lstlisting}
-$ sudo apt-get install ghc6 ghc6-prof ghc6-doc haddock haskell-doc
-		\end{lstlisting}\end{center}
-	\item Instalar los paquetes necesarios para compilar \textsl{The Haskell Platform}:
-		\begin{center}\begin{lstlisting}
-$ sudo apt-get install libghc6-opengl-dev libghc6-zlib-dev libghc6-glut-dev
-	libghc6-opengl-prof libghc6-zlib-prof libghc6-glut-prof
-		\end{lstlisting}\end{center}
-	\item Descargar y descomprimir la versi—n \textsl{2010.1.0.0} de \htmladdnormallink{The Haskell Platform}{http://hackage.haskell.org/platform/linux}:
-		\begin{center}\begin{lstlisting}
-$ tar -xzf haskell-platform-2010.1.0.0.tar.gz
-		\end{lstlisting}\end{center}
-	\item Instalarlo
-		\begin{center}\begin{lstlisting}
-$ cd haskell-platform-2010.1.0.0
-$ ./configure
-$ make
-$ sudo make install
-		\end{lstlisting}\end{center}
-	\item Asegurarse de que \texttt{~/.cabal/bin} est'e en el \textsl{path}:
-		\begin{center}\begin{lstlisting}
-$ export PATH=~/.cabal/bin:$PATH
-		\end{lstlisting}\end{center}
-	\item Actualizar cabal y, finalmente, instalar \hpage:
-		\begin{center}\begin{lstlisting}
-$ cabal update
-$ cabal install hpage
-		\end{lstlisting}\end{center}
-\end{enumerate}
-
-\subsubsection{Windows}
-\paragraph{}Para instalar \hpage\ en \textsl{Windows XP} se deben seguir las instrucciones que se listan a continuaci'on:
-\begin{enumerate}
-	\item Descargar e instalar \htmladdnormallink{WxWidgets 2.8.10 for MSW}{http://ufpr.dl.sourceforge.net/project/wxwindows/wxMSW/2.8.10/wxMSW-2.8.10-Setup.exe}
-	\item Descargar y ubicar en el \textsl{path} (de modo que pueda ser ejecutado desde la l'inea de comandos) \htmladdnormallink{wx-config para Windows}{http://wxconfig.googlepages.com/}
-	\item Crear dos nuevas variables de entorno:
-		\begin{enumerate}[i.]
-			\item Abrir \textsl{Men'u Inicio $\rightarrow$ Panel de Control $\rightarrow$ Sistema  $\rightarrow$ Opciones Avanzadas  $\rightarrow$ Variables de Entorno}
-			\item Crear la variable \textbf{WXWIN} cuyo valor debe ser la carpeta en la que se encuentre instalado \textsl{WxWidgets} (por ejemplo \texttt{c:\textbackslash wxWidgets-2.8.10})
-			\item Crear la variable \textbf{WXCFG} cuyo valor debe ser \texttt{gcc\_dll/mswu}
-		\end{enumerate}
-	\item Descargar e instalar \htmladdnormallink{MinGW}{http://sourceforge.net/projects/mingw/files/Automated\%20MinGW\%20Installer} con soporte para \textbf{gcc}
-	\item Descargar e instalar \htmladdnormallink{MSYS}{http://downloads.sourceforge.net/mingw/MSYS-1.0.11.exe}
-	\item Usando la consola de MSYS, ejecutar:
-		\begin{center}\begin{lstlisting}
-$ cd /c/path/to/wxWidgets-2.8.10/build/msw
-$ mingw32-make -f makefile.gcc BUILD=release MONOLITHIC=1 SHARED=1 UNICODE=1
-		\end{lstlisting}\end{center}
-	\item Instalar el \htmladdnormallink{C++ 2008 SP1}{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2}~\cite{cppsp1}.
-	\item Descargar e instalar la versi—n \textsl{2010.1.0.0} de \htmladdnormallink{The Haskell Platform}{http://hackage.haskell.org/platform/windows}
-	\item Actualizar cabal y, finalmente, instalar \hpage:
-		\begin{center}\begin{lstlisting}
-$ cabal update
-$ cabal install hpage
-		\end{lstlisting}\end{center}
-\end{enumerate}
+\paragraph{}El proceso de instalaci'on de estas librer'ias y \hpage, a trav'es de \cabal\ var'ia seg'un la plataforma en la que se lo desee instalar.  Las instrucciones detalladas y actualizadas se encuentran disponibles en \htmladdnormallink{la \textsl{wiki} del sitio web de \hpage}{http://wiki.github.com/elbrujohalcon/hPage/installing-page}~\cite{hwiki}.
 
 \newpage
 \subsection{Caso de Uso: Aprobando PLP con \hpage}
 \begin{epigraphs}
-	\qitem{Es como un 'arbol, pero al rev'es: con la ra'iz abajo}{Eduardo Bonelli, profesor de PLP}
-	\qitem{How is education supposed to make me feel smarter? Besides, every time I learn something new, it pushes some old stuff out of my brain - remember when I took that home winemaking course, and I forgot how to drive?}{Homer Simpons}
+	\qitem{How is education supposed to make me feel smarter? Besides, every time I learn something new, it pushes some old stuff out of my brain - remember when I took that home winemaking course, and I forgot how to drive?}{Homer Simpon}
 \end{epigraphs}
 \paragraph{}Mostraremos a continuaci'on, a trav'es de un ejemplo, c'omo utilizar \hpage.  En este caso, hemos tomado prestada una pr'actica de la materia \textsl{Paradigmas de Lenguajes de Programaci'on}~\cite{plp}.  Exhibiremos entonces, c'omo un alumno podr'ia utilizar \hpage\ para resolver algunos de los ejercicios que all'i se presentan.  Seleccionamos s'olo aquellos que a nuestro criterio son los m'as representativos a la hora de entender c'omo \hpage\ ayuda al alumno en su resoluci'on.
 
@@ -232,7 +155,7 @@ $ cabal install hpage
 	xs = [1,2,3]::[Float]
 	ys = map (+) xs
 \end{lstlisting}\end{center}
-\subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno simplemente ingresa el c'odigo provisto por la c'atedra en la p'agina de \hpage, separando ambas expresiones por un rengl'on en blanco y agregando la expresi'on de la que desea conocer el tipo (\texttt{ys}) al final.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
+\subparagraph{Uso de \hpage}En el caso de este ejercicio, el alumno puede deducir que el tipo de \texttt{ys} es \texttt{[Float -> Float]}.  Para chequear su deducci'on y asegurarse de haber obtenido el resultado deseado, puede ingresar el c'odigo provisto por la c'atedra en la p'agina de \hpage, separando ambas expresiones por un rengl'on en blanco (pues ese es el modo utilizado por \hpage\ para determinar qu'e porci'on de la p'agina corresonde a cada expresi'on) y agregando la expresi'on de la que desea conocer el tipo (\texttt{ys}) al final.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/01}
@@ -248,7 +171,7 @@ $ cabal install hpage
 \begin{center}\begin{lstlisting}
 	[ x | x <- [1..4], y <- [x..5], (x+y) `mod` 2 == 0 ]
 \end{lstlisting}\end{center}
-\subparagraph{Resoluci'on}Este ejercicio se resuelve simplemente copiando y pegando el c'odigo dentro de \hpage, seleccionando la expresi'on a evaluar (si es que no se ha borrado las expresiones anteriores) y evalu'andola con el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la figura \ref{tut102}.
+\subparagraph{Uso de \hpage}Nuevamente, en este ejercicio el alumno puede calcular el resultado manualmente y luego utilizar \hpage\ para chequear su resultado propuesto.  Para ello, ingresa el c'odigo dentro de la p'agina, selecciona la expresi'on (pues de ese modo indica a \hpage\ que, al momento de interpretar, s'olo quiere que sea considerada esa porci'on del texto de la p'agina), y la evalu'a presionando el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la figura \ref{tut102}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/02}
@@ -259,9 +182,10 @@ $ cabal install hpage
 
 \paragraph{Ejercicio 5}Una tripla pitag'orica es una tripla $(a,b,c)$ de enteros positivos tal que $a^{2} + b^{2} = c^{2}$.  La siguiente es una definici'on de una lista (infinita) de triplas pitag'oricas.  Explicar por qu'e esta definici'on no es muy 'util.  Dar una definici'on mejor.
 \begin{center}\begin{lstlisting}
-	
+pitagorica :: [(Integer,Integer,Integer)] 
+pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2] 
 \end{lstlisting}\end{center}
-\subparagraph{Resoluci'on}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la figura \ref{tut103} y presionar'a el bot'on \textsl{Interpret}.
+\subparagraph{Uso de \hpage}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la figura \ref{tut103} y presionar'a el bot'on \textsl{Interpret}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/03}
@@ -296,7 +220,7 @@ $ cabal install hpage
 	\item Usando \texttt{genLista}, definir la funci'on \texttt{dh}, que dado un par de n'umeros (el primero menor que el segundo), devuelve una lista de n'umeros consecutivos desde el primero hasta el segundo.
 \end{enumerate}
 \renewcommand{\theenumi}{\arabic{enumi}}
-\subparagraph{Resoluci'on}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut106}.  Luego, intenta testear su ejercicio y, tal como se ve en la figura \ref{tut107}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la figura \ref{tut108} y obtener as'i el resultado esperado.
+\subparagraph{Uso de \hpage}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut106}.  Luego, intenta testear su ejercicio y, tal como se ve en la figura \ref{tut107}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la figura \ref{tut108} y obtener as'i el resultado esperado.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/06}
@@ -331,7 +255,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
            (Telefonos "Javi" [47779830] (Telefonos "Letincho" [42079999] Vacia)) 
 \end{lstlisting}\end{center}
 \ldots
-\subparagraph{Resoluci'on}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la figura \ref{tut109}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.
+\subparagraph{Uso de \hpage}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la figura \ref{tut109}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/09}
@@ -374,11 +298,16 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \newpage
 \subsubsection{Conclusiones}
 \paragraph{}En este tutorial hemos demostrado un uso sencillo de \hpage\ como herramienta de \textsl{micro-testing}, permitiendo al usuario trabajar con las funciones definidas en el \texttt{Prelude} de \haskell\ adem'as de las que 'el mismo desee definir localmente.
-\paragraph{}Pudimos apreciar c'omo \hpage\ permite definir expresiones y funciones, para luego evaluarlas de manera individual o combinada.  Dichas evaluaciones pueden generar diversos resultados y hemos visto c'omo se maneja \hpage\ con algunos de ellos:
+\paragraph{}Pudimos apreciar c'omo \hpage\ permite definir expresiones y funciones, para luego evaluarlas de manera individual o combinada.  Pudimos ver que \hpage\ distingue unas expresiones de otras por encontrase separadas utilizando renglones en blanco.  Vimos tambi'en c'omo var'ia el contexto de interpretaci'on (o sea, las expresiones que \hpage\ toma en consideraci'on al momento de realizar una interpretaci'on):
 \begin{itemize}
-\item Para aquellas expresiones cuyo valor no puede ser expresado en forma de texto, hemos visto c'omo \hpage\ nos permite conocer su tipo.
-\item En el caso de expresiones cuyo valor es de longitud infinita, \hpage\ exhibe todo lo que el usuario desee del resultado, culminando cuando 'este presiona el bot'on \textsl{Cancel}.
-\item Y en relaci'on a aquellas que requieren un c'alculo infinito para determinar su valor, \hpage\ muestra su tipo y permite al usuario continuar trabajando con las dem'as expresiones hasta que decida presionar el bot'on \textsl{Cancel} e interrumpir de esa manera el c'alculo.
+	\item Si el usuario seleccion'o una porci'on de texto, \hpage\ s'olo toma en consideraci'on las definiciones que se encuentren en la selecci'on e interpreta la 'ultima expresi'on del texto seleccionado
+	\item Si el usuario, en cambio, no ha seleccionado texto alguno, \hpage\ toma en consideraci'on todas las definiciones de la p'agina e interpreta la expresi'on sobre la que se encuentra posicionado por el cursor
+\end{itemize}
+\subparagraph{}Dichas evaluaciones pueden generar diversos resultados y hemos visto c'omo se maneja \hpage\ con algunos de ellos:
+\begin{itemize}
+	\item Para aquellas expresiones cuyo valor no puede ser expresado en forma de texto, hemos visto c'omo \hpage\ nos permite conocer su tipo.
+	\item En el caso de expresiones cuyo valor es de longitud infinita, \hpage\ exhibe todo lo que el usuario desee del resultado, culminando cuando 'este presiona el bot'on \textsl{Cancel}.
+	\item Y en relaci'on a aquellas que requieren un c'alculo infinito para determinar su valor, \hpage\ muestra su tipo y permite al usuario continuar trabajando con las dem'as expresiones hasta que decida presionar el bot'on \textsl{Cancel} e interrumpir de esa manera el c'alculo.
 \end{itemize}
 \paragraph{}Esta forma de trabajar con los resultados, combinada con la posibilidad que brinda \hpage\ de editar definiciones de manera simple y directa, para luego volver a evaluar expresiones que las usan, permite al usuario trabajar fluidamente y le da la libertad de \textsl{cometer errores}, detectarlos, corregirlos y luego continuar su trabajo.  Esta caracter'istica de \hpage\ es muy importante sobre todo para quienes se encuentran dando sus primeros pasos en el mundo de \haskell\ pues, entendemos, facilita el aprendizaje del lenguaje.
 \paragraph{}Tambi'en hemos visto en este tutorial c'omo se puede utilizar \hpage\ para crear, cargar, modificar y recargar m'odulos, trabajando siempre en una 'unica p'agina de texto.  'Esta es otra caracter'istica de \hpage\ que facilita el trabajo ya no s'olamente a los estudiantes sino a todo tipo de desarrolladores \haskell.
@@ -389,7 +318,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
 	\qitem{Look behind you, a Three-Headed Monkey!}{Guybrush Threepwood}
 \end{epigraphs}
-\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos c'omo trabajar con herramientas tales como \cabal, \textsl{Hayoo!} y \textsl{wxHaskell}.  Veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
+\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
 \subsubsection{Introducci'on}
 \paragraph{}La historia comienza cuando nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima}\footnote{El nombre lo hemos elegido en honor a quien, hace ya casi 15 a'nos y utilizando el sobrenombre \textsl{Pers'efone}, fue la \textsl{maestra} y principal rival de 4 en L'inea de Fernando Benavides en \htmladdnormallink{CyberJuegos}{http://www.cyberjuegos.com}} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
 \subparagraph{}Como es de suponer, F'atima no conoce al creador del juego y no puede contactarlo por lo que sus 'unicas herramientas, m'as all'a de su conocimiento de \haskell\ y del juego en s'i, son el c'odigo fuente de \textsl{hfiar} y \hpage.
@@ -817,10 +746,10 @@ instance Show WithIfiniteChar where
 	\item Otra posibilidad es que, luego de presentar un caracter, al intentar obtener el resto de la cadena, \hpage\ encuentre un c'alculo ``infinito'' o una excepci'on.  En estos casos, se informa la situaci'on al usuario y se aborta la evaluaci'on de la expresi'on.
 \end{itemize}
 \subsubsection{Integraci'on}
-\paragraph{}Una de las herramientas m'as comunmente usada por los desarrolladores haskell es \cabal.  \cabal\ (Common Architecture for Building Applications and Libraries) es una API distribuida con GHC que permite a un desarrollador agrupar f'acilmente un conjunto de m'odulos para producir un paquete. Es el sistema de compilaci'on est'andar para las aplicaciones y librer'ias de \haskell.  En un \textsl{paquete Cabal}, el desarrollador define los m'odulos que componen su aplicaci'on o librer'ia, los lugares (carpetas) donde encontrar el c'odigo fuente y los recursos que 'estos necesitan para funcionar, junto con las extensiones que se requieren para poder compilarlos.
+\paragraph{}Una de las herramientas m'as comunmente usada por los desarrolladores haskell es \cabal.  En un \textsl{paquete Cabal}, el desarrollador define los m'odulos que componen su aplicaci'on o librer'ia, los lugares (carpetas) donde encontrar el c'odigo fuente y los recursos que 'estos necesitan para funcionar, junto con las extensiones que se requieren para poder compilarlos.
 \subparagraph{}\hpage\ por su parte, permite al desarrollador cargar o importar m'odulos para poder utilizarlos al momento de evaluar expresiones.  Tambi'en permite definir los lugares donde el compilador puede encontrar archivos fuentes y las extensiones que 'este debe utilizar al momento de compilar los archivos encontrados.
 \subparagraph{}Observando estas similitudes, una integraci'on con \cabal\ es algo que surge de manera natural y \hpage\ lo provee.  \hpage\ permite al desarrollador cargar un paquete \cabal\ previamente configurado y de ese modo utilizar los m'odulos, extensiones y ubicaciones en 'el definidos.
-\paragraph{}Otra herramienta, quiz'a no tan popular como \cabal, pero tambi'en muy 'util es \textsl{Hayoo!}.  \textsl{Hayoo!} es un motor de b'usqueda especializado en la documentaci'on de la API de \haskell.  El objetivo de \textsl{Hayoo!} es proporcionar una interfaz de b'usqueda interactiva y f'acil de usar para la documentaci'on de varios paquetes y librer'ias \haskell.  Conociendo esta herramienta, decidimos integrarla con \hpage\ de modo que el desarrollador pueda realizar consultas en su base de datos para obtener informaci'on sobre alguna funci'on, tipo, m'odulo, clase o expresi'on que desee analizar.
+\paragraph{}Otra herramienta, quiz'a no tan popular como \cabal, pero tambi'en muy 'util es \textsl{Hayoo!}.  Conociendo esta herramienta, decidimos integrarla con \hpage\ de modo que el desarrollador pueda realizar consultas en su base de datos para obtener informaci'on sobre alguna funci'on, tipo, m'odulo, clase o expresi'on que desee analizar.
 
 \subsection{Implementaci'on}
 \begin{epigraphs}
@@ -978,7 +907,7 @@ $ cabal test hpage
 \subsection{Objetivos Alcanzados}
 \begin{epigraphs}
 	\qitem{Results! Why, man? I have gotten a lot of results. I know several thousand things that wont work}{Thomas A. Edison}
-	\qitem{Kids, you tried your best and you failed miserably. The lesson is: ``never try''}{Homer Simpsons}
+	\qitem{Kids, you tried your best and you failed miserably. The lesson is: ``never try''}{Homer Simpson}
 \end{epigraphs}
 \paragraph{}A primera vista, \hpage\ puede parecer simplemente un editor de texto al que se le agrega la posibilidad de interpretar expresiones \haskell.  Esta visi'on es cierta, y en s'i misma es un avance con respecto a las herramientas ya existentes pues permite intercalar en un mismo documento texto libre y expresiones \haskell.
 \subparagraph{}Sin embargo, \hpage\ presenta varios atributos que generan un importante valor agregado:

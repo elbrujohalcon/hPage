@@ -1,97 +1,5 @@
 \begin{thebibliography}{10}
 
-\bibitem{couchdb}
-Couchdb [online].
-\newblock Available from: \url{http://couchdb.apache.org}.
-
-\bibitem{eclipsefp}
-Eclipsefp [online].
-\newblock Available from: \url{http://eclipsefp.sourceforge.net/}.
-
-\bibitem{ejabberd}
-ejabberd [online].
-\newblock Available from: \url{http://www.ejabberd.im}.
-
-\bibitem{erlang}
-Erlang [online].
-\newblock Available from: \url{http://www.erlang.org}.
-
-\bibitem{ghci}
-Ghci [online].
-\newblock Available from:
-  \url{http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html}.
-
-\bibitem{ghcdebug}
-Ghci debugger [online].
-\newblock Available from:
-  \url{http://www.haskell.org/ghc/docs/6.10-latest/html/users_guide/ghci-debug%
-ger.html}.
-
-\bibitem{github}
-Github [online].
-\newblock Available from: \url{http://github.com}.
-
-\bibitem{ghc}
-The glasgow haskell compiler [online].
-\newblock Available from: \url{http://www.haskell.org/ghc}.
-
-\bibitem{hackage}
-Hackagedb [online].
-\newblock Available from: \url{http://hackage.haskell.org}.
-
-\bibitem{haskell}
-Haskell [online].
-\newblock Available from: \url{http://www.haskell.org}.
-
-\bibitem{cabal}
-The haskell cabal [online].
-\newblock Available from: \url{http://www.haskell.org/cabal}.
-
-\bibitem{platform}
-Haskell platform [online].
-\newblock Available from: \url{http://hackage.haskell.org/platform/}.
-
-\bibitem{hat}
-Hat - the haskell tracer [online].
-\newblock Available from: \url{http://www.haskell.org/hat}.
-
-\bibitem{hayoo}
-Hayoo! [online].
-\newblock Available from: \url{http://holumbus.fh-wedel.de/hayoo}.
-
-\bibitem{javascrapbook}
-Java scrapbook pages [online].
-\newblock Available from:
-  \url{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.use%
-r/reference/ref-34.htm}.
-
-\bibitem{cppsp1}
-Microsoft visual c++ 2008 sp1 redistributable package (x86) [online].
-\newblock Available from:
-  \url{http://www.microsoft.com/downloads/details.aspx?familyid=A5C84275-3B97-%
-4AB7-A40D-3802B2AF5FC2}.
-
-\bibitem{smalltalk}
-Smalltalk [online].
-\newblock Available from: \url{http://www.smalltalk.org}.
-
-\bibitem{smalltalkworkspace}
-Smalltalk workspace [online].
-\newblock Available from: \url{http://wiki.squeak.org/squeak/1934}.
-
-\bibitem{wxhaskell}
-Wxhaskell [online].
-\newblock Available from: \url{http://haskell.org/haskellwiki/WxHaskell}.
-
-\bibitem{wxwidgets}
-Wxwidgets [online].
-\newblock Available from: \url{http://www.wxwidgets.org/}.
-
-\bibitem{java}
-Java [online].
-\newblock October 2007.
-\newblock Available from: \url{http://www.java.com}.
-
 \bibitem{tdd}
 Kent Beck.
 \newblock {\em Test Driven Development: By Example}.
@@ -99,8 +7,8 @@ Kent Beck.
 
 \bibitem{eprocess}
 Fernando Benavides.
-\newblock eprocess.
-\newblock \url{http://hackage.haskell.org/package/eprocess}, October 2009.
+\newblock eprocess [online].
+\newblock October 2009.
 \newblock Available from: \url{http://hackage.haskell.org/package/eprocess}.
 
 \bibitem{hpage}
@@ -111,7 +19,8 @@ Fernando Benavides.
 
 \bibitem{wxhnotepad}
 Fernando Benavides.
-\newblock wxhnotepad, December 2009.
+\newblock wxhnotepad [online].
+\newblock December 2009.
 \newblock Available from: \url{http://github.com/elbrujohalcon/wxhnotepad}.
 
 \bibitem{hfiar}
@@ -119,6 +28,24 @@ Fernando Benavides.
 \newblock hfiar [online].
 \newblock January 2010.
 \newblock Available from: \url{http://hackage.haskell.org/package/hfiar}.
+
+\bibitem{hwiki}
+Fernando Benavides.
+\newblock Installing $\lambda$page from cabal [online].
+\newblock May 2010.
+\newblock Available from:
+  \url{http://wiki.github.com/elbrujohalcon/hPage/installing-page} [cited May
+  13, 2010].
+
+\bibitem{hat}
+Olaf Chitil et~al.
+\newblock Hat - the haskell tracer [online].
+\newblock Available from: \url{http://www.haskell.org/hat}.
+
+\bibitem{platform}
+Duncan Coutts and Don Stewart.
+\newblock Haskell platform [online].
+\newblock Available from: \url{http://hackage.haskell.org/platform/}.
 
 \bibitem{plp}
 Paradigmas de~Lenguajes~de Programaci'on.
@@ -128,23 +55,96 @@ Paradigmas de~Lenguajes~de Programaci'on.
   \url{http://www.dc.uba.ar/materias/plp/cursos/2009/cuat2/descargas/guias/Pra%
 ctica-funcional.pdf/at_download/file}.
 
+\bibitem{javascrapbook}
+eclipse.
+\newblock Java scrapbook pages [online].
+\newblock Available from:
+  \url{http://help.eclipse.org/help33/index.jsp?topic=/org.eclipse.jdt.doc.use%
+r/reference/ref-34.htm}.
+
+\bibitem{erlang}
+Ericsson.
+\newblock Erlang [online].
+\newblock Available from: \url{http://www.erlang.org}.
+
 \bibitem{giesl-automated}
 J.~Giesl, S.~Swiderski, P.~Schneider-Kamp, and R.~Thiemann.
 \newblock {Automated termination analysis for Haskell: From term rewriting to
   programming languages}.
-\newblock {\em Term Rewriting and Applications}, pages 297--312.
+\newblock {\em Term Rewriting and Applications}, pages 297--312, 2007.
 
 \bibitem{hint}
 Daniel Gor'in.
-\newblock Hint.
-\newblock \url{http://projects.haskell.org/hint}, January 2009.
+\newblock Hint [online].
+\newblock January 2009.
+\newblock Available from: \url{http://projects.haskell.org/hint}.
+
+\bibitem{java}
+James Gosling.
+\newblock Java [online].
+\newblock October 2007.
+\newblock Available from: \url{http://www.java.com}.
 
 \bibitem{vital}
 Keith Hanna.
 \newblock A document-centered environment for haskell.
-\newblock April 2005.
+\newblock Vital is a document-centered implemention of Haskell, a functional
+  programming language., April 2005.
 \newblock Available from:
   \url{http://www.cs.kent.ac.uk/projects/vital/description/2005/all.ps}.
+
+\bibitem{hayoo}
+Timo~B. H{\"u}bel and Sebastian~M. Schlat.
+\newblock Hayoo! [online].
+\newblock Available from: \url{http://holumbus.fh-wedel.de/hayoo}.
+
+\bibitem{cabal}
+Isaac Jones and Duncan Coutts.
+\newblock The haskell cabal [online].
+\newblock Available from: \url{http://www.haskell.org/cabal}.
+
+\bibitem{hugs}
+Mark~P. Jones et~al.
+\newblock Hugs [online].
+\newblock Available from: \url{http://www.haskell.org/hugs/}.
+
+\bibitem{ghci}
+Simon~Peyton Jones.
+\newblock Ghci [online].
+\newblock Available from:
+  \url{http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html}.
+
+\bibitem{ghcdebug}
+Simon~Peyton Jones.
+\newblock Ghci debugger [online].
+\newblock Available from:
+  \url{http://www.haskell.org/ghc/docs/6.10-latest/html/users_guide/ghci-debug%
+ger.html}.
+
+\bibitem{ghc}
+Simon~Peyton Jones.
+\newblock The glasgow haskell compiler [online].
+\newblock Available from: \url{http://www.haskell.org/ghc}.
+
+\bibitem{haskell}
+Simon~Peyton Jones, Paul Hudak, Philip Wadler, et~al.
+\newblock Haskell [online].
+\newblock Available from: \url{http://www.haskell.org}.
+
+\bibitem{couchdb}
+Damien Katz.
+\newblock Couchdb [online].
+\newblock Available from: \url{http://couchdb.apache.org}.
+
+\bibitem{smalltalk}
+Alan Kay, Dan Ingalls, and Adele Goldberg.
+\newblock Smalltalk [online].
+\newblock Available from: \url{http://www.smalltalk.org}.
+
+\bibitem{smalltalkworkspace}
+Alan Kay, Dan Ingalls, and Adele Goldberg.
+\newblock Smalltalk workspace [online].
+\newblock Available from: \url{http://wiki.squeak.org/squeak/1934}.
 
 \bibitem{quickcheck}
 John~Hughes Koen~Claessen.
@@ -169,20 +169,52 @@ Huiquing Li.
 \newblock {\em Refactoring Haskell Programs}.
 \newblock Philosophy, University of Kent, September 2006.
 
+\bibitem{eclipsefp}
+JP~Moresmau, Leif Frenzel, and Thomas ten Cate.
+\newblock Eclipsefp [online].
+\newblock Available from: \url{http://eclipsefp.sourceforge.net/}.
+
 \bibitem{wewantarock}
 Jeremy O'Donoghue.
 \newblock Building a text editor.
 \newblock {\em \url{http://wewantarock.wordpress.com}}, January 2010.
+
+\bibitem{wxhaskell}
+Jeremy O'Donoghue and Eric~Y. Kow.
+\newblock Wxhaskell [online].
+\newblock Available from: \url{http://haskell.org/haskellwiki/WxHaskell}.
 
 \bibitem{realworldhaskell}
 Bryan O'Sullivan, John Goerzen, and Don Stewart.
 \newblock {\em Real World Haskell}.
 \newblock O'Reilly Media, Inc., 1 edition, 2008.
 
+\bibitem{hackage}
+Ross Paterson.
+\newblock Hackagedb [online].
+\newblock Available from: \url{http://hackage.haskell.org}.
+
 \bibitem{facebook}
 Chris Piro.
-\newblock Facebook chat, February 2009.
+\newblock Facebook chat [online].
+\newblock February 2009.
 \newblock Available from:
   \url{http://www.facebook.com/note.php?note_id=51412338919}.
+
+\bibitem{wxwidgets}
+Dr.~Robert Roebling, Dr.~Vadim Zeitlin, Dr.~Stefan Csomor, Dr.~Julian Smart,
+  Vaclav Slavik, Robin Dunn, et~al.
+\newblock Wxwidgets [online].
+\newblock Available from: \url{http://www.wxwidgets.org/}.
+
+\bibitem{ejabberd}
+Alexey Shchepin.
+\newblock ejabberd [online].
+\newblock Available from: \url{http://www.ejabberd.im}.
+
+\bibitem{github}
+Chris Wanstrath, PJ~Hyett, and Tom Preston-Werner.
+\newblock Github [online].
+\newblock Available from: \url{http://github.com}.
 
 \end{thebibliography}
