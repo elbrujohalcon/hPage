@@ -138,7 +138,7 @@ $ cabal install hpage
 \paragraph{}Mostraremos a continuaci'on, a trav'es de un ejemplo, c'omo utilizar \hpage.  En este caso, hemos tomado prestada una pr'actica de la materia \textsl{Paradigmas de Lenguajes de Programaci'on}~\cite{plp}.  Exhibiremos entonces, c'omo un alumno podr'ia utilizar \hpage\ para resolver algunos de los ejercicios que all'i se presentan.  Seleccionamos s'olo aquellos que a nuestro criterio son los m'as representativos a la hora de entender c'omo \hpage\ ayuda al alumno en su resoluci'on.
 
 \subsubsection{Pasos previos}
-\paragraph{}Antes de comenzar a resolver los ejercicios, el alumno ejecuta \hpage\ y clickea en el bot'on \textsl{New}.  El programa presentar'a una pantalla similar a la de la figura \ref{tut100}.
+\paragraph{}Antes de comenzar a resolver los ejercicios, el alumno ejecuta \hpage\ y clickea en el bot'on \textsl{New}.  El programa presentar'a una pantalla similar a la de la Figura \ref{tut100}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/00}
@@ -155,7 +155,7 @@ $ cabal install hpage
 	xs = [1,2,3]::[Float]
 	ys = map (+) xs
 \end{lstlisting}\end{center}
-\subparagraph{Uso de \hpage}En el caso de este ejercicio, el alumno puede deducir que el tipo de \texttt{ys} es \texttt{[Float -> Float]}.  Para chequear su deducci'on y asegurarse de haber obtenido el resultado deseado, puede ingresar el c'odigo provisto por la c'atedra en la p'agina de \hpage, separando ambas expresiones por un rengl'on en blanco (pues ese es el modo utilizado por \hpage\ para determinar qu'e porci'on de la p'agina corresonde a cada expresi'on) y agregando la expresi'on de la que desea conocer el tipo (\texttt{ys}) al final.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la figura \ref{tut101}.
+\subparagraph{Uso de \hpage}En el caso de este ejercicio, el alumno puede deducir que el tipo de \texttt{ys} es \texttt{[Float -> Float]}.  Para chequear su deducci'on y asegurarse de haber obtenido el resultado deseado, puede ingresar el c'odigo provisto por la c'atedra en la p'agina de \hpage, separando ambas expresiones por un rengl'on en blanco (pues ese es el modo utilizado por \hpage\ para determinar qu'e porci'on de la p'agina corresonde a cada expresi'on) y agregando la expresi'on de la que desea conocer el tipo (\texttt{ys}) al final.  Luego de ello, simplemente presiona el bot'on \textsl{Interpret} y puede observar el tipo del resultado (\texttt{[Float -> Float]}), tal como lo muestra la Figura \ref{tut101}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/01}
@@ -171,7 +171,7 @@ $ cabal install hpage
 \begin{center}\begin{lstlisting}
 	[ x | x <- [1..4], y <- [x..5], (x+y) `mod` 2 == 0 ]
 \end{lstlisting}\end{center}
-\subparagraph{Uso de \hpage}Nuevamente, en este ejercicio el alumno puede calcular el resultado manualmente y luego utilizar \hpage\ para chequear su resultado propuesto.  Para ello, ingresa el c'odigo dentro de la p'agina, selecciona la expresi'on (pues de ese modo indica a \hpage\ que, al momento de interpretar, s'olo quiere que sea considerada esa porci'on del texto de la p'agina), y la evalu'a presionando el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la figura \ref{tut102}.
+\subparagraph{Uso de \hpage}Nuevamente, en este ejercicio el alumno puede calcular el resultado manualmente y luego utilizar \hpage\ para chequear su resultado propuesto.  Para ello, ingresa el c'odigo dentro de la p'agina, selecciona la expresi'on (pues de ese modo indica a \hpage\ que, al momento de interpretar, s'olo quiere que sea considerada esa porci'on del texto de la p'agina), y la evalu'a presionando el bot'on \textsl{Interpret}.  \hpage\ mostrar'a entonces el resultado: \texttt{[1,1,1,2,2,3,3,4]} como se ve en la Figura \ref{tut102}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/02}
@@ -185,7 +185,7 @@ $ cabal install hpage
 pitagorica :: [(Integer,Integer,Integer)] 
 pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2] 
 \end{lstlisting}\end{center}
-\subparagraph{Uso de \hpage}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la figura \ref{tut103} y presionar'a el bot'on \textsl{Interpret}.
+\subparagraph{Uso de \hpage}Para resolver este ejercicio, el alumno podr'ia comenzar por intentar evaluar la lista que se le provee, para ello reacomodar'a su definici'on tal como se observa en la Figura \ref{tut103} y, seleccionando las 'ultimas tres expresiones, presionar'a el bot'on \textsl{Interpret}.  El espacio intermedio tiene la finalidad de distinguir ambas expresiones (por un lado, la declaraci'on de tipo y, por otro, la definici'on de la expresi'on)
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/03}
@@ -193,8 +193,8 @@ pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2]
 		\label{tut103}
 	\end{center}
 \end{figure}
-\subparagraph{}El alumno podr'a observar entonces que el resultado de la interpretaci'on (si bien tiene un tipo v'alido) nunca aparece por pantalla.  Esto se debe al modo en el que se eval'uan las listas por comprensi'on en \haskell: En este caso teniendo tres generadores (\texttt{a}, \texttt{b} y \texttt{c}), para generar el primer elemento de la lista, \haskell\ toma el primer valor posible para \texttt{a} (o sea $1$), el primer valor posible para \texttt{b} (o sea $2$) y luego itera sobre \texttt{c}, con lo que intentar'a verificar en cada paso de esta iteraci'on que $1^{2} + 1^{2} = c$.  Pero $1^{2}+1^{2} = 2$ y sabemos que no existe ning'un n'umero natural que elevado al cuadrado sea $2$, por lo tanto, \haskell\ nunca encontrar'a el primer elemento de esta lista.  \hpage\ permite al alumno, pues, presionar el bot'on \textsl{Cancel} de modo de interrumpir la evaluaci'on y poder continuar trabajando.
-\subparagraph{}Luego de presionar el bot'on \textsl{Cancel}, o incluso durante el lapso en el que \hpage\ trata de evaluar la expresi'on, el alumno puede modificar la expresi'on para cumplir con la consigna del ejercicio.  Podr'ia, por ejemplo, reformularla como muestra la figura \ref{tut104} e intentar interpretarla, considerando que, dentro de los n'umeros naturales se cumple que $a > c \Rightarrow a^{2} > c^{2}$ y $b > c \Rightarrow b^{2} > c^{2}$.  \hpage\ entonces, comenzar'a a exhibir resultados hasta que el alumno presione el bot'on \textsl{Cancel}.
+\subparagraph{}El alumno podr'a observar entonces que el resultado de la interpretaci'on (si bien tiene un tipo v'alido) nunca aparece por pantalla.  Esto se debe al modo en el que se eval'uan las listas por comprensi'on en \haskell: En este caso, teniendo tres generadores (\texttt{a}, \texttt{b} y \texttt{c}) y siguiendo la sem'antica de \haskell\, para generar el primer elemento de la lista, el interprete toma el primer valor posible para \texttt{a} (o sea $1$), el primer valor posible para \texttt{b} (o sea $2$) y luego itera sobre \texttt{c}, con lo que intentar'a verificar en cada paso de esta iteraci'on que $1^{2} + 1^{2} = c$.  Pero $1^{2}+1^{2} = 2$ y sabemos que no existe ning'un n'umero natural que elevado al cuadrado sea $2$, por lo tanto, el interprete nunca encontrar'a el primer elemento de esta lista.  \hpage\ permite al alumno, pues, presionar el bot'on \textsl{Cancel} de modo de interrumpir la evaluaci'on y poder continuar trabajando.
+\subparagraph{}Luego de presionar el bot'on \textsl{Cancel}, o incluso durante el lapso en el que \hpage\ trata de evaluar la expresi'on, el alumno puede modificar la definici'on de \texttt{pitagorica} para cumplir con la consigna del ejercicio.  Podr'ia, por ejemplo, reformularla como muestra la Figura \ref{tut104} e intentar interpretarla, considerando que, dentro de los n'umeros naturales se cumple que $a > c \Rightarrow a^{2} > c^{2}$ y $b > c \Rightarrow b^{2} > c^{2}$.  \hpage\ entonces, comenzar'a a exhibir resultados hasta que el alumno presione el bot'on \textsl{Cancel}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/04}
@@ -202,7 +202,7 @@ pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2]
 		\label{tut104}
 	\end{center}
 \end{figure}
-\subparagraph{}Finalmente, el alumno podr'ia tambi'en verificar que puede obtener s'olo las 5 primeras tuplas pitag'oricas, definiendo la serie pitag'orica y tomando s'olo sus primeros 5 elementos como lo muestra la figura \ref{tut105}.  De este modo no necesitar'ia presionar el bot'on \textsl{Cancel}.
+\subparagraph{}Finalmente, el alumno podr'ia tambi'en verificar que puede obtener s'olo las 5 primeras tuplas pitag'oricas, definiendo la serie pitag'orica y tomando s'olo sus primeros 5 elementos como lo muestra la Figura \ref{tut105}.  De este modo no necesitar'ia presionar el bot'on \textsl{Cancel}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/05}
@@ -220,7 +220,7 @@ pitagorica = [(a,b,c) | a <- [1..], b <-[1..], c <- [1..], a^2 + b^2 == c^2]
 	\item Usando \texttt{genLista}, definir la funci'on \texttt{dh}, que dado un par de n'umeros (el primero menor que el segundo), devuelve una lista de n'umeros consecutivos desde el primero hasta el segundo.
 \end{enumerate}
 \renewcommand{\theenumi}{\arabic{enumi}}
-\subparagraph{Uso de \hpage}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la figura \ref{tut106}.  Luego, intenta testear su ejercicio y, tal como se ve en la figura \ref{tut107}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la figura \ref{tut108} y obtener as'i el resultado esperado.
+\subparagraph{Uso de \hpage}En este caso, ciertamente \hpage\ no puede ayudar al alumno a \textsl{crear} las funciones que se le solicitan, pero s'i puede ayudarlo a testearlas.  Supongamos pues que el alumno crea una nueva p'agina y define en ella las funciones \texttt{genLista} y \texttt{dh} tal como se ve en la Figura \ref{tut106}.  Luego, intenta testear su ejercicio y, tal como se ve en la Figura \ref{tut107}, puede comprobar que sus funciones generan una recursi'on infinita.  Observa entonces que a \texttt{genLista} le falta un \textbf{caso base} y lo agrega, para luego volver a testear sus funciones como se ve en la Figura \ref{tut108} y obtener as'i el resultado esperado.  Al igual que ya hemos visto en varios casos anteriores, debe dejar un rengl'on intermedio en blanco para que \hpage\ distinga las dos partes de la definici'on de la funci'on.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/06}
@@ -255,7 +255,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
            (Telefonos "Javi" [47779830] (Telefonos "Letincho" [42079999] Vacia)) 
 \end{lstlisting}\end{center}
 \ldots
-\subparagraph{Uso de \hpage}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la figura \ref{tut109}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.
+\subparagraph{Uso de \hpage}El ejercicio contin'ua, pero en este caso, el alumno podr'ia verse tentado a intentar evaluar \texttt{miAgenda} directamente en \hpage\ y obtendr'ia el resultado de la Figura \ref{tut109}.  'Esto se debe a que \hpage\ no soporta definiciones de tipos de datos directamente en el texto.  Cabe aclarar que el error obtenido no es ``prolijo'' pues viene directamente de \textsl{GHC}, cuya API (utilizada por \hpage\ a trav'es de \textsl{hint} como se ver'a en la Secci'on \ref{secImplement}) no provee errores tipados, sino s'olamente descritos en forma de texto.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/09}
@@ -263,7 +263,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 		\label{tut109}
 	\end{center}
 \end{figure}
-\subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la figura \ref{tut110}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la figura \ref{tut111}
+\subparagraph{}Para conseguir el efecto deseado, el alumno puede crear un m'odulo (sin salir de \hpage) y guardarlo utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}) tal como se observa en la Figura \ref{tut110}.  Luego, utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} puede cargar el m'odulo reci'en creado, seleccionar la expresi'on \texttt{miAgenda} y evaluarla normalmente.  Observamos el resultado de esta operaci'on en la Figura \ref{tut111}
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/10}
@@ -278,7 +278,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 		\label{tut111}
 	\end{center}
 \end{figure}
-\subparagraph{}Podemos ver, por un lado, que el resultado no ha sido mostrado, sino que s'olo se inform'o su tipo.  Esto se debe a que el tipo \texttt{Agenda} no es instancia de la clase \texttt{Show}.  Para visualizar el resultado, el alumno podr'ia agregar la cl'ausla \texttt{deriving (Show)} al tipo \texttt{Agenda}, grabar el m'odulo modificado, presionar el bot'on \textsl{Reload} y luego evaluar nuevamente \texttt{miAgenda} tal como se ve en la figura \ref{tut112}.
+\subparagraph{}Podemos ver, por un lado, que el resultado no ha sido mostrado, sino que s'olo se inform'o su tipo.  Esto se debe a que el tipo \texttt{Agenda} no es instancia de la clase \texttt{Show}.  Para visualizar el resultado, el alumno podr'ia agregar la cl'ausla \texttt{deriving (Show)} al tipo \texttt{Agenda}, grabar el m'odulo modificado, presionar el bot'on \textsl{Reload} y luego evaluar nuevamente \texttt{miAgenda} tal como se ve en la Figura \ref{tut112}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/12}
@@ -286,7 +286,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 		\label{tut112}
 	\end{center}
 \end{figure}
-\subparagraph{}Por otra parte, aprovecharemos este ejercicio simple para mostrar lo que \hpage\ permite hacer con los elementos de la lista \textsl{Modules}.  Presionando bot'on derecho del mouse sobre un 'item, \hpage\ despliega un men'u que nos permite, entre otras opciones ``navegar''  el m'odulo y observar los elementos que exporta.  La figura \ref{tut113} nos muestra el ``'arbol'' que se desprende de nuestro m'odulo \texttt{Temp}
+\subparagraph{}Por otra parte, aprovecharemos este ejercicio simple para mostrar lo que \hpage\ permite hacer con los elementos de la lista \textsl{Modules}.  Presionando bot'on derecho del mouse sobre un 'item, \hpage\ despliega un men'u contextual que nos permite, entre otras opciones ``navegar''  el m'odulo y observar los elementos que exporta.  La Figura \ref{tut113} nos muestra el ``'arbol'' que se desprende de nuestro m'odulo \texttt{Temp}
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut1/13}
@@ -318,7 +318,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
 	\qitem{Look behind you, a Three-Headed Monkey!}{Guybrush Threepwood}
 \end{epigraphs}
-\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a demostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema m'as lejano al mundo acad'emico.  En 'el veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
+\paragraph{}Inclu'imos en este informe un segundo tutorial, apuntando esta vez a mostrar c'omo \hpage\ puede ser de utilidad para un programador \haskell\ que se enfrenta a un problema complejo.  En 'el veremos como \hpage\ ayuda al usuario a ``entender'' c'odigo escrito por otra persona (o quiz'a por el mismo, alg'un tiempo atr'as).
 \subsubsection{Introducci'on}
 \paragraph{}La historia comienza cuando nuestra amiga desarrolladora, a quien llamaremos \textsl{F'atima}\footnote{El nombre lo hemos elegido en honor a quien, hace ya casi 15 a'nos y utilizando el sobrenombre \textsl{Pers'efone}, fue la \textsl{maestra} y principal rival de 4 en L'inea de Fernando Benavides en \htmladdnormallink{CyberJuegos}{http://www.cyberjuegos.com}} para darle un poco de personalidad, se encuentra con la misi'on de modificar una implementaci'on de un juego de \textsl{4 en L'inea}, llamada \htmladdnormallink{hfiar}{http://hackage.haskell.org/package/hfiar}~\cite{hfiar}.  F'atima tiene que adaptar el juego de modo que permita \textsl{jugar contra la computadora} pues actualmente s'olo permite jugar a dos seres humanos entre s'i.
 \subparagraph{}Como es de suponer, F'atima no conoce al creador del juego y no puede contactarlo por lo que sus 'unicas herramientas, m'as all'a de su conocimiento de \haskell\ y del juego en s'i, son el c'odigo fuente de \textsl{hfiar} y \hpage.
@@ -336,10 +336,10 @@ $ git clone git://github.com/elbrujohalcon/hfiar.git
 		\label{tut200}
 	\end{center}
 \end{figure}
-\paragraph{}Una vez hecho eso, puede observar la estructura del proyecto, tal como se ve en la figura \ref{tut200}.  Conociendo la estructura b'asica de los proyectos desarrollados en \haskell, podemos describir los archivos all'i presentes de la siguiente manera:
+\paragraph{}Una vez hecho eso, puede observar la estructura del proyecto, tal como se ve en la Figura \ref{tut200}.  Conociendo la estructura b'asica de los proyectos desarrollados en \haskell, podemos describir los archivos all'i presentes de la siguiente manera:
 \begin{description}
-\item[hfiar.cabal] Archivo de descripci'on de proyecto \cabal.  F'atima puede obtener de 'el informaci'on general del proyecto, sus m'odulos, las extensiones que se necesitan para compilarlo y dem'as.  
-\item[Setup.hs] Archivo \haskell\ utilizado por \cabal\ para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las instrucciones de la figura \ref{tut201}.
+\item[hfiar.cabal] Archivo de descripci'on de proyecto \cabal.  F'atima puede obtener de 'el informaci'on general del proyecto, sus m'odulos, las dependencias y extensiones del lenguaje que se necesitan para compilarlo y dem'as.  
+\item[Setup.hs] Archivo \haskell\ utilizado por \cabal\ para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las instrucciones de la Figura \ref{tut201}.
 \begin{figure}[hp]
 	\begin{center}
 		\begin{center}\begin{lstlisting}
@@ -362,7 +362,7 @@ See http://hackage.haskell.org/package/hfiar
 
 \newpage
 \subsubsection{Entendiendo el Proyecto}
-\paragraph{}Para comenzar a entender c'omo est'a estructurada la aplicaci'on, F'atima observa el archivo \textbf{hfiar.cabal} (al que podemos ver en la figura \ref{tut202}) y observa que el proyecto se encuentra compuesto por una librer'ia (que incluye s'olamente al m'odulo \texttt{HFiaR}) y un ejecutable llamado \texttt{hfiar} que, m'as all'a del m'odulo \texttt{Main}, incluye a los m'odulos \texttt{HFiaR.GUI} y \texttt{HFiaR.Server}.  F'atima puede ver adem'as que, para compilar los m'odulos del proyecto, debe utilizar las extensiones \textbf{MultiParamTypeClasses} y \textbf{GeneralizedNewtypeDeriving}.
+\paragraph{}Para comenzar a entender c'omo est'a estructurada la aplicaci'on, F'atima observa el archivo \textbf{hfiar.cabal} (al que podemos ver en la Figura \ref{tut202}) y observa que el proyecto se encuentra compuesto por una librer'ia (que incluye s'olamente al m'odulo \texttt{HFiaR}) y un ejecutable llamado \texttt{hfiar} que, m'as all'a del m'odulo \texttt{Main}, incluye a los m'odulos \texttt{HFiaR.GUI} y \texttt{HFiaR.Server}.  F'atima puede ver adem'as que, para compilar los m'odulos del proyecto, debe utilizar las extensiones \textbf{MultiParamTypeClasses} y \textbf{GeneralizedNewtypeDeriving}.
 \begin{figure}[hp]
 	\begin{center}
 	\hbox{}
@@ -428,7 +428,7 @@ $ cabal haddock
 
 \newpage
 \subsubsection{Utilizando \hpage}
-\paragraph{}Una vez abierto \hpage, F'atima intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la figura \ref{tut202}.
+\paragraph{}Una vez abierto \hpage, F'atima intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la Figura \ref{tut202}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/02}
@@ -436,7 +436,7 @@ $ cabal haddock
 		\label{tut202}
 	\end{center}
 \end{figure}
-\subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la figura \ref{tut203}.
+\subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la Figura \ref{tut203}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/03}
@@ -445,7 +445,7 @@ $ cabal haddock
 	\end{center}
 \end{figure}
 \newpage
-\paragraph{}Recordando que el proyecto inclu'ia una librer'ia compuesta 'unicamente por el m'odulo \texttt{HFiaR}, nuestra amiga F'atima decide cargarlo y navegarlo utilizando el men'u desplegable que nos muestra la figura \ref{tut204}.
+\paragraph{}Recordando que el proyecto inclu'ia una librer'ia compuesta 'unicamente por el m'odulo \texttt{HFiaR}, nuestra amiga F'atima decide cargarlo y navegarlo utilizando el men'u desplegable que nos muestra la Figura \ref{tut204}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/04}
@@ -455,7 +455,7 @@ $ cabal haddock
 \end{figure}
 \paragraph{}Gracias a la documentaci'on generada previamente, puede observar que la din'amica del juego est'a modelada con una m'onada que permite describir las acciones llevadas a cabo durante un partido (b'asicamente utilizando la funci'on \texttt{dropIn}, que equivale a la acci'on que realiza el jugador actual al momento de dejar caer una ficha en una columna).  Esta m'onada tambi'en permite observar un juego utilizando las funciones \texttt{player} (para conocer el jugador actual), \texttt{board} (para observar el tablero, que es modelado como una lista de listas de \texttt{Tile}s, o sea fichas) y \texttt{result} para verificar el resultado del partido.
 \subparagraph{}Puede ver tambi'en que dichas acciones pueden ser ejecutadas dentro de cualquier m'onada, gracias a las funciones \texttt{play} y \texttt{eval} y al hecho de que la m'onada est'a implementada utilizando la t'ecnica de \textsl{Monad Transformers}~\cite{realworldhaskell}.
-\subparagraph{}Finalmente, y de modo muy conveniente, F'atima observa que el creador del m'odulo provey'o las funciones \texttt{justPlay} y \texttt{justEval} que permiten simplemente ejecutar las acciones de la m'onada y obtener su resultado.  Utilizando estas funciones, F'atima comienza a realizar su tarea de \textsl{micro-testing}.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la figura \ref{tut205}
+\subparagraph{}Finalmente, y de modo muy conveniente, F'atima observa que el creador del m'odulo provey'o las funciones \texttt{justPlay} y \texttt{justEval} que permiten simplemente ejecutar las acciones de la m'onada y obtener su resultado.  Utilizando estas funciones, F'atima comienza a realizar su tarea de \textsl{micro-testing}.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la Figura \ref{tut205}
 \lstset{language=haskell, frame=single, tabsize=4}
 \begin{center}\begin{lstlisting}
 	justPlay $ return ()
@@ -565,7 +565,7 @@ Left That column is full
 
 \newpage
 \subsubsection{Creando al \textsl{Jugador Computadora}}
-\paragraph{}Con el conocimiento adquirido en el uso de \texttt{HFiaR}, F'atima decide crear la funci'on \texttt{aiDropIn}, que se ejecutar'a dentro de la m'onada \texttt{HFiaR}.  La figura \ref{tut207} nos muestra la aridad de dicha funci'on.
+\paragraph{}Con el conocimiento adquirido en el uso de \texttt{HFiaR}, F'atima decide crear la funci'on \texttt{aiDropIn}, que se ejecutar'a dentro de la m'onada \texttt{HFiaR}.  La Figura \ref{tut207} nos muestra la aridad de dicha funci'on.
 \begin{figure}[hp]
 	\begin{center}
 		\begin{lstlisting}
@@ -576,7 +576,7 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 		\label{tut207}
 	\end{center}
 \end{figure}
-\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
+\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la Figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/06}
@@ -585,7 +585,7 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 	\end{center}
 \end{figure}
 \subparagraph{}Una vez definidas ambas funciones, F'atima decide testearlas y, para ello, no necesita m'as que \textsl{evaluar} un juego en el que conozca el resultado.  En particular, F'atima elije hacer jugar a la computadora contra s'i misma 8 movimientos y verifica que las fichas han quedado intercaladas en la primer columna y luego el siguiente jugador ha colocado una en la segunda.
-\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save} tal como se observa en la figura \ref{tut208}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y, seleccionando \texttt{testGame} puede realizar la misma prueba de la figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
+\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save} tal como se observa en la Figura \ref{tut208}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y, seleccionando \texttt{testGame} puede realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
@@ -594,7 +594,7 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 	\end{center}
 \end{figure}
 \newpage
-\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumnFor}, F'atima, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumnFor} y sus funciones adicionales las podemos observar en la figura \ref{tut209}.  El resto del m'odulo permanece tal como estaba.
+\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumnFor}, F'atima, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumnFor} y sus funciones adicionales las podemos observar en la Figura \ref{tut209}.  El resto del m'odulo permanece tal como estaba.
 \begin{itemize}
 	\item Si poniendo la ficha en alguna columna el jugador gana el partido, se debe elegir esa columna.
 	\item Si poniendo la ficha en alguna columna se impide que el jugador rival gane el partido (pues acumula 3 alineadas convenientemente) se debe elegir esa columna.
@@ -650,7 +650,7 @@ wins t b c =
 		\label{tut209}
 	\end{center}
 \end{figure}
-\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es crear una nueva p'agina utilizando la opci'on \textsl{Page $\rightarrow$ New} e ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la figura \ref{tut210}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
+\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es crear una nueva p'agina utilizando la opci'on \textsl{Page $\rightarrow$ New} e ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut210}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/09}
@@ -702,7 +702,7 @@ $ ~/.cabal/bin/hfiar &
 		\label{arq1}
 	\end{center}
 \end{figure}
-\subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la figura \ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representan un proceso o ``thread'' en ejecuci'on.  Cada uno de estos procesos se ejecuta dentro del entorno de una m'onada, la cual se encuentra identificada en la esquina superior derecha del bloque.  En el diagrama podemos identificar los siguientes componentes:
+\subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la Figura \ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representan un proceso o ``thread'' en ejecuci'on.  Cada uno de estos procesos se ejecuta dentro del entorno de una m'onada, la cual se encuentra identificada en la esquina superior derecha del bloque.  En el diagrama podemos identificar los siguientes componentes:
 \begin{description}
 	\item[UI Manager] Este es el thread que inicia el programa, genera y administra la interfaz del usuario utilizando las herramientas provistas por \textsl{wxHaskell}.  En este thread se mantiene el estado visual de la aplicaci'on: el estado de los controles, la 'ultima b'usqueda realizada, etc.
 	\item[HPage Server] Este proceso, iniciado por el \textbf{UI Manager}, es el que comunica a la interfaz del usuario con la m'aquina virtual de GHC, a trav'es del \textbf{Hint Server}, captura sus errores y lo reinicia en caso de ser necesario.  En el caso de expresiones de tipo \textbf{IO a}, este mismo proceso se comunica con el \textbf{IO Server} para ejecutarlas y obtener su resultado o capturar sus errores.  En este proceso se mantiene el estado general de la aplicaci'on: sus p'aginas, expresiones, paquetes y m'odulos cargados, etc.
@@ -712,7 +712,7 @@ $ ~/.cabal/bin/hfiar &
 	\item[Value Filler] Este proceso, iniciado por el \textbf{UI Manager} es el encargado de procesar el resultado obtenido del \textbf{HPage Server}.  Cabe recordar aqu'i que \haskell\ trabaja con evaluaci'on ``lazy'', por lo cual el resultado obtenido no ha sido a'un completamente procesado.  El \textbf{Value Filler} espera recibir un resultado y, al recibirlo, se encarga de evaluarlo y mostrarlo por pantalla, para ello env'ia y recibe mensajes del \textbf{Char Filler} a fin de procesar cada caracter a mostrar.
 	\item[Runaway Killer] Este thread, creado utilizando la clase \textsl{TimerEx} provista por \textsl{wxHaskell}, es iniciado por cada \textbf{Value Filler} al momento de enviar un nuevo caracter al \textbf{Char Filler}.  El objetivo del \textbf{Runaway Killer} es el de detectar procesamiento ``posiblemente'' infinito.  B'asicamente, pasado un segundo de procesamiento, reinicia el \textbf{Char Filler} e informa al \textbf{Value Filler} que lo inici'o que el caracter que se esperaba procesar ha demorado demasiado y podr'ia desencadenar una evaluaci'on infinita.
 \end{description}
-\paragraph{}Para un mayor detalle, la figura \ref{seq1} nos muestra un diagrama de secuencia correspondiente a un proceso de evaluaci'on.  Para poder brindar un ejemplo completo, hemos ``fabricado'' un tipo que responde al siguiente c'odigo:
+\paragraph{}Para un mayor detalle, la Figura \ref{seq1} nos muestra un diagrama de secuencia correspondiente a un proceso de evaluaci'on.  Para poder brindar un ejemplo completo, hemos ``fabricado'' un tipo que responde al siguiente c'odigo:
 \lstset{language=haskell, frame=single, tabsize=4}
 \begin{center}\begin{lstlisting}
 data WithIfiniteChar = WIC
@@ -751,7 +751,7 @@ instance Show WithIfiniteChar where
 \subparagraph{}Observando estas similitudes, una integraci'on con \cabal\ es algo que surge de manera natural y \hpage\ lo provee.  \hpage\ permite al desarrollador cargar un paquete \cabal\ previamente configurado y de ese modo utilizar los m'odulos, extensiones y ubicaciones en 'el definidos.
 \paragraph{}Otra herramienta, quiz'a no tan popular como \cabal, pero tambi'en muy 'util es \textsl{Hayoo!}.  Conociendo esta herramienta, decidimos integrarla con \hpage\ de modo que el desarrollador pueda realizar consultas en su base de datos para obtener informaci'on sobre alguna funci'on, tipo, m'odulo, clase o expresi'on que desee analizar.
 
-\subsection{Implementaci'on}
+\subsection{Implementaci'on}\label{secImplement}
 \begin{epigraphs}
 	\qitem{Nothing resolves design issues like an implementation}{J. D. Horton}
 	\qitem{A child of five would understand this. Send someone to fetch a child of five}{Groucho Marx}

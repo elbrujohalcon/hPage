@@ -88,8 +88,7 @@ James Gosling.
 \bibitem{vital}
 Keith Hanna.
 \newblock A document-centered environment for haskell.
-\newblock Vital is a document-centered implemention of Haskell, a functional
-  programming language., April 2005.
+\newblock Yet unpublished, April 2005.
 \newblock Available from:
   \url{http://www.cs.kent.ac.uk/projects/vital/description/2005/all.ps}.
 
