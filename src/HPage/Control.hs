@@ -496,9 +496,12 @@ typeOfNth = runInExprNthWithLets Hint.typeOf
 
 loadModules :: [String] -> HPage (Either Hint.InterpreterError ())
 loadModules ms = do
-                    let action = do
+                    ctx <- confirmRunning
+                    let ims = toList $ importedModules ctx
+                        action = do
                                     liftTraceIO $ "loading: " ++ show ms
                                     Hint.loadModules ms
+                                    Hint.setImports ims
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                     res <- syncRun action
                     case res of
@@ -529,9 +532,11 @@ reloadModules :: HPage (Either Hint.InterpreterError ())
 reloadModules = do
                     ctx <- confirmRunning
                     let ms = toList $ loadedModules ctx
+                        ims = toList $ importedModules ctx
                     syncRun $ do
                                 liftTraceIO $ "reloading: " ++ (show ms)
                                 Hint.loadModules ms
+                                Hint.setImports ims
                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
 
 getLoadedModules :: HPage (Either Hint.InterpreterError [ModuleDescription])
@@ -664,9 +669,12 @@ reset = do
 
 loadModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModules' ms = do
-                    let action = do
+                    ctx <- confirmRunning
+                    let ims = toList $ importedModules ctx
+                        action = do
                                     liftTraceIO $ "loading': " ++ show ms
                                     Hint.loadModules ms
+                                    Hint.setImports ims
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
                     res <- asyncRun action
                     modify (\ctx -> ctx{running = Just $ LoadModules (fromList ms) action})
@@ -686,10 +694,12 @@ importModules' newms = do
 reloadModules' :: HPage (MVar (Either Hint.InterpreterError ()))
 reloadModules' = do
                     ctx <- confirmRunning
-                    let ms = toList $ loadedModules ctx
+                    let ims = toList $ importedModules ctx
+                        ms = toList $ loadedModules ctx
                     asyncRun $ do
                                     liftTraceIO $ "reloading': " ++ (show ms)
                                     Hint.loadModules ms
+                                    Hint.setImports ims
                                     Hint.getLoadedModules >>= Hint.setTopLevelModules
 
 getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [ModuleDescription]))
