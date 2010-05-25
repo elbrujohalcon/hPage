@@ -496,8 +496,8 @@ typeOfNth = runInExprNthWithLets Hint.typeOf
 
 loadModules :: [String] -> HPage (Either Hint.InterpreterError ())
 loadModules ms = do
-                    ctx <- confirmRunning
-                    let ims = toList $ importedModules ctx
+                    prevctx <- confirmRunning
+                    let ims = toList $ importedModules prevctx
                         action = do
                                     liftTraceIO $ "loading: " ++ show ms
                                     Hint.loadModules ms
@@ -669,8 +669,8 @@ reset = do
 
 loadModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
 loadModules' ms = do
-                    ctx <- confirmRunning
-                    let ims = toList $ importedModules ctx
+                    prevctx <- confirmRunning
+                    let ims = toList $ importedModules prevctx
                         action = do
                                     liftTraceIO $ "loading': " ++ show ms
                                     Hint.loadModules ms

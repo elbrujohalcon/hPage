@@ -168,6 +168,18 @@ Huiquing Li.
 \newblock {\em Refactoring Haskell Programs}.
 \newblock Philosophy, University of Kent, September 2006.
 
+\bibitem{mtl}
+Sheng Liang, Paul Hudak, and Mark Jones.
+\newblock Monad transformers and modular interpreters.
+\newblock In {\em POPL '95: Proceedings of the 22nd ACM SIGPLAN-SIGACT
+  symposium on Principles of programming languages}, pages 333--343, New York,
+  NY, USA, 1995. ACM.
+\newblock Available from:
+  \url{http://portal.acm.org/ft_gateway.cfm?id=199528&type=pdf&coll=GUIDE&dl=G%
+UIDE&CFID=91507314&CFTOKEN=66609812}, \href
+  {http://dx.doi.org/http://doi.acm.org/10.1145/199448.199528}
+  {\path{doi:http://doi.acm.org/10.1145/199448.199528}}.
+
 \bibitem{eclipsefp}
 JP~Moresmau, Leif Frenzel, and Thomas ten Cate.
 \newblock Eclipsefp [online].
@@ -210,6 +222,17 @@ Dr.~Robert Roebling, Dr.~Vadim Zeitlin, Dr.~Stefan Csomor, Dr.~Julian Smart,
 Alexey Shchepin.
 \newblock ejabberd [online].
 \newblock Available from: \url{http://www.ejabberd.im}.
+
+\bibitem{bsd}
+Ken Thompson.
+\newblock Bsd license definition [online].
+\newblock 1969.
+\newblock Available from: \url{http://www.linfo.org/bsdlicense.html}.
+
+\bibitem{monads}
+Philip Wadler.
+\newblock Monads for functional programming.
+\newblock {\em Advanced Functional Programming}, pages 24--52, 1995.
 
 \bibitem{github}
 Chris Wanstrath, PJ~Hyett, and Tom Preston-Werner.

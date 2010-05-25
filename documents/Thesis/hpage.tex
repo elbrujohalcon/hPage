@@ -2,7 +2,6 @@
 \usepackage[spanish,activeacute]{babel}
 \usepackage[ansinew]{inputenc}
 \usepackage{cite}
-% Anda fen'omeno mientras codifiquemos el archivo como ansi.
 \usepackage{graphicx}
 \usepackage[left=2cm,right=2cm]{geometry}
 \usepackage{ulem} %Para tachar cosas
@@ -339,20 +338,14 @@ $ git clone git://github.com/elbrujohalcon/hfiar.git
 \paragraph{}Una vez hecho eso, puede observar la estructura del proyecto, tal como se ve en la Figura \ref{tut200}.  Conociendo la estructura b'asica de los proyectos desarrollados en \haskell, podemos describir los archivos all'i presentes de la siguiente manera:
 \begin{description}
 \item[hfiar.cabal] Archivo de descripci'on de proyecto \cabal.  F'atima puede obtener de 'el informaci'on general del proyecto, sus m'odulos, las dependencias y extensiones del lenguaje que se necesitan para compilarlo y dem'as.  
-\item[Setup.hs] Archivo \haskell\ utilizado por \cabal\ para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las instrucciones de la Figura \ref{tut201}.
-\begin{figure}[hp]
-	\begin{center}
+\item[Setup.hs] Archivo \haskell\ utilizado por \cabal\ para realizar tareas especiales al momento de configurar, compilar o instalar la aplicaci'on.  Junto con \textbf{hfiar.cabal} permite instalar el proyecto utilizando las siguientes instrucciones:
 		\begin{center}\begin{lstlisting}
 $ cabal configure --user
 $ cabal build
 $ cabal install
 		\end{lstlisting}\end{center}
-		\caption{Tutorial 2 - Instalaci'on}
-		\label{tut201}
-	\end{center}
-\end{figure}
 \item[src] Carpeta que contiene los archivos de c'odigo fuente del proyecto.  F'atima deber'a analizar cada uno de ellos por separado para poder comprender su funcionamiento.
-\item[LICENSE] Tradicional archivo con la descripci'on de la licencia del proyecto.
+\item[LICENSE] Archivo con la licencia del proyecto, en este caso \htmladdnormallink{BSD3}{http://www.linfo.org/bsdlicense.html}~\cite{bsd}.
 \item[README] En el caso de este proyecto, no se trata de algo demasiado 'util, dice simplemente:
 \begin{verbatim}
 Four in a Row in Haskell!!
@@ -362,13 +355,13 @@ See http://hackage.haskell.org/package/hfiar
 
 \newpage
 \subsubsection{Entendiendo el Proyecto}
-\paragraph{}Para comenzar a entender c'omo est'a estructurada la aplicaci'on, F'atima observa el archivo \textbf{hfiar.cabal} (al que podemos ver en la Figura \ref{tut202}) y observa que el proyecto se encuentra compuesto por una librer'ia (que incluye s'olamente al m'odulo \texttt{HFiaR}) y un ejecutable llamado \texttt{hfiar} que, m'as all'a del m'odulo \texttt{Main}, incluye a los m'odulos \texttt{HFiaR.GUI} y \texttt{HFiaR.Server}.  F'atima puede ver adem'as que, para compilar los m'odulos del proyecto, debe utilizar las extensiones \textbf{MultiParamTypeClasses} y \textbf{GeneralizedNewtypeDeriving}.
+\paragraph{}Para comenzar a entender c'omo est'a estructurada la aplicaci'on, F'atima observa el archivo \textbf{hfiar.cabal} (al que podemos ver en la Figura \ref{tut201}) y observa que el proyecto se encuentra compuesto por una librer'ia (que incluye s'olamente al m'odulo \texttt{HFiaR}) y un ejecutable llamado \texttt{hfiar} que, m'as all'a del m'odulo \texttt{Main}, incluye a los m'odulos \texttt{HFiaR.GUI} y \texttt{HFiaR.Server}.  F'atima puede ver adem'as que, para compilar los m'odulos del proyecto, debe utilizar las extensiones \textbf{MultiParamTypeClasses} y \textbf{GeneralizedNewtypeDeriving}.
 \begin{figure}[hp]
 	\begin{center}
 	\hbox{}
 		\begin{center}\begin{lstlisting}
 name: hfiar
-version: 1.0.0
+version: 2.0.1
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -383,7 +376,7 @@ synopsis: Four in a Row in Haskell!!
 description: The classical game, implemented with wxHaskell
 category: Game
 author: Fernando "Brujo" Benavides
-tested-with: GHC ==6.10.4
+tested-with: GHC ==6.12.1
 data-files: LICENSE README
 data-dir: ""
 extra-source-files: Setup.hs
@@ -396,21 +389,21 @@ source-repository head
 Library
     build-depends: base >= 4,                   base < 5,
                    mtl >=1.1.0,                 mtl < 1.2,
-                   eprocess >= 1.1.0,           eprocess < 2
+                   eprocess >= 1.1.2,           eprocess < 2
     extensions: MultiParamTypeClasses, GeneralizedNewtypeDeriving
     exposed-modules: HFiaR
     hs-source-dirs: src
 
 Executable hfiar
-    build-depends: wxcore >=0.11.1,             wxcore < 0.13,
-                   wx >=0.11.1,                 wx < 0.13
+    build-depends: wxcore >=0.12.1.4,           wxcore < 0.13,
+                   wx >=0.12.1.4,               wx < 0.13
     extensions: MultiParamTypeClasses, GeneralizedNewtypeDeriving
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
     other-modules: HFiaR.GUI, HFiaR.Server
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields
-                 -fwarn-incomplete-patterns
+    					-fwarn-incomplete-patterns
 		\end{lstlisting}\end{center}
 		\caption{Tutorial 2 - hfiar.cabal}
 		\label{tut201}
@@ -428,7 +421,7 @@ $ cabal haddock
 
 \newpage
 \subsubsection{Utilizando \hpage}
-\paragraph{}Una vez abierto \hpage, F'atima intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la Figura \ref{tut202}.
+\paragraph{}Una vez abierto \hpage, F'atima puede intentar cargar el proyecto utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Package\ldots} o el bot'on \textsl{Load Package}.  Eso abre una ventana en la que F'atima debe seleccionar el archivo \textbf{setup-config} generado por \cabal, tal como se ve en la Figura \ref{tut202}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/02}
@@ -436,7 +429,7 @@ $ cabal haddock
 		\label{tut202}
 	\end{center}
 \end{figure}
-\subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click derecho en ellos, podr'a cargarlos, como se ve en la Figura \ref{tut203}.
+\subparagraph{}F'atima tendr'a entonces a su disposici'on los m'odulos que componen la aplicaci'on y, haciendo click con el bot'on derecho del mouse en ellos, podr'a cargarlos, como se ve en la Figura \ref{tut203}.  \textsl{Cargar} un m'odulo es la acci'on de poner en contexto las funciones y tipos de datos definidos en 'el, de modo que puedan ser utilizados dentro de las p'aginas actuales.  Al \textsl{cargar} un m'odulo, \hpage\ carga recursivamente los m'odulos de los que 'este depende.  Todos los m'odulos previamente cargados, excepto los m'odulos del paquete, se olvidan.  Si existe c'odigo precompilado para el m'odulo, \hpage\ lo utiliza.  En otro caso, intenta compilar su c'odigo desde el archivo fuente.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/03}
@@ -444,6 +437,7 @@ $ cabal haddock
 		\label{tut203}
 	\end{center}
 \end{figure}
+
 \newpage
 \paragraph{}Recordando que el proyecto inclu'ia una librer'ia compuesta 'unicamente por el m'odulo \texttt{HFiaR}, nuestra amiga F'atima decide cargarlo y navegarlo utilizando el men'u desplegable que nos muestra la Figura \ref{tut204}.
 \begin{figure}[hp]
@@ -453,9 +447,18 @@ $ cabal haddock
 		\label{tut204}
 	\end{center}
 \end{figure}
-\paragraph{}Gracias a la documentaci'on generada previamente, puede observar que la din'amica del juego est'a modelada con una m'onada que permite describir las acciones llevadas a cabo durante un partido (b'asicamente utilizando la funci'on \texttt{dropIn}, que equivale a la acci'on que realiza el jugador actual al momento de dejar caer una ficha en una columna).  Esta m'onada tambi'en permite observar un juego utilizando las funciones \texttt{player} (para conocer el jugador actual), \texttt{board} (para observar el tablero, que es modelado como una lista de listas de \texttt{Tile}s, o sea fichas) y \texttt{result} para verificar el resultado del partido.
-\subparagraph{}Puede ver tambi'en que dichas acciones pueden ser ejecutadas dentro de cualquier m'onada, gracias a las funciones \texttt{play} y \texttt{eval} y al hecho de que la m'onada est'a implementada utilizando la t'ecnica de \textsl{Monad Transformers}~\cite{realworldhaskell}.
-\subparagraph{}Finalmente, y de modo muy conveniente, F'atima observa que el creador del m'odulo provey'o las funciones \texttt{justPlay} y \texttt{justEval} que permiten simplemente ejecutar las acciones de la m'onada y obtener su resultado.  Utilizando estas funciones, F'atima comienza a realizar su tarea de \textsl{micro-testing}.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la Figura \ref{tut205}
+\paragraph{}Gracias a la documentaci'on generada previamente, puede observar que la din'amica del juego est'a modelada con una m'onada~\cite{monads} que describe las acciones llevadas a cabo durante un partido.  El concepto de \textsl{m'onada} (monad) es uno de los m'as dif'iciles de comprender para aquellos que dan sus primeros pasos en \haskell.  A los fines de este tutorial, podemos ver a las m'onadas como tipos de datos que nos permiten definir acciones que generan resultados (por ejemplo, \texttt{dropIn} o \texttt{player} son acciones de la m'onada \texttt{HFiaR}) y concatenarlas utilizando distintos operadores gen'ericos (como \texttt{$>>$}) para generar nuevas acciones m'as complejas (como por ejemplo, \texttt{dropIn 1 $>>$ player}, que es una acci'on de la m'onada \texttt{HFiaR} que representa el hecho de arrojar una ficha en la columna 1 y luego verificar cu'al es el jugador actual).  Estas acciones, luego pueden ser ``ejecutadas''.  En nuestro caso dicha ejecuci'on se realiza, por ejemplo, utilizando las funciones \texttt{play} (cuyo resultado refleja el estado del partido una vez ejecutada las acci'on) o \texttt{eval} (cuyo resultado es el de la acci'on ejecutada).
+\subparagraph{}F'atima verifica las funciones de la m'onada \texttt{HFiaR} con las que cuenta:
+\begin{description}
+	\item[\texttt{dropIn}] representa el hecho de arrojar una ficha en una columna
+	\item[\texttt{player}] le permite conocer el jugador actual
+	\item[\texttt{board}] le permite observar el tablero, que es modelado como una lista de listas de \texttt{Tile}s, o sea fichas)
+	\item[\texttt{result}] le permite verificar el resultado del partido, si es que el mismo ha conclu'ido
+\end{description}
+
+\subparagraph{}Como el lector, al igual que F'atima, habr'a podido observar en la Figura \ref{tut204}, si bien las acciones que pueden definirse corresponden a la m'onada \texttt{HFiaR}, dado el tipo de \texttt{play} y \texttt{eval}, las mismas pueden ser ejecutadas dentro de cualquier m'onada.  Esto se debe a que la m'onada est'a implementada utilizando la t'ecnica de \textsl{Monad Transformers}~\cite{realworldhaskell}~\cite{mtl}.  Los \textsl{Transformadores de M'onadas} (Monad Transformers) son variantes especiales de las m'onadas que facilitan la combinaci'on de m'onadas.  Sus constructores de tipo tienen como par'ametro un tipo mon'adico y proucen tipos mon'adicos combinados.  En este tutorial, por ejemplo, las funciones \texttt{justPlay} y \texttt{justEval}, est'an definidas internamente utilizando el tipo transformador \texttt{HFiaRT} para ejecutar acciones de la m'onada \texttt{HFiaR} dentro de la m'onada \texttt{IO}.
+
+\subparagraph{}Utilizando estas funciones, F'atima comienza a realizar su tarea de \textsl{micro-testing}.  Su primera prueba consiste en \textit{jugar} un partido en el que nada pasa, s'olo para ver qu'e informaci'on puede obtener de 'el.  Coloca entonces en la p'agina la expresi'on que presentamos a continuaci'on e intenta interpretarla tal como se ve en la Figura \ref{tut205}.  Esta expresi'on, aunque simple, presenta dos elementos muy utilizados por los desarrolladores \haskell: el operador \$, que equivale a encerrar entre par'entesis lo que sigue en la expresi'on, facilitando la lectura de la expresi'on en su totalidad, y la expresi'on \texttt{return ()}, que es la acci'on que representa el hecho de simplemente ``no hacer nada''.  Como toda acci'on debe tener un resultado, la acci'on \texttt{return ()}, el de \texttt{return ()} es \texttt{()}, el 'unico valor posible de tipo \texttt{Unit}.
 \lstset{language=haskell, frame=single, tabsize=4}
 \begin{center}\begin{lstlisting}
 	justPlay $ return ()
@@ -467,13 +470,13 @@ $ cabal haddock
 		\label{tut205}
 	\end{center}
 \end{figure}
-\subparagraph{}El resultado obtenido es el que sigue y puede interpretarse como \textsl{``el partido se encuentra en curso, es el turno del jugador que juega con fichas verdes y el tablero est'a vac'io''}.
+\subparagraph{}El resultado obtenido es el que sigue y puede interpretarse como \textsl{``el partido se encuentra en curso, es el turno del jugador que juega con fichas verdes y el tablero est'a vac'io''}.  Cabe notar que el tipo del resultado es \texttt{IO Game}, o sea, una acci'on con posibles efectos colaterales de entrada/salida (dentro de la m'onada \texttt{IO}) cuyo resultado es un juego (\texttt{Game}).  Sin embargo, el resultado obtenido representa simplemente a un juego.  Esto se debe a que \hpage, siguiendo el ejemplo de \textsl{GHCi}, trata de manera especial a las acciones de la m'onada \texttt{IO} y, en lugar de intentar mostrarlas (cosa que, por cierto, no podr'ia hacer) las eval'ua y luego intenta mostrar su resultado.
 \begin{center}\begin{lstlisting}
 OnCourse {gamePlayer = Green,
           gameBoard = [[],[],[],[],[],[],[]]}
 \end{lstlisting}\end{center}
 \newpage
-\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla del cuadro \ref{tut206}.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha concluido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.  Cabe notar que los resultados de tipo \texttt{Left HFiaRError} se exhiben como texto porque el desarrollador de \textsl{hfiar} ha decidido utilizar la funci'on \texttt{show} para describir los errores en lugar de exhibir su constructor.
+\paragraph{}Usando \hpage, F'atima realiza varias otras pruebas que consignamos en la tabla que presentamos a continuaci'on.  Con ellas puede entender el funcionamiento general de la m'onada \texttt{HFiaR} y de ese modo determinar c'omo su jugador de inteligencia artificial puede observar el desarrollo del juego (saber si el mismo ha concluido o no, si es su turno y el estado del tablero) y elegir c'omo jugar.  Cabe notar que los resultados de tipo \texttt{Left HFiaRError} se exhiben como texto porque el desarrollador de \textsl{hfiar} ha decidido utilizar la funci'on \texttt{show} para describir los errores en lugar de exhibir su constructor.
 
 \lstset{language=haskell, frame=none, tabsize=4}
 	\begin{table}[hp]
@@ -491,7 +494,7 @@ OnCourse {gamePlayer = Green,
 \end{lstlisting} \\[1.5em]
 
 \begin{lstlisting}
-justEval $ player
+justEval player
 \end{lstlisting} &
 \begin{lstlisting}
 Right Green
@@ -502,6 +505,22 @@ justEval $ dropIn 1 >> board
 \end{lstlisting} &
 \begin{lstlisting}
 [[],[Green],[],[],[],[],[]]
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 1 >> 
+           dropIn 2 >> board
+\end{lstlisting} &
+\begin{lstlisting}
+[[],[Green],[Red],[],[],[],[]]
+\end{lstlisting} \\[1.5em]
+
+\begin{lstlisting}
+justEval $ dropIn 1 >> dropIn 1 >>
+           dropIn 2 >> board
+\end{lstlisting} &
+\begin{lstlisting}
+[[],[Red, Green],[Green],[],[],[],[]]
 \end{lstlisting} \\[1.5em]
 
 \begin{lstlisting}
@@ -542,7 +561,7 @@ justEval $ dropIn 4 >> dropIn 1 >>
            dropIn 4 >> result
 \end{lstlisting} &
 \begin{lstlisting}
-Left Game is on course yet
+Left Game is still on course
 \end{lstlisting} \\[1.5em]
 
 \begin{lstlisting}
@@ -558,37 +577,32 @@ Left That column is full
 			\bottomrule
 		\end{tabular}
 		\caption{Tutorial 2 - Pruebas realizadas en \hpage}
-		\label{tut206}
 	\end{center}
 \end{table}
 \lstset{language=haskell, frame=single, tabsize=4}
 
 \newpage
 \subsubsection{Creando al \textsl{Jugador Computadora}}
-\paragraph{}Con el conocimiento adquirido en el uso de \texttt{HFiaR}, F'atima decide crear la funci'on \texttt{aiDropIn}, que se ejecutar'a dentro de la m'onada \texttt{HFiaR}.  La Figura \ref{tut207} nos muestra la aridad de dicha funci'on.
-\begin{figure}[hp]
-	\begin{center}
-		\begin{lstlisting}
+\paragraph{}Con el conocimiento adquirido en el uso de \texttt{HFiaR}, F'atima decide crear la funci'on \texttt{aiDropIn}, que se ejecutar'a dentro de la m'onada \texttt{HFiaR}.  A continuaci'on observamos el tipo de dicha funci'on.  Se puede ver que el tipo de la funci'on es similar al de \texttt{dropIn}, salvo por el hecho de no recibir el n'umero de columna en la que el jugador desea volcar su ficha.  Eso se debe, justamente, a que ser'a la propia funci'on qui'en lo determine.
+\begin{center}\begin{lstlisting}
 -- | Drop a tile in a column choosen by the Artificial Inteligence
 aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
-		\end{lstlisting}
-		\caption{Tutorial 2 - Aridad de aiDropIn}
-		\label{tut207}
-	\end{center}
-\end{figure}
-\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la Figura \ref{tut208}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando paso a paso.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.
+\end{lstlisting}\end{center}
+\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la Figura \ref{tut207}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando a lo largo del tutorial.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.  Recordamos que, para que \hpage reconozca las distintas expresiones, F'atima debe separarlas con renglones en blanco.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/06}
 		\caption{Tutorial 2 - \texttt{aiDropIn} versi'on 1}
-		\label{tut208}
+		\label{tut207}
 	\end{center}
 \end{figure}
+
+\newpage
 \subparagraph{}Una vez definidas ambas funciones, F'atima decide testearlas y, para ello, no necesita m'as que \textsl{evaluar} un juego en el que conozca el resultado.  En particular, F'atima elije hacer jugar a la computadora contra s'i misma 8 movimientos y verifica que las fichas han quedado intercaladas en la primer columna y luego el siguiente jugador ha colocado una en la segunda.
-\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save} tal como se observa en la Figura \ref{tut208}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y, seleccionando \texttt{testGame} puede realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
+\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save} tal como se observa en la Figura \ref{tut208}.  Previo a ello agrega la cabecera del m'odulo, la importaci'on del m'odulo que ten'ia cargado (\texttt{HFiaR}), ``bautiza'' la expresi'on utilizada para testear como (\texttt{testGame}) y aprovecha para eliminar los renglones en blanco que ya no ser'an necesarios al compilar el m'odulo,  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y entonces, seleccionando \texttt{testGame} y presionando el bot'on \textsl{Interpret}, puede realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/07}
 		\caption{Tutorial 2 - El m'odulo \texttt{HFiaR.AI}}
 		\label{tut208}
 	\end{center}
@@ -653,7 +667,7 @@ wins t b c =
 \paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es crear una nueva p'agina utilizando la opci'on \textsl{Page $\rightarrow$ New} e ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut210}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
 \begin{figure}[hp]
 	\begin{center}
-        	\includegraphics[width=.75\textwidth]{pictures/tut2/09}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
 		\caption{Tutorial 2 - \textsl{Jugando} contra \texttt{HFiaR.AI}}
 		\label{tut210}
 	\end{center}
