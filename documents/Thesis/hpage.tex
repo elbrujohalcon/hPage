@@ -361,7 +361,7 @@ See http://hackage.haskell.org/package/hfiar
 	\hbox{}
 		\begin{center}\begin{lstlisting}
 name: hfiar
-version: 2.0.1
+version: 2.0.3
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -402,9 +402,8 @@ Executable hfiar
     buildable: True
     hs-source-dirs: src
     other-modules: HFiaR.GUI, HFiaR.Server
-    ghc-options: -fwarn-unused-imports -fwarn-missing-fields
-    					-fwarn-incomplete-patterns
-		\end{lstlisting}\end{center}
+    ghc-options: -Wall
+    			\end{lstlisting}\end{center}
 		\caption{Tutorial 2 - hfiar.cabal}
 		\label{tut201}
 	\end{center}
@@ -451,6 +450,7 @@ $ cabal haddock
 \subparagraph{}F'atima verifica las funciones de la m'onada \texttt{HFiaR} con las que cuenta:
 \begin{description}
 	\item[\texttt{dropIn}] representa el hecho de arrojar una ficha en una columna
+	\item[\texttt{tryDropIn}] representa el hecho de verificar qu'e pasar'ia en el caso de realizar serie de jugadas, donde cada una de ellas corresponde a arrojar una ficha en una columna.  Es similar a \texttt{dropIn} pero sin que el juego avance
 	\item[\texttt{player}] le permite conocer el jugador actual
 	\item[\texttt{board}] le permite observar el tablero, que es modelado como una lista de listas de \texttt{Tile}s, o sea fichas)
 	\item[\texttt{result}] le permite verificar el resultado del partido, si es que el mismo ha conclu'ido
@@ -588,7 +588,7 @@ Left That column is full
 -- | Drop a tile in a column choosen by the Artificial Inteligence
 aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 \end{lstlisting}\end{center}
-\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la Figura \ref{tut207}, componi'endola con otra funci'on a la que denomina \texttt{bestColumnFor}.  Esta funci'on se ejecutar'a fuera del contexto mon'adico y s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando a lo largo del tutorial.  La primera versi'on de \texttt{bestColumnFor}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.  Recordamos que, para que \hpage reconozca las distintas expresiones, F'atima debe separarlas con renglones en blanco.
+\subparagraph{}Para crear \texttt{aiDropIn}, F'atima no cierra \hpage.  Por el contrario, define la funci'on all'i mismo, como podemos ver en la Figura \ref{tut207}, componi'endola con otra funci'on a la que denomina \texttt{bestColumn}.  Esta funci'on se ejecutar'a s'olo en el caso de que el partido no haya concluido.  La idea es que en ella estar'a el algoritmo principal de selecci'on de columna a jugar (o sea, el verdadero motor de \textsl{inteligencia artificial}), el cual se ir'a perfeccionando a lo largo del tutorial.  La primera versi'on de \texttt{bestColumn}, con m'as de artificial que de inteligencia, simplemente elegir'a la primer columna que no est'e llena y \texttt{aiDropIn} arrojar'a la ficha ah'i.  Recordamos que, para que \hpage\ reconozca las distintas expresiones, F'atima debe separarlas con renglones en blanco.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/06}
@@ -599,77 +599,66 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 
 \newpage
 \subparagraph{}Una vez definidas ambas funciones, F'atima decide testearlas y, para ello, no necesita m'as que \textsl{evaluar} un juego en el que conozca el resultado.  En particular, F'atima elije hacer jugar a la computadora contra s'i misma 8 movimientos y verifica que las fichas han quedado intercaladas en la primer columna y luego el siguiente jugador ha colocado una en la segunda.
-\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumnFor} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save} tal como se observa en la Figura \ref{tut208}.  Previo a ello agrega la cabecera del m'odulo, la importaci'on del m'odulo que ten'ia cargado (\texttt{HFiaR}), ``bautiza'' la expresi'on utilizada para testear como (\texttt{testGame}) y aprovecha para eliminar los renglones en blanco que ya no ser'an necesarios al compilar el m'odulo,  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y entonces, seleccionando \texttt{testGame} y presionando el bot'on \textsl{Interpret}, puede realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.
-\begin{figure}[hp]
-	\begin{center}
-        	\includegraphics[width=.75\textwidth]{pictures/tut2/07}
-		\caption{Tutorial 2 - El m'odulo \texttt{HFiaR.AI}}
-		\label{tut208}
-	\end{center}
-\end{figure}
-\newpage
-\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumnFor}, F'atima, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumnFor} y sus funciones adicionales las podemos observar en la Figura \ref{tut209}.  El resto del m'odulo permanece tal como estaba.
+\paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumn} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}.  A partir de ese momento, F'atima puede utilizar su editor \haskell\ favorito para agregar la cabecera del m'odulo, la importaci'on del m'odulo que ten'ia cargado (\texttt{HFiaR}) y ``bautizar'' la expresi'on utilizada para testear como \texttt{testGame}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y entonces, en una p'agina nueva (creada utilizando la opci'on \textsl{Page $\rightarrow$ New}) escribe e interpreta la expresi'on \texttt{testGame}, de modo de realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.  A partir de este momento, F'atima utiliza su editor favorito para trabajar en el m'odulo que ha creado y, ante cada modificaci'on del mismo, lo recarga utilizando la opci'on \textsl{Haskell $\rightarrow$ Reload} o el bot'on \textsl{Reload}.
+\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumn}, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumn} y sus funciones adicionales las podemos observar en la Figura \ref{tut208}.  El resto del m'odulo permanece tal como estaba.
 \begin{itemize}
 	\item Si poniendo la ficha en alguna columna el jugador gana el partido, se debe elegir esa columna.
 	\item Si poniendo la ficha en alguna columna se impide que el jugador rival gane el partido (pues acumula 3 alineadas convenientemente) se debe elegir esa columna.
 	\item En otro caso, de ser posible, debe elegirse la columna 3 (o sea, la columna central) pues para formar l'ineas de 4 fichas horizontales o diagonales se requiere una ficha en dicha columna
+%%TODO: CONTINUAR DESDE ACç - HAY QUE DEFINIR LAS FUNCIONES EN TƒRMINOS DE tryDropIn
 \end{itemize}
-\begin{figure}[hp]
+\begin{figure}[h]
 	\begin{center}
 		\begin{lstlisting}
-bestColumnFor :: Player -> [[Tile]] -> Int
-bestColumnFor p b =
-	case columnWhereWins p b of
-		Nothing ->
-			case columnWhereLooses p b of
-				Nothing ->
-					case length (b !! 3) of
-						7 -> length $ takeWhile (\c -> length c == 7) b
-						_ -> 3
-				Just cwl -> cwl
-		Just cww -> cww
+--TODO: VERIFY
+bestColumn :: Monad m => HFiaRT m Int
+bestColumn =
+    lift (head . catMaybes) [columnWhereWins p b,
+                             columnWhereLoses p b,
+                             column3ifAvailable b,
+                             firstAvailableColumn b]
 
-columnWhereWins :: Player -> [[Tile]] -> Maybe Int
-columnWhereWins Pl{tiles=tile} b =
-	case (length $ takeWhile (not . wins tile b) [0..6]) of
-		7 -> Nothing
-		x -> Just x
+--TODO: columnWhereWins
 
-columnWhereLooses :: Player -> [[Tile]] -> Maybe Int
-columnWhereLooses Pl{tiles=tile} b =
-	let otherTile = case tile of {Green -> Red; Red -> Green}
-	 in case (length $ takeWhile (not . wins otherTile b) [0..6]) of
-			7 -> Nothing
-			x -> Just x
+--TODO: columnWhereLooses
 
-wins :: Tile -> [[Tile]] -> Int -> Bool
-wins t b c =
-	let	newBoard = (take c b) ++ ((t : (b !! c)) : drop (c+1) b)
-		col = newBoard !! c
-		getRow r = map (cell r)
-		getDiagUpRight c r xss = map (\i -> cell (i+r-c) (xss !! i)) [0..6]
-		getDiagUpLeft c r xss = map (\i -> cell (r+c-i) (xss !! i)) [0..6]
-		cell c xs = if (c >= 0 && c < length xs)
-					then Just $ (reverse xs) !! c
-					else Nothing
-		fourIn [] = False
-		fourIn (Nothing:xs) = fourIn xs
-		fourIn (Just p:xs) = ([Just p,Just p,Just p] == take 3 xs) || fourIn xs
-      in	([t,t,t,t] == take 4 col) ||
-      	fourIn (getRow (length col - 1) newBoard) ||
-		fourIn (getDiagUpRight c (length col - 1) newBoard) ||
-		fourIn (getDiagUpLeft  c (length col - 1) newBoard)
+column3ifAvailable :: Monad m => HFiaRT m (Maybe Int)
+column3ifAvailable = board >>= \b -> return . case length (b !! 3) of
+                                                    7 -> Nothing
+                                                    _ -> Just 3
+
+firstAvailableColumn :: Monad m => HFiaRT m (Maybe Int)
+firstAvailableColumn = board >>= return . Just . length . takeWhile (\c -> length c == 7)
 		\end{lstlisting}
 		\caption{Tutorial 2 - Versi'on definitiva de \texttt{HFiaR.AI}}
+		\label{tut208}
+	\end{center}
+\end{figure}
+
+\newpage
+\paragraph{} Podemos ver que la nueva versi'on de la funci'on \texttt{bestColumn} utiliza la funci'on \texttt{catMaybes}.  A los fines de demostrar el uso de \hpage, supongamos que, si bien F'atima sab'ia de la existencia de esta funci'on, no sab'ia en qu'e m'odulo se encontraba declarada ni recordaba exactamente su tipo.  En tal caso, lo que F'atima puede hacer es escribir el nombre de la funci'on en la p'agina de \hpage, seleccionarlo y utilizar la opci'on \textsl{Search on Hayoo!} del men'u contextual que se despliega al presionar el bot'on derecho del mouse sobre el texto seleccionado.  En ese momento, \hpage\ le presentar'a la p'agina web que se ve en la Figura \ref{tut209}. All'i se puede observar que la funci'on \texttt{catMaybes} se encuentra definida en el m'odulo \texttt{Data.Maybe} y que su tipo es \texttt{[Maybe a] -> [a]}.  M'as a'un, \textsl{Hayoo!} nos muestra la documentaci'on que acompa'na a la funci'on, seg'un la cual \textit{la funci'on \texttt{catMaybes} toma una lista de \texttt{Maybe}s y devuelve una lista de todos los valores constru'idos con \texttt{Just}}.  Para probarla, F'atima puede importar el m'odulo \textsl{Data.Maybe} utilizando la opci'on \textsl{Haskell $\rightarrow$ Import modules\ldots} y realizar alguna prueba similar a la de la Figura \ref{tut210}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/09}
+		\caption{Tutorial 2 - Utilizando \textsl{Hayoo!}}
 		\label{tut209}
 	\end{center}
 \end{figure}
-\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es crear una nueva p'agina utilizando la opci'on \textsl{Page $\rightarrow$ New} e ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut210}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/tut2/10}
+		\caption{Tutorial 2 - Testeando \texttt{catMaybes}}
+		\label{tut210}
+	\end{center}
+\end{figure}
+
+\newpage
+\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut211}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
 		\caption{Tutorial 2 - \textsl{Jugando} contra \texttt{HFiaR.AI}}
-		\label{tut210}
+		\label{tut211}
 	\end{center}
 \end{figure}
 \paragraph{}Resta pues modificar la interfaz gr'afica para que permita al usuario jugar contra la computadora, utilizando la funci'on \texttt{aiDropIn} en los turnos correspondientes a la m'aquina.  Para ello, F'atima abre el m'odulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.  Estos cambios puede realizarlos utilizando \hpage\ o cualquier otro editor, pues por la naturaleza ``imperativa'' del c'odigo a modificar, \hpage\ no representar'a un beneficio importante.  Por el mismo motivo, no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p'agina web del proyecto hfiar en github}{http://github.com/elbrujohalcon/hfiar/commit/88a59a61d3dff930a96a1a51ab1daff4fcac9ef8\#diff-2}~\cite{hfiar}
