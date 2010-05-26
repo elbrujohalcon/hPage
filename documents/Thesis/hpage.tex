@@ -847,55 +847,57 @@ recv :: MonadIO m => ReceiverT r m r
 
 \newpage
 \subsubsection{Servers}
-\paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  A su vez, tambi'en fue necesario ejeuctar acciones de la m'onada \texttt{IO} en un contexto controlado, por lo que desarrolamos el proceso \textbf{IO Server}.  Gracias al uso de m'onadas y los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos servers de una manera sencilla.   Mostramos, a modo de ejemplo e incluyendo comentarios explicativos, el c'odigo m'as significativo de uno de ellos:
+\paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  A su vez, tambi'en fue necesario ejeuctar acciones de la m'onada \texttt{IO} en un contexto controlado, por lo que desarrolamos el proceso \textbf{IO Server}.  Gracias al uso de m'onadas, al hecho de que las acciones sean objetos de primer tipo y a los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos servers de una manera sencilla.   Mostramos, a modo de ejemplo e incluyendo comentarios explicativos, el c'odigo del \textbf{IO Server}:
 \begin{center}\begin{lstlisting}
--- Para comenzar definimos un tipo ``ServerHandle'', que debe ser utilizado para
--- enviarle mensajes al servidor
-newtype ServerHandle = SH {handle :: Handle (InterpreterT IO ())}
+-- | Este modulo provee un proceso servidor (implementado usando eprocess)
+-- que puede recibir y ejecutar acciones de entrada/salida (o sea, de tipo IO a)
+module HPage.IOServer (
+    -- * Funciones
+    start, stop, runIn,
+    -- * Tipos
+    ServerHandle
+    ) where
 
--- Convertimos a (ReceiverT r m) en una instancia de MonadInterpreter para poder
--- ejecutar las acciones que esperamos recibir como mensajes
-instance MonadInterpreter m => MonadInterpreter (ReceiverT r m) where
-    fromSession = lift . fromSession
-    modifySessionRef a = lift . (modifySessionRef a)
-    runGhc = lift . runGhc 
+-- * Importamos try para poder capturar las excepciones que se generen durante la
+--   ejecucion de las acciones y SomeException puse es el tipo de excepcion mas
+--   general, el cual engloba a todos los demas
+-- * Importamos Control.Monad para poder utilizar las funciones >> y >>=
+-- * Importamos Control.Monad.Trans para poder combinar acciones de tipo Process
+--   e IO
+-- * Importamos Control.Concurrent.Process para poder usar las funciones de 
+--   la libreria eprocess
+import Control.Exception (try, SomeException)
+import Control.Monad
+import Control.Monad.Trans
+import Control.Concurrent.Process
 
--- Definimos una funcion que inicia el servidor y retorna su handle
--- El servidor simplemente recibe acciones de tipo MonadInterpreter
--- y las ejecuta utilizando la funcion lift
+-- | Definimos un tipo ``ServerHandle'', que ser'a el tipo del resultado de start
+--   y el primer parametro de runIn.  Las instancias de este tipo seran las que
+--   permitiran al proceso que inicia el servidor comunicarse con 'el
+newtype ServerHandle = SH {handle :: Handle (IO ())}
+
+-- | Definimos una funcion que inicia el servidor y retorna su handle
+--   El proceso del servidor simplemente recibe acciones de tipo IO () y las
+--   ejecuta utilizando la funcion liftIO
 start :: IO ServerHandle
-start = (spawn $ makeProcess runInterpreter interpreter) >>= return . SH
-    where interpreter =
-            do
-                setImports ["Prelude"]
-                forever $ recv >>= lift
+start = spawn ioRunner >>= return . SH
+    where ioRunner = forever $ recv >>= liftIO
 
--- Definimos una funcion para ejecutar acciones asincronicamente
--- Esta funcion recibe la acciona a ejecutar junto con el handle del servidor
--- y devuelve una MVar que llenara con el resultado de la accion
-asyncRunIn :: ServerHandle -> InterpreterT IO a
-     -> IO (MVar (Either InterpreterError a))
-asyncRunIn server action = do
-     resVar <- liftIO newEmptyMVar
-     sendTo (handle server) $ try action >>= liftIO . putMVar resVar
-     return resVar
-
--- Definimos tambien una funcion para ejecutar resultados sincronicamente
--- Esta funcion envia al servidor la acciona a ejecutar y espera recibir el 
--- resultado para luego devolverlo
-runIn :: ServerHandle -> InterpreterT IO a
-       -> IO (Either InterpreterError a)
+-- | Definimos una funcion para ejecutar acciones.  Esta funcion envia al 
+--   servidor la acciona a ejecutar (modificada de modo que el servidor envie
+--   el resultado a este proceso) y espera pues recibir ese resultado
+runIn :: ServerHandle -> IO a -> IO (Either SomeException a)
 runIn server action = runHere $ do
-     me <- self
-     sendTo (handle server) $ try action >>= sendTo me
-     recv
+                                    me <- self
+                                    sendTo (handle server) $ try action >>=
+                                                                    sendTo me
+                                    recv
 
--- Finalmente, definimos una funcion que detiene al servidor utilizando la
--- la funcion kill
+-- | La ultima de las funciones detiene al servidor utilizando la la funcion kill
 stop :: ServerHandle -> IO ()
 stop = kill . handle
 \end{lstlisting}\end{center}
-\subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 25 l'ineas de c'odigo es capaz de ejecutar todas las acciones que provee \textsl{hint} en un proceso aislado y controlado.
+\subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 25 l'ineas de c'odigo es capaz de ejecutar cualquier acci'on dentro de la m'onada \texttt{IO} en un proceso aislado y controlado.
 
 \subsubsection{M'odulos de \hpage}
 \paragraph{}El m'odulo principal de la aplicaci'on es el denominado \texttt{HPage.Control}.  Este m'odulo describe la m'onada \texttt{HPage} e incluye todas las acciones que pueden realizarse en ella.  Es el encargado de mantener el estado del sistema, para lo cual hemos definido un tipo de datos llamado \texttt{Context}, que mostraremos a continuaci'on.
