@@ -361,7 +361,7 @@ See http://hackage.haskell.org/package/hfiar
 	\hbox{}
 		\begin{center}\begin{lstlisting}
 name: hfiar
-version: 2.0.3
+version: 2.0.4
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -600,43 +600,59 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 \newpage
 \subparagraph{}Una vez definidas ambas funciones, F'atima decide testearlas y, para ello, no necesita m'as que \textsl{evaluar} un juego en el que conozca el resultado.  En particular, F'atima elije hacer jugar a la computadora contra s'i misma 8 movimientos y verifica que las fichas han quedado intercaladas en la primer columna y luego el siguiente jugador ha colocado una en la segunda.
 \paragraph{}El siguiente paso es agregar un poco de inteligencia a \texttt{bestColumn} de modo que realmente sea competitivo.  Para ello, F'atima prev'e que necesitar'a varias funciones auxiliares y una buena cantidad de c'odigo, por lo que decide convertir su p'agina actual en un m'odulo al que denomina \texttt{HFiaR.AI} y graba en el lugar correspondiente entre los fuentes del proyecto, utilizando la opci'on \textsl{Page $\rightarrow$ Save As\ldots} o el bot'on \textsl{Save}.  A partir de ese momento, F'atima puede utilizar su editor \haskell\ favorito para agregar la cabecera del m'odulo, la importaci'on del m'odulo que ten'ia cargado (\texttt{HFiaR}) y ``bautizar'' la expresi'on utilizada para testear como \texttt{testGame}.  Luego lo carga utilizando la opci'on \textsl{Haskell $\rightarrow$ Load Modules\ldots} y entonces, en una p'agina nueva (creada utilizando la opci'on \textsl{Page $\rightarrow$ New}) escribe e interpreta la expresi'on \texttt{testGame}, de modo de realizar la misma prueba de la Figura \ref{tut207}.  Es interesante notar que, pese a que el m'odulo creado s'olo exporta la funci'on \texttt{aiDropIn}, F'atima pudo interpretar sin problemas la funci'on \texttt{testGame}, pues hab'ia cargado el m'odulo y eso le da acceso a todas las funciones del mismo, tanto p'ublicas como privadas.  A partir de este momento, F'atima utiliza su editor favorito para trabajar en el m'odulo que ha creado y, ante cada modificaci'on del mismo, lo recarga utilizando la opci'on \textsl{Haskell $\rightarrow$ Reload} o el bot'on \textsl{Reload}.
-\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumn}, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on.  La nueva versi'on de \texttt{bestColumn} y sus funciones adicionales las podemos observar en la Figura \ref{tut208}.  El resto del m'odulo permanece tal como estaba.
+\subparagraph{}Para la segunda (y a los fines de este tutorial, definitva) versi'on de \texttt{bestColumn}, experta jugadora de 4 en l'inea como es, pone un poco de criterio y decide que la funci'on tenga en cuenta las condiciones que enumeramos a continuaci'on:
 \begin{itemize}
 	\item Si poniendo la ficha en alguna columna el jugador gana el partido, se debe elegir esa columna.
 	\item Si poniendo la ficha en alguna columna se impide que el jugador rival gane el partido (pues acumula 3 alineadas convenientemente) se debe elegir esa columna.
 	\item En otro caso, de ser posible, debe elegirse la columna 3 (o sea, la columna central) pues para formar l'ineas de 4 fichas horizontales o diagonales se requiere una ficha en dicha columna
-%%TODO: CONTINUAR DESDE ACç - HAY QUE DEFINIR LAS FUNCIONES EN TƒRMINOS DE tryDropIn
 \end{itemize}
-\begin{figure}[h]
-	\begin{center}
-		\begin{lstlisting}
---TODO: VERIFY
+
+\newpage
+\subparagraph{}Podemos observar entonces la nueva versi'on de \texttt{bestColumn} y sus funciones adicionales:
+\begin{center}\begin{lstlisting}
+module HFiaR.AI (aiDropIn) where
+
+import HFiaR
+import Data.Maybe
+
 bestColumn :: Monad m => HFiaRT m Int
 bestColumn =
-    lift (head . catMaybes) [columnWhereWins p b,
-                             columnWhereLoses p b,
-                             column3ifAvailable b,
-                             firstAvailableColumn b]
+    do
+        j1 <- columnWhereWins
+        j2 <- columnWhereLoses
+        j3 <- column3IfAvailable
+        j4 <- firstAvailableColumn
+        return . head $ catMaybes [j1, j2, j3, j4]
 
---TODO: columnWhereWins
+columnWhereWins, columnWhereLoses,
+    column3IfAvailable, firstAvailableColumn :: Monad m => HFiaRT m (Maybe Int)
 
---TODO: columnWhereLooses
+columnWhereWins = mapM (tryDropIn . (:[])) [0..6] >>= return . firstEnded
 
-column3ifAvailable :: Monad m => HFiaRT m (Maybe Int)
-column3ifAvailable = board >>= \b -> return . case length (b !! 3) of
+columnWhereLoses = mapM moves [0..6] >>= return . firstEnded
+    where moves :: Monad m => Int -> HFiaRT m (Either HFiaRError Game)
+          moves col = do
+            b <- board
+            let avail c = c == col || length (b!!c) == 7
+            other <- return . length $ takeWhile avail [0..6]
+            tryDropIn [other, col]
+
+column3IfAvailable = board >>= \b -> return $ case length (b !! 3) of
                                                     7 -> Nothing
                                                     _ -> Just 3
 
-firstAvailableColumn :: Monad m => HFiaRT m (Maybe Int)
-firstAvailableColumn = board >>= return . Just . length . takeWhile (\c -> length c == 7)
-		\end{lstlisting}
-		\caption{Tutorial 2 - Versi'on definitiva de \texttt{HFiaR.AI}}
-		\label{tut208}
-	\end{center}
-\end{figure}
+firstAvailableColumn = board >>=
+						return . Just . length . takeWhile (\c -> length c == 7)
 
-\newpage
-\paragraph{} Podemos ver que la nueva versi'on de la funci'on \texttt{bestColumn} utiliza la funci'on \texttt{catMaybes}.  A los fines de demostrar el uso de \hpage, supongamos que, si bien F'atima sab'ia de la existencia de esta funci'on, no sab'ia en qu'e m'odulo se encontraba declarada ni recordaba exactamente su tipo.  En tal caso, lo que F'atima puede hacer es escribir el nombre de la funci'on en la p'agina de \hpage, seleccionarlo y utilizar la opci'on \textsl{Search on Hayoo!} del men'u contextual que se despliega al presionar el bot'on derecho del mouse sobre el texto seleccionado.  En ese momento, \hpage\ le presentar'a la p'agina web que se ve en la Figura \ref{tut209}. All'i se puede observar que la funci'on \texttt{catMaybes} se encuentra definida en el m'odulo \texttt{Data.Maybe} y que su tipo es \texttt{[Maybe a] -> [a]}.  M'as a'un, \textsl{Hayoo!} nos muestra la documentaci'on que acompa'na a la funci'on, seg'un la cual \textit{la funci'on \texttt{catMaybes} toma una lista de \texttt{Maybe}s y devuelve una lista de todos los valores constru'idos con \texttt{Just}}.  Para probarla, F'atima puede importar el m'odulo \textsl{Data.Maybe} utilizando la opci'on \textsl{Haskell $\rightarrow$ Import modules\ldots} y realizar alguna prueba similar a la de la Figura \ref{tut210}
+firstEnded :: [Either HFiaRError Game] -> Maybe Int
+firstEnded games = case (length $ takeWhile onCourse games) of
+                        7 -> Nothing
+                        g -> Just g
+    where onCourse (Left _)           = False
+          onCourse (Right OnCourse{}) = True
+          onCourse (Right Ended{})    = False
+\end{lstlisting}\end{center}
+\subparagraph{} Muchas porciones del c'odigo que acabamos de exponer pueden resultar desconocidas o quiz'as dif'iciles de comprender incluso para un programador \haskell\ ya habituado a este tipo de c'odigo.  Tomemos, por ejemplo, la funci'on \texttt{catMaybes}, utilizada en la nueva versi'on de \texttt{bestColumn}.  A los fines de continuar con nuestra historia y demostrar el uso de \hpage, supongamos que, si bien F'atima sab'ia de la existencia de esta funci'on, no sab'ia en qu'e m'odulo se encontraba declarada ni recordaba exactamente su tipo.  En tal caso, lo que F'atima puede hacer es escribir el nombre de la funci'on en la p'agina de \hpage, seleccionarlo y utilizar la opci'on \textsl{Search on Hayoo!} del men'u contextual que se despliega al presionar el bot'on derecho del mouse sobre el texto seleccionado.  En ese momento, \hpage\ le presentar'a la p'agina web que se ve en la Figura \ref{tut209}. All'i se puede observar que la funci'on \texttt{catMaybes} se encuentra definida en el m'odulo \texttt{Data.Maybe} y que su tipo es \texttt{[Maybe a] -> [a]}.  M'as a'un, \textsl{Hayoo!} nos muestra la documentaci'on que acompa'na a la funci'on, seg'un la cual \textit{la funci'on \texttt{catMaybes} toma una lista de \texttt{Maybe}s y devuelve una lista de todos los valores construidos con \texttt{Just}}.  Para probarla, F'atima puede importar el m'odulo \textsl{Data.Maybe} utilizando la opci'on \textsl{Haskell $\rightarrow$ Import modules\ldots} y realizar alguna prueba similar a la de la Figura \ref{tut210}.  El lector podr'ia preguntarse en este momento por qu'e F'atima debi'o importar el m'odulo en lugar de cargarlo como ha hecho con los dem'as m'odulos.  Esto se debe a que el m'odulo \textsl{Data.Maybe} se encuentra en un paquete que no es aquel con el que estamos trabajando, por lo tanto \hpage\ no tiene acceso a su c'odigo fuente.  \textsl{Importar} un m'odulo es similar a cargarlo: es la acci'on de poner en contexto las funciones y tipos de datos definidos y \textbf{exportados} por 'el, de modo que puedan ser utilizados dentro de las p'aginas actuales.  Al importar un m'odulo, el usuario no tiene acceso a las funciones y tipos de datos \textsl{privados} del mismo.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/09}
@@ -653,7 +669,7 @@ firstAvailableColumn = board >>= return . Just . length . takeWhile (\c -> lengt
 \end{figure}
 
 \newpage
-\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut211}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.
+\paragraph{} La funci'on \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c'odigo est'a en un m'odulo que ha sido cargado dentro de \hpage, lo que F'atima puede hacer es ir construyendo paso a paso una expresi'on que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci'on auxiliar \texttt{round} y, tal como lo vemos en la Figura \ref{tut211}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m'odulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.  Cabe destacar una vez m'as aqu'i que, cada vez que F'atima desee realizar cambios en su m'odulo, puede hacerlo con su editor favorito, luego presionar el bot'on \textsl{Reload} al volver a \hpage\ e interpretar nuevamente sus expresiones, que no han sido perdidas pues est'an todav'ia en la(s) p'agina(s) con la(s) que est'a trabajando.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
@@ -661,8 +677,8 @@ firstAvailableColumn = board >>= return . Just . length . takeWhile (\c -> lengt
 		\label{tut211}
 	\end{center}
 \end{figure}
-\paragraph{}Resta pues modificar la interfaz gr'afica para que permita al usuario jugar contra la computadora, utilizando la funci'on \texttt{aiDropIn} en los turnos correspondientes a la m'aquina.  Para ello, F'atima abre el m'odulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.  Estos cambios puede realizarlos utilizando \hpage\ o cualquier otro editor, pues por la naturaleza ``imperativa'' del c'odigo a modificar, \hpage\ no representar'a un beneficio importante.  Por el mismo motivo, no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p'agina web del proyecto hfiar en github}{http://github.com/elbrujohalcon/hfiar/commit/88a59a61d3dff930a96a1a51ab1daff4fcac9ef8\#diff-2}~\cite{hfiar}
-\paragraph{}El 'ultimo paso que F'atima debe realizar es incluir su nuevo m'odulo en la lista de m'odulos del ejecutable \textsl{hfiar} dentro del archivo \textbf{hfiar.cabal}.  Una vez hechas estas modificaciones, puede ejecutar los siguientes comandos y disfrutar de un partido de su juego favorito contra la computadora:
+\paragraph{}Resta pues modificar la interfaz gr'afica para que permita al usuario jugar contra la computadora, utilizando la funci'on \texttt{aiDropIn} en los turnos correspondientes a la m'aquina.  Para ello, F'atima abre el m'odulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.   Se trata b'asicamente de modificaciones de la interfaz gr'afica del programa, para las cuales \hpage\ no es de m'as ayuda que en los ejemplos que hemos visto a lo largo de este tutorial.  Por ese motivo no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p'agina web del proyecto hfiar en github}{bihttp://github.com/elbrujohalcon/hfiar/commit/d69ab637bf32866e7e4550b6ea51cdd5fba33a90\#diff-2}~\cite{hfiar}
+\paragraph{}El 'ultimo paso que F'atima debe realizar es incluir su nuevo m'odulo en la lista de m'odulos de la librer'ia \textsl{HFiaR} dentro del archivo \textbf{hfiar.cabal}.  Una vez hechas estas modificaciones, puede ejecutar los siguientes comandos y disfrutar de un partido de su juego favorito contra la computadora:
 \lstset{language=sh, frame=single, tabsize=4}
 \begin{center}\begin{lstlisting}
 $ cabal configure --user
@@ -673,9 +689,22 @@ $ ~/.cabal/bin/hfiar &
 
 \newpage
 \subsubsection{Conclusiones}
-\paragraph{}A lo largo de este tutorial hemos podido ver c'omo utilizar \hpage\ para \textsl{comprender} c'odigo \haskell\ a trav'es de \textsl{micro-testing}.  Hemos visto tambi'en como, utilizando esa misma t'ecnica, podemos construir paso a paso m'odulos \haskell\ medianamente complejos.  Pudimos ver c'omo \hpage\ nos permite editar los m'odulos al tiempo que los testeamos, de modo de utilizar un 'unico aplicativo para ambas cosas y no necesitar recurrir a la consola.
-\paragraph{}Hemos podido ver c'omo \hpage\ se encuentra integrado con \cabal\ para permitir cargar proyectos previamente configurados y evitar al desarrollador lidiar con el manejo de extensiones, carpetas y m'odulos manualmente.  Esto es una importante ventaja que ofrece \hpage\, dado que la mayor'ia de los proyectos desarrollados en \haskell\ se encuentran organizados en paquetes \cabal.
-\paragraph{}Tambi'en hemos observado la forma gr'afica con la que \hpage\ describe y permite navegar los m'odulos cargados, sus funciones y sus estructuras de datos para luego utilizarlas en nuestro c'odigo.
+\paragraph{}A lo largo de este tutorial hemos podido ver c'omo utilizar \hpage\ para \textsl{comprender} c'odigo \haskell\ a trav'es de \textsl{micro-testing}.  Hemos visto tambi'en como, utilizando esa misma t'ecnica, podemos construir paso a paso m'odulos \haskell\ medianamente complejos.  Pudimos ver c'omo \hpage\ nos permite editar los m'odulos y recargarlos para volver a testearlos sin perder las expresiones que ya hab'iamos definido.
+\paragraph{}Hemos podido ver c'omo \hpage\ se encuentra integrado con \cabal\ para permitir cargar proyectos previamente configurados y evitar al desarrollador lidiar con el manejo de extensiones, carpetas y m'odulos manualmente.  Esto es una importante ventaja que ofrece \hpage\, dado que la mayor'ia de los proyectos desarrollados en \haskell\ se encuentran organizados en paquetes \cabal.  Pudimos observar tambi'en c'omo \hpage\ se integra con \textsl{Hayoo!}, permitiendo al desarrollador consultar sus dudas sobre la API de \haskell directamente dentro de la aplicaci'on.
+\paragraph{}Hemos observado c'omo utilizar \hpage\ para cargar o importar m'odulos y hemos notado las diferencias entre estas dos acciones.  Tambi'en hemos observado la forma gr'afica con la que \hpage\ describe y permite navegar los m'odulos cargados o importados, sus funciones y sus estructuras de datos para luego utilizarlas en nuestro c'odigo.
+\paragraph{}Por otra parte, hemos podido trabajar con expresiones de entrada/salida que podr'ian generar efectos colaterales (en otras palabras, expresiones de tipo \texttt{IO a}) de manera transparente, tal como lo har'iamos con \textsl{GHCi}.
+
+\newpage
+\subsection{Otras Caracter'isticas de \hpage}
+\begin{epigraphs}
+	%%TODO: Epigrafear
+	\qitem{TODO: EP'IGRAFE}{autor}
+\end{epigraphs}
+\paragraph{}Los dos tutoriales que hemos presentado en este cap'itulo muestran muchas de las principales caracter'isticas de \hpage.  Sin embargo, algunas otras caracter'isticas han quedado sin ser expuestas.  Es nuestra intenci'on utilizar esta secci'on para detallarlas, de modo que el usuario interesado pueda experimentar con ellas.
+\subsubsection{Listas} %%TODO: TEXTO
+\subsubsection{Kind} %%TODO: TEXTO
+\subsubsection{Importaci'on de M'odulos por Nombre} %%TODO: TEXTO
+\subsubsection{Configuraci'on del Compilador} %%TODO: TEXTO
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
