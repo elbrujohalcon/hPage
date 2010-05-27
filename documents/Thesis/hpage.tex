@@ -820,7 +820,7 @@ test = map WIC2 [-5,-4..]
 	\qitem{A child of five would understand this. Send someone to fetch a child of five}{Groucho Marx}
 \end{epigraphs}
 
-\subsubsection{eprocess}
+\subsubsection{eprocess}\label{secEprocess}
 \paragraph{}Para la implementaci'on de \textsl{eprocess}, nuestra librer'ia de procesos, utilizamos varias herramientas de paralelismo y concurrencia que se encuentran muy bien descriptas en el libro \htmladdnormallink{Real World Haskell}{http://book.realworldhaskell.org/read/concurrent-and-multicore-programming.html}~\cite{realworldhaskell}.  Utilizamos \textsl{Threads} para paralelizar procesos y \textsl{Channels} y \textsl{MVars} para permitirles comunicarse.
 \subparagraph{}Un \textsl{Thread} es una acci'on de entrada/salida que se ejecuta de manera independiente.  Para crear un \textsl{Thread}, se debe importar el m'odulo \texttt{Control.Concurrent} y utilizar la funci'on \texttt{forkIO}.
 \subparagraph{}Una \textsl{MVar} representa una \textit{caja para un 'unico elemento}: puede estar llena o vac'ia.  Podemos poner algo en la caja, llen'andola, o sacarlo, vaci'andola.  Si intentamos poner algo en una \textsl{MVar} que ya est'a llena, nuestro \textsl{Thread} quedar'a bloqueado hasta que otro tome su contenido y, por ende, la vac'ie.  Del mismo modo, si intentamos tomar el valor de una \textsl{MVar} que est'a vac'ia, nuestro \textsl{Thread} esperar'a hasta que alguien ponga un valor en ella.
@@ -847,70 +847,55 @@ recv :: MonadIO m => ReceiverT r m r
 
 \newpage
 \subsubsection{Servers}
-\paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  A su vez, tambi'en fue necesario ejeuctar acciones de la m'onada \texttt{IO} en un contexto controlado, por lo que desarrolamos el proceso \textbf{IO Server}.  Gracias al uso de m'onadas, al hecho de que las acciones sean objetos de primer tipo y a los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos servers de una manera sencilla.   Mostramos, a modo de ejemplo e incluyendo comentarios explicativos, el c'odigo del \textbf{IO Server}:
+\paragraph{}Con el objetivo de separar la interacci'on con GHC del resto de la ejecuci'on del sistema y de esta manera, poder capturar sus excepciones y aislarlas, hemos encapsulado la ejecuci'on de estas acciones (correspondientes a la m'onada \texttt{Interpreter}) en un proceso particular, al que denominamos \textbf{Hint Server}.  Por otra parte, con objetivos similares, decidimos aislar la ejecuci'on de las acciones propias de \hpage\ (correspondientes a la m'onada \texttt{HPage}) de las relativas a la interfaz de usuario, para lo cual creamos el proceso \textbf{HPage Server}.  A su vez, tambi'en fue necesario ejeuctar acciones de la m'onada \texttt{IO} en un contexto controlado, por lo que desarrolamos el proceso \textbf{IO Server}.  Gracias al uso de m'onadas, al hecho de que las acciones sean objetos de primer tipo y a los mecanismos provistos por \textsl{eprocess}, pudimos construir 'estos servers de una manera sencilla.   Mostramos, a modo de ejemplo, el c'odigo del \textbf{IO Server}:
 \begin{center}\begin{lstlisting}
--- | Este modulo provee un proceso servidor (implementado usando eprocess)
--- que puede recibir y ejecutar acciones de entrada/salida (o sea, de tipo IO a)
-module HPage.IOServer (
-    -- * Funciones
-    start, stop, runIn,
-    -- * Tipos
-    ServerHandle
-    ) where
+module HPage.IOServer (start, stop, runIn, ServerHandle) where
 
--- * Importamos try para poder capturar las excepciones que se generen durante la
---   ejecucion de las acciones y SomeException puse es el tipo de excepcion mas
---   general, el cual engloba a todos los demas
--- * Importamos Control.Monad para poder utilizar las funciones >> y >>=
--- * Importamos Control.Monad.Trans para poder combinar acciones de tipo Process
---   e IO
--- * Importamos Control.Concurrent.Process para poder usar las funciones de 
---   la libreria eprocess
 import Control.Exception (try, SomeException)
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.Process
 
--- | Definimos un tipo ``ServerHandle'', que ser'a el tipo del resultado de start
---   y el primer parametro de runIn.  Las instancias de este tipo seran las que
---   permitiran al proceso que inicia el servidor comunicarse con 'el
 newtype ServerHandle = SH {handle :: Handle (IO ())}
 
--- | Definimos una funcion que inicia el servidor y retorna su handle
---   El proceso del servidor simplemente recibe acciones de tipo IO () y las
---   ejecuta utilizando la funcion liftIO
 start :: IO ServerHandle
 start = spawn ioRunner >>= return . SH
     where ioRunner = forever $ recv >>= liftIO
 
--- | Definimos una funcion para ejecutar acciones.  Esta funcion envia al 
---   servidor la acciona a ejecutar (modificada de modo que el servidor envie
---   el resultado a este proceso) y espera pues recibir ese resultado
 runIn :: ServerHandle -> IO a -> IO (Either SomeException a)
 runIn server action = runHere $ do
                                     me <- self
                                     sendTo (handle server) $ try action >>=
                                                                     sendTo me
                                     recv
-
--- | La ultima de las funciones detiene al servidor utilizando la la funcion kill
 stop :: ServerHandle -> IO ()
 stop = kill . handle
 \end{lstlisting}\end{center}
-\subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 25 l'ineas de c'odigo es capaz de ejecutar cualquier acci'on dentro de la m'onada \texttt{IO} en un proceso aislado y controlado.
+\subparagraph{}Cabe destacar la simpleza de este m'odulo que, con no m'as de 20 l'ineas de c'odigo es capaz de ejecutar cualquier acci'on dentro de la m'onada \texttt{IO} en un proceso aislado y controlado.
+\subparagraph{}Para entender el comportamiento de este m'odulo, iremos paso a paso:
+\subparagraph{Imports} Al inicio del m'odulo se realiza la importaci'on de los siguientes m'odulos auxiliares:
+\begin{description}
+	\item[\texttt{Control.Exception}] Se importan la funci'on \texttt{try} para poder capturar las excepciones que se generen durante la ejecuci'on de las acciones y el constructor \texttt{SomeException} pues es constructor del tipo de excepci'on m'as gen'erico, el mismo engloba a todos los dem'as.  Nuestro objetivo es poder capturar cualquier excepci'on que se genere durante la ejecuci'on de una acci'on.
+	\item[\texttt{Control.Monad}] Se importa el m'odulo para poder utilizar las funciones \texttt{$>>$} y \texttt{$>>=$} que permitir'an concatenar acciones, la funci'on \texttt{return} para determinar el resultado de una acci'on y la funci'on \texttt{forever} que explicaremos m'as adelante.
+	\item[\texttt{Control.Monad.Trans}] Se importa el m'odulo para poder combinar acciones de tipo \texttt{Process} con acciones de tipo \texttt{IO a} utilizando la funci'on \texttt{liftIO}
+	\item[\texttt{Control.Concurrent.Process}] Este es el m'odulo en el que se encuentran definidas las funciones de la librer'ia \textsl{eprocess}
+\end{description}
+\subparagraph{ServerHandle}Luego se define el tipo \texttt{ServerHandle}, cuyas instancias representan identificadores un'ivocos de \textsl{IO Servers}.  El proceso que inicie un servidor obtendr'a un \texttt{ServerHandle} que le permitir'a comunicarse con el luego.
+\subparagraph{start}A continuaci'on se define la funci'on que inicia el servidor y retorna su \texttt{ServerHandle}.  El servidor es iniciado utilizando la funci'on \texttt{spawn} provista por \textsl{eprocess}, la cual retorna un \texttt{Handle} que es encapsulado en un \texttt{ServerHandle} utilizando su constructor \texttt{SH}.  La funci'on \texttt{spawn} toma como primer par'ametro la acci'on (de tipo \texttt{IO a}) que se ejecutar'a en el nuevo proceso.  En este caso, esa acci'on recibe el nombre de \texttt{ioRunner} y se define utilizando la funci'on \texttt{forever} que ejecuta, en principio, indefinidamente la acci'on que recibe por par'ametro.  En nuestro caso, la acci'on a ejecutar indefinidamente es \texttt{recv $>>=$ liftIO}, la cual puede leerse como ``esperar a recibir un valor y, una vez recibido, aplicarle la funci'on \texttt{liftIO}''.  Esta funci'on permite ejecutar acciones de tipo \texttt{IO a} dentro del contexto de otra m'onada, en este caso \texttt{Process a} (que es el tipo de \texttt{ioRunner} por ser el primer par'ametro de la funci'on \texttt{spawn}).
+\subparagraph{runIn} La siguiente funci'on que aparece en el m'odulo es \texttt{runIn}, una funci'on pensada para ejecutar acciones.  Esta funci'on toma como par'ametro un \texttt{ServerHandle} y una acci'on (de tipo \texttt{IO a}), compone una nueva acci'on (de tipo \texttt{IO ()} que consiste en intentar evaluar la acci'on recibida y luego enviar el resultado de la misma nuevamente al proceso en el que se est'a evaluando \texttt{runIn}), env'ia esta nueva acci'on al servidor correspondiente al \texttt{ServerHandle} recibido y se bloquea esperando el resultado.  Observemos en detalle las funciones involucradas en este proceso:
+\begin{description}
+	\item[\texttt{runHere}] Esta funci'on permite ejecutar acciones de tipo \texttt{Process a} en el contexto de la m'onada \texttt{IO}.
+	\item[\texttt{self}] Como hemos visto en la secci'on \ref{secEprocess}, esta funci'on nos permite conocer el \texttt{Handle} del propio proceso.
+	\item[\texttt{sendTo}] Utilizando esta funci'on se env'ia a un proceso un mensaje, en este caso la acci'on modificada que se espera ejecute.
+	\item[\texttt{handle}] Esta funci'on, definida de forma impl'icita en el constructor del tipo \texttt{ServerHandle} nos devuelve el \texttt{Handle} del mismo, que es lo que \texttt{sendTo} necesita para ``ubicar'' al proceso al que debe enviar el mensaje.
+	\item[\texttt{try}] Esta funci'on intenta ejecutar una acci'on y devuelve, en caso de detectar una excepci'on, la expresi'on \texttt{Left e} donde \texttt{e} es la excepci'on capturada y, en caso de que la acci'on se ejecute correctamente, la expresi'on \texttt{Right a} donde \texttt{a} es el resultado de la acci'on.
+	\item[\texttt{$>>=$}] Esta funci'on toma una acci'on de alg'un tipo que instancia de la clase \texttt{Control.Monad} y una funci'on y genera una nueva acci'on que consiste en evaluar la primera, luego construir un nueva acci'on utilizando la funci'on con el resultado obtenido como par'ametro y finalmente ejecutar esta segunda acci'on.  En nuestro caso, la utilizamos para que el servidor (usando \texttt{sendTo me}) env'ie al proceso ejecutado con \texttt{runHere} el resultado de \texttt{try action}.
+	\item[\texttt{recv}] Como hemos visto en la secci'on \ref{secEprocess}, esta funci'on bloquea al proceso en espera de recibir alg'un mensaje y retorna ese mensaje una vez recibido.
+\end{description}
+\subparagraph{stop} La 'ultima de las funciones simplemente compone las funciones \texttt{handle} (nos devuelve el \texttt{Handle} del servidor) con \texttt{kill} que, como hemos visto en la secci'on \ref{secEprocess}, lo detiene.
 
 \subsubsection{M'odulos de \hpage}
 \paragraph{}El m'odulo principal de la aplicaci'on es el denominado \texttt{HPage.Control}.  Este m'odulo describe la m'onada \texttt{HPage} e incluye todas las acciones que pueden realizarse en ella.  Es el encargado de mantener el estado del sistema, para lo cual hemos definido un tipo de datos llamado \texttt{Context}, que mostraremos a continuaci'on.
-\subparagraph{} Los principales componentes del estado del sistema son:
-\begin{description}
-	\item[activePackage] El paquete \cabal\ activo, si es que se ha cargado alguno.
-	\item[pages] Las p'aginas que el usuario est'a viendo.  Cabe notar que un usuario puede tener varias p'aginas activas a la vez, una con cada documento.
-	\item[loadedModules / importedModules] Los m'odulos que el usuario ha cargado / importado
-	\item[server] El handle del \textbf{Hint Server} que el mismo \textbf{HPage Server} inicia y mantiene
-	\item[ioServer] El handle del \textbf{IO Server} que el mismo \textbf{HPage Server} inicia y mantiene
-	\item[running] La acci'on que se encuentra ejecut'andose de manera asincr'onica, si es que hay alguna
-	\item[recoveryLog] El log de acciones realizadas hasta el momento, 'util al momento de detener el \textbf{Hint Server}
-\end{description}
 \begin{center}\begin{lstlisting}
 newtype Expression = Exp {exprText :: String}       
     deriving (Eq, Show)
@@ -957,11 +942,26 @@ data Context = Context { -- Package --
                          recoveryLog :: Hint.InterpreterT IO ()
                        }
 \end{lstlisting}\end{center}
+
+\subparagraph{} Los principales componentes del estado del sistema son:
+\begin{description}
+	\item[activePackage] El paquete \cabal\ activo, si es que se ha cargado alguno.
+	\item[pages] Las p'aginas que el usuario est'a viendo.  Cabe notar que un usuario puede tener varias p'aginas activas a la vez, una con cada documento.
+	\item[loadedModules / importedModules] Los m'odulos que el usuario ha cargado / importado
+	\item[server] El handle del \textbf{Hint Server} que el mismo \textbf{HPage Server} inicia y mantiene
+	\item[ioServer] El handle del \textbf{IO Server} que el mismo \textbf{HPage Server} inicia y mantiene
+	\item[running] La acci'on que se encuentra ejecut'andose de manera asincr'onica, si es que hay alguna
+	\item[recoveryLog] El log de acciones realizadas hasta el momento, necesario al momento de detener el \textbf{Hint Server}.  Cabe destacar aqu'i c'omo se construye este log: Se trata de una 'unica acci'on de tipo \texttt{Hint.InterpreterT IO ()} que se va construyendo de manera incremental al realizar cada acci'on.  Cuando una acci'on es aplicada (o sea, al momento en que ya finaliz'o su ejecuci'on -recordemos que \texttt{HPage.Control} permite ejecutar acciones de manera sincr'onica o asincr'onica-), se ejecuta el siguiente c'odigo para agregarla al log (donde \texttt{c} es el contexto actual, \texttt{ra} es la acci'on ejecutada y el resultado es el nuevo contexto actual, una vez almacenada la acci'on):
+\begin{center}\begin{lstlisting}
+c{recoveryLog  = (recoveryLog c) >> ra >> return ()}
+\end{lstlisting}\end{center}
+\end{description}
+
 \subparagraph{}Notese que el paquete \cabal, las extensiones y los m'odulos cargados o importados, etc. son independientes de las p'aginas con las que el usuario est'e trabajando, por lo que el usuario por ejemplo no puede manejar dos paquetes \cabal\ a la vez.  'Esto se debe a que la API de \textsl{GHC} no permite la utilizaci'on de \textsl{multi-threading}, por lo tanto, dentro de un programa s'olo puede haber una 'unica lista de m'odulos cargados/importados, una 'unica lista de extensiones, etc.
-\subparagraph{}Tambi'en debe notarse que mucha de la informaci'on de estado guardada en el \texttt{Context} es ``redundante'' pues se configura directamente en el \textbf{Hint Server}.  Eso se debe a que ante la eventual ca'ida del \textbf{Hint Server}, el \textbf{HPage Server} lo reinicia y restaura su estado utilizando esos datos.
-\subparagraph{}Finalmente, \texttt{running} y \texttt{recoveryLog} se utilizan para permitir al usuario cancelar acciones que intenta ejecutar.  Cada acci'on que se desea realizar de forma asincr'onica, devuelve una \textsl{MVar} que se llenar'a en caso de finalizar la acci'on con 'exito y se acumular'a en el \texttt{recoveryLog}.  En caso de cancelar, el \textbf{HPage Server} reinicia al \textbf{IO Server} y al \textbf{Hint Server}, configura a este 'ultimo seg'un los dem'as par'ametros (ej: \texttt{ghcOptions}) y vuelve a ejecutar el \texttt{recoveryLog} para ``ponerlo al d'ia''.
+\subparagraph{}Tambi'en debe notarse que mucha de la informaci'on de estado guardada en el \texttt{Context} es ``redundante'' pues se configura directamente en el \textbf{Hint Server}.  Eso se debe a que ante la necesidad de reiniciarlo, el \textbf{HPage Server} restaura su estado utilizando esos datos.
+\subparagraph{}Finalmente, \texttt{running} y \texttt{recoveryLog} se utilizan para permitir al usuario cancelar acciones que intenta ejecutar de modo asincr'onico.  Cada acci'on que se desea realizar de forma asincr'onica, devuelve una \textsl{MVar} que se llenar'a en caso de finalizar la acci'on con 'exito y se acumular'a en el \texttt{recoveryLog}.  En caso de que el usuario decida cancelar, el \textbf{HPage Server} reiniciar'a el \textbf{IO Server} y el \textbf{Hint Server}, configurar'a a este 'ultimo seg'un los dem'as par'ametros (ej: \texttt{ghcOptions}) y ejecutar'a \texttt{recoveryLog} para ``ponerlo al d'ia''.
 \subparagraph{}El estado de las p'aginas con las que el usuario trabaja est'a definido como una lista de expresiones y dos listas de acciones para permitir el uso de \textsl{undo} y \textsl{redo}.  Finalmente, si la p'agina corresponde a un archivo en disco, \hpage\ identifica el ``path'' del mismo para poder guardarlo o recargarlo de ser necesario.
-\subparagraph{}Gracias a haber separado la l'ogica correspondiente a la interfaz de usuario y la propia de \hpage, hemos podido desarrollar esta 'ultima utilizando la t'ecnica de TDD (Test Driven Development) ~\cite{tdd}.  Para ello utilizamos \htmladdnormallink{QuickCheck}{http://www.cs.chalmers.se/~rjmh/QuickCheck/}~\cite{quickcheck}, una herramienta que nos permiti'o ir desarrollando y verificando tests de manera incremental hasta alcanzar la actual definici'on del \textbf{HPage Server}.  Los tests desarrollados pueden ser ejecutados utilizando el siguiente comando:
+\subparagraph{}Gracias a haber separado la l'ogica correspondiente a la interfaz de usuario y la propia de \hpage, hemos podido desarrollar esta 'ultima utilizando la t'ecnica de TDD (Test Driven Development) ~\cite{tdd}.  Para ello utilizamos \htmladdnormallink{QuickCheck}{http://www.cs.chalmers.se/~rjmh/QuickCheck/}~\cite{quickcheck}, una herramienta de testeo autom'atico para programas \haskell\ que nos permiti'o ir desarrollando y verificando tests de manera incremental hasta alcanzar la actual definici'on del \textbf{HPage Server}.  Los tests desarrollados pueden ser ejecutados utilizando el siguiente comando:
 \lstset{language=sh, frame=single, tabsize=2}
 \begin{center}\begin{lstlisting}
 $ cabal test hpage
@@ -975,16 +975,18 @@ $ cabal test hpage
 \section{Resultados}
 \subsection{Objetivos Alcanzados}
 \begin{epigraphs}
-	\qitem{Results! Why, man? I have gotten a lot of results. I know several thousand things that wont work}{Thomas A. Edison}
+	\qitem{Results! Why, man? I have gotten a lot of results. I know several thousand things that won't work}{Thomas A. Edison}
 	\qitem{Kids, you tried your best and you failed miserably. The lesson is: ``never try''}{Homer Simpson}
 \end{epigraphs}
-\paragraph{}A primera vista, \hpage\ puede parecer simplemente un editor de texto al que se le agrega la posibilidad de interpretar expresiones \haskell.  Esta visi'on es cierta, y en s'i misma es un avance con respecto a las herramientas ya existentes pues permite intercalar en un mismo documento texto libre y expresiones \haskell.
+\paragraph{}A primera vista, \hpage\ puede parecer simplemente un cuadro de texto al que se le agrega la posibilidad de interpretar expresiones \haskell.  Esta visi'on es cierta, y en s'i misma es un avance con respecto a las herramientas ya existentes pues permite intercalar en un mismo documento texto libre y expresiones \haskell.
 \subparagraph{}Sin embargo, \hpage\ presenta varios atributos que generan un importante valor agregado:
 \begin{itemize}
 	\item Permite configurar el entorno manual o autom'aticamente en base a un paquete \cabal
 	\item Permite buscar documentaci'on sobre expresiones \haskell\ utilizando \textsl{Hayoo!}
 	\item Permite al usuario editar texto mientras espera el resultado de la evaluaci'on de una expresi'on
-	\item Permite visualizar y analizar expresiones que contengan errores, ``bottoms'' o que generen c'alculos ``infinitos''
+	\item Permite visualizar y analizar expresiones que contengan errores, ``bottoms'' o que generen c'alculos ``infinitos'' sin bloquearse ante su aparici'on y sin que ellos le impidan continuar presentando el resto de la expresi'on
+	\item Permite cargar, importar y recargar m'odulos de modo de modificar el contexto de ejecuci'on sin perder las expresiones con las que el usuario estaba trabajando
+	\item Permite mantener varias p'aginas de expresiones por separado, guardarlas y reabrirlas de modo de organizar m'as amigablemente el entorno de trabajo del usuario
 \end{itemize}
 \subparagraph{}Son todas estas caracter'isticas las que convierten a \hpage\ en una herramienta de gran utilidad para todo desarrollador \haskell, desde el estudiante universitario que generalmente se encuentra frente a la necesidad de ``entender''  funciones del lenguaje y as'i aprenderlo hasta el desarrollador avanzado que necesita debuggear sus aplicaciones.
 
@@ -996,11 +998,16 @@ $ cabal test hpage
 \end{epigraphs}
 \paragraph{}\hpage\ es todav'ia una aplicaci'on en desarrollo y de c'odigo abierto.  A'un queda mucho por hacer y por eso la hemos publicado en internet utilizando \htmladdnormallink{github}{http://github.com}~\cite{github}.  Gracias a este servicio, se encuentra habilitada \htmladdnormallink{una lista de bugs y sugerencias}{http://github.com/elbrujohalcon/hPage/issues} en constante actualizaci'on.  Entre las tareas que all'i se encuentran al d'ia de hoy, cabe destacar:
 \begin{description}
-	\item[ByteStrings] Las aplicaciones \haskell\ tradicionales manejan el texto utilizando \textbf{Strings} (o sea, listas de caracteres), pero ya se encuentra a disposici'on del desarrollador \haskell\ una nueva herramienta que permite manejar texto de una manera m'as 'optima: \textbf{ByteStrings}.  \hpage\ utiliza en su mayor'ia \textbf{Strings} y podr'ia ser optimizado migrando la mayor cantidad posible a \textbf{ByteStrings}.
 	\item[Mejoras Visuales] La UI de \hpage\ tiene mucho por mejorar y optimizar.  Ejemplos de esto son el coloreo de c'odigo y la autocompleci'on.  \textsl{wxHaskell} se encuentra en constante desarrollo y sus optimizaciones deber'ian ser aprovechadas por \hpage\ cuando sea posible.
 	\item[\cabal] La actual integraci'on con \cabal\ cubre lo b'asico de la configuraci'on de paquetes, como las extensiones y los m'odulos, pero \cabal\ permite describir varias cosas m'as que podr'ian ser aprovechadas por \hpage\ como la ubicaci'on de librer'ias y otros archivos
 	\item[Auto Reload] Una caracter'istica que ser'ia muy 'util agregar a \hpage\ es la recarga autom'atica de los m'odulos modificados.  De este modo, el desarrollador no necesitar'ia presionar el bot'on ``reload'' cada vez que modifica un m'odulo para que \hpage\ tome los cambios realizados.
 \end{description}
+\paragraph{}Por otra parte, si bien no menores, los progresos realizados por \hpage\ en cuanto a la presentaci'on de interpretaciones de expresiones al usuario son s'olo los primeros pasos en un camino en el cual todav'ia queda mucho por explorar.  Por ejemplo:
+\begin{description}
+	\item[Otras Visualizaciones] %%TODO: TEXTO sobre IO y la consola y dem'as
+	\item[Otros Tipos] %%TODO: TEXTO sobre tuplas y registros, etc...
+\end{description}
+\subparagraph{}%%TODO: TEXTO SOBRE LA CLASE VIEW o PRESENT
 \paragraph{}Por otro lado, \hpage\ es s'olo una de las m'ultiples herramientas comunes en el desarrollo de lenguajes orientados a objetos que pueden ser ``migradas'' al paradigma funcional.  \hpage\ podr'ia integrarse alg'un d'ia en una IDE m'as grande y con mayores capacidades, que brinde al desarrollador funcionalidades tales como:
 \begin{description}
 	\item[Soporte para TDD] El ambiente de desarrollo de \textsl{Smalltalk} es un gran ejemplo de este tipo de herramientas ya que permite realizar (e incluso sugiere), al momento de detectar un test que falla, las tareas necesarias para hacerlo funcionar.  Una herramienta de este tipo, combinada con el poder de QuickCheck~\cite{quickcheck} podr'ia ser muy 'util a la hora de desarrollar software \haskell\ utilizando Test Driven Development~\cite{tdd}.
