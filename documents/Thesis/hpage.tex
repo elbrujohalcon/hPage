@@ -312,7 +312,7 @@ miAgenda = Telefonos "Letincho" [42079999,43834567]
 \paragraph{}Tambi'en hemos visto en este tutorial c'omo se puede utilizar \hpage\ para crear, cargar, modificar y recargar m'odulos, trabajando siempre en una 'unica p'agina de texto.  'Esta es otra caracter'istica de \hpage\ que facilita el trabajo ya no s'olamente a los estudiantes sino a todo tipo de desarrolladores \haskell.
 
 \newpage
-\subsection{Caso de Uso: Ganando al 4 en L'inea con \hpage}
+\subsection{Caso de Uso: Ganando al 4 en L'inea con \hpage}\label{secTut2}
 \begin{epigraphs}
 	\qitem{We learn by example and by direct experience because there are real limits to the adequacy of verbal instruction}{Malcom Gladwell}
 	\qitem{Look behind you, a Three-Headed Monkey!}{Guybrush Threepwood}
@@ -697,23 +697,79 @@ $ ~/.cabal/bin/hfiar &
 \newpage
 \subsection{Otras Caracter'isticas de \hpage}
 \begin{epigraphs}
-	%%TODO: Epigrafear
-	\qitem{TODO: EP'IGRAFE}{autor}
+	\qitem{What is best in life?}{}
+	\qitem{To crush your enemies, to see them driven before you, and to hear the lamentations of their women}{Conan, the Barbarian}
+	\qitem{Hot water, good dentishtry and shoft lavatory paper}{Cohen, the Barbarian}
 \end{epigraphs}
 \paragraph{}Los dos tutoriales que hemos presentado en este cap'itulo muestran muchas de las principales caracter'isticas de \hpage.  Sin embargo, algunas otras caracter'isticas han quedado sin ser expuestas.  Es nuestra intenci'on utilizar esta secci'on para detallarlas, de modo que el usuario interesado pueda experimentar con ellas.
-\subsubsection{Listas} %%TODO: TEXTO
-\subsubsection{Resultados Parciales}\label{secTutWIC} %%TODO: WIC
-\lstset{language=haskell, frame=single, tabsize=4}
-\begin{center}\begin{lstlisting}
-data WithInfiniteChar = WIC
+\subsubsection{Listas}
+\paragraph{}En el caso general, cuando el usuario desea interpretar una expresi'on \texttt{e}, si esta es de un tipo que es instancia de la clase \texttt{Show}, \hpage\ presenta al usuario el resultado de evaluar \texttt{show e}.  Ya hemos visto en el tutorial de la secci'on \ref{secTut2} que el caso de las expresiones de tipo \texttt{IO a} son tratadas de un modo especial (son ejecutadas y se presenta al usuario el resultado de su ejecuci'on en caso de que sea de un tipo instancia de la clase \texttt{Show}).
+\subparagraph{}Otras expresiones que son tratadas de un modo particular son las listas.  Cuando el usuario decide interpretar una expresi'on \texttt{e :: [a]} tal que \texttt{a} es instancia de \texttt{Show}, \hpage\ no eval'ua \texttt{show e}, sino que intenta evaluar cada elemento de la lista en forma independiente y as'i presentarlo al usuario.  De ese modo, a pesar de que uno o m'as de los elementos de la lista genere una excepci'on al intentar ser evaluado, los dem'as elementos pueden ser mostrados al usuario y la interpretaci'on no se aborta.  Para entender mejor este concepto podemos observar el ejemplo de la Figura \ref{etc1}.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/lists01}
+		\caption{Interpretaci'on de listas}
+		\label{etc1}
+	\end{center}
+\end{figure}
+\subparagraph{}En la Figura \ref{etc1} podemos ver que, al evaluar una lista en la que hay dos elementos que generan excepciones, \hpage\ nos presenta como su interpretaci'on el valor \texttt{[1, 2, $\bot$, $\bot$, 5]} y en la barra de estado nos informa que \textit{La expresi'on fue interpretada con errores} y podemos chequearlos \textit{clickeando con el bot'on derecho del mouse en cada uno de ellos}.  Al seleccionar el caracter \texttt{$\bot$} y hacer click con el bot'on derecho del mouse, se despliega el men'u contextual que podemos apreciar en la Figura \ref{etc2}. Al presionar la opci'on \textsl{Explain}, \hpage\ nos presenta un cuadro de di'alogo explicando el error, tal como vemos en la Figura \ref{etc3}.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/lists02}
+		\caption{Interpretaci'on de listas - Explicar}
+		\label{etc2}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/lists03}
+		\caption{Interpretaci'on de listas - Explicaci'on}
+		\label{etc3}
+	\end{center}
+\end{figure}
 
-instance Show WithInfiniteChar where
-    show WIC = ['c', head . show $ length [1..]]
-\end{lstlisting}\end{center}
-\subparagraph{}Como puede observarse, al intentar mostrar la expresi'on \texttt{WIC}, \hpage\ se encontrar'a con una cadena cuyo segundo caracter no puede computar pues requiere un c'alculo infinito, en la figura representamos este caracter con la letra $\Omega$.  All'i es donde entra en acci'on el \textbf{Runaway Killer} para informar esta situaci'on al usuario.
-\subsubsection{Kind} %%TODO: TEXTO
-\subsubsection{Importaci'on de M'odulos por Nombre} %%TODO: TEXTO
-\subsubsection{Configuraci'on del Compilador} %%TODO: TEXTO
+\newpage
+\subsubsection{Kind}
+\paragraph{}Otro caso de expresiones que son tratadas de un modo particular es el de las expresiones de tipo (como pueden ser \texttt{IO ()}, \texttt{Int} o \texttt{(Num n, Monad m) =>\ Float ->\ m [Float ->\ n]}).  En estos casos, \hpage\ entiende que el usuario al presionar el bot'on \textsl{Interpret} no quiere conocer el valor de la expresi'on sino m'as bien el g'enero (o, en ingl'es, \textsl{kind}) del tipo.  En \haskell\ cada tipo tiene un g'enero asociado que puede ser utilizado para asegurar que el tipo es usado de modo correcto.  Las expresiones de tipos son clasificadas seg'un sus g'eneros, los cuales pueden tomar una de las siguientes formas:
+\begin{itemize}
+	\item El s'imbolo \texttt{*} representa el g'enero de tipos asociados con datos concretos.
+	\item Si $k_{1}$ y $k_{2}$ son g'eneros, entonces $k_{1} \rightarrow k_{2}$ es el g'enero de de los tipos que toman un tipo con g'enero $k_{1}$ y devuelven un tipo con g'enero $k_{2}$
+\end{itemize}
+\subparagraph{}Veamos como ejemplos las expresiones de las Figuras \ref{etc4}, \ref{etc5} y \ref{etc6}.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/kind01}
+		\caption{G'eneros - \texttt{IO ()}}
+		\label{etc4}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/kind02}
+		\caption{G'eneros - \texttt{Int}}
+		\label{etc5}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/kind03}
+		\caption{G'eneros - \texttt{(Num n, Monad m) =>\ Float ->\ m [Float ->\ n]}}
+		\label{etc6}
+	\end{center}
+\end{figure}
+
+\newpage
+\subsubsection{Carga de M'odulos por Nombre}
+\paragraph{}A lo largo de los tutoriales de este cap'itulo varias veces el usuario ha debido cargar m'odulos y siempre lo ha hecho seleccionando el archivo con el c'odigo fuente del m'odulo que deseaba cargar.  \hpage\ brinda, adem'as de esa forma, otra alternativa para la carga de m'odulos: cargarlos por su nombre.  Para ello, el usuario debe seleccionar la opci'on \textsl{Haskell $\rightarrow$ Load modules by name\ldots}.  El programa entonces le presentar'a un cuadro de texto donde ingresar los nombres de los m'odulos que desea cargar separados por espacios.  \hpage, entonces, buscar'a en primera instancia el c'odigo precompilado de cada m'odulo e intentar'a cargarlo junto con los m'odulos de los que depende.  De no ser posible, buscar'a el c'odigo fuente del mismo e intentar'a compilarlo y cargarlo.
+\subsubsection{Configuraci'on del Compilador}
+\paragraph{}Hemos mostrado en el tutorial de la Secci'on \ref{secTut2}, c'omo \hpage\ puede configurar su entorno y, sobre todo, las opciones necesarias para el compilador a partir de un paquete \cabal.  \hpage\ permite adem'as al usuario modificar estas opciones a trav'es del men'u \textsl{Preferences...}.  Al seleccionar esta opci'on, \hpage\ presenta al usuario una ventana similar a la de la figura \ref{etc7}.  En ella el usuario puede elegir las extensiones del lenguaje que desea habilitar, determinar las carpetas en las que el compilador puede ubicar los archivos con c'odigo fuente y aplicar opciones al compilador.
+\begin{figure}[hp]
+	\begin{center}
+        	\includegraphics[width=.75\textwidth]{pictures/prefs}
+		\caption{Opciones del Compilador}
+		\label{etc7}
+	\end{center}
+\end{figure}
 
 \newpage
 \section{Desarrollo - ?`C'omo se hizo \hpage?}
@@ -743,7 +799,7 @@ instance Show WithInfiniteChar where
 		\label{arq1}
 	\end{center}
 \end{figure}
-\subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la Figura \ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representan un proceso o ``thread'' en ejecuci'on. %%TODO: Explicar que no son threads del Sistema Operativo (copiar de RealWorldHaskell o algo as’)
+\subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la Figura \ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representan un proceso o ``thread'' en ejecuci'on.  Es importante no confundir estos \textsl{threads} con los threads del sistema operativo.  Los ``threads'' utilizados por \hpage\ son administrados por la m'aquina virtual de \textsl{GHC}.  Por este motivo, en un thread de sistema operativo pueden coexistir varios \textsl{threads} \haskell.
 \subparagraph{}Cada uno de estos procesos se ejecuta dentro del entorno de una m'onada, la cual se encuentra identificada en la esquina superior derecha del bloque.  En el diagrama podemos identificar los siguientes componentes:
 \begin{description}
 	\item[UI Manager] Este es el thread que inicia el programa, genera y administra la interfaz del usuario utilizando las herramientas provistas por \textsl{wxHaskell}.  En este thread se mantiene el estado visual de la aplicaci'on: el estado de los controles, la 'ultima b'usqueda realizada, etc.
@@ -789,21 +845,21 @@ instance Show WithInfiniteChar where
 \end{description}
 \subparagraph{}La distinci'on que hace \hpage\ ante los distintos tipos de expresiones  a procesar y el comportamiento escogido al momento de mostrar el resultado de su evaluaci'on tienen como objetivo brindar al usuario la mayor cantidad de informaci'on posbile sobre la expresi'on que desea interpretar.  Sin ellos, el comportamiento natural de un programa como \hpage\ ante una expresi'on \texttt{e}, ser'ia el de asignar el resultado de \texttt{show e} al cuadro de texto que presenta el resultado al usuario.
 \subparagraph{}En el caso de las acciones de entrada/salida, \hpage\ al igual que \textsl{GHCi}, considera que el usuario no est'a simplemente interesado en conocer el tipo de las acciones, sino en ejecutarlas para producir (de ser preciso) ciertos efectos secundarios y obtener un resultado.  Es razonable pensar que quien construye una acci'on de este tipo (que no es instancia de la clase \texttt{Show}) pero que produce (al ser evaluada) un resultado de un tipo que s'i lo es, est'a interesado en ejecutar la acci'on y observar el resultado.
-\subparagraph{}Observemos con un ejemplo, qu'e suceder'ia.  Para nuestro ejemplo, vamos a crear un tipo de datos similar al que creamos en la Secci'on \ref{secTutWIC}, pero esta vez, le agregaremos un par'ametro:
+\subparagraph{}Observemos con un ejemplo, qu'e suceder'ia.  Para nuestro ejemplo, vamos a crear un tipo de datos bastante artificial pero que nos va a permitir mostrar todos los casos posibles:
 \begin{center}\begin{lstlisting}
-data WithInfiniteChar2 = WIC2 Int
+data WithInfiniteChar = WIC Int
 
-instance Show WithInfiniteChar2 where
-    show (WIC2 x) | x < 0 = ['c', head $ show x]
-			  | x == 0 = undefined
-			  | otherwise = ['c', head . show $ length [1..]]
+instance Show WithInfiniteChar where
+    show (WIC x) | x < 0 = ['c', head $ show x]
+			  	 | x == 0 = undefined
+			  	 | otherwise = ['c', head . show $ length [1..]]
 
-test = map WIC2 [-5,-4..]
+test = map WIC [-5,-4..]
 \end{lstlisting}\end{center}
 \subparagraph{}Si el usuario quisiese interpretar la expresi'on \texttt{[-5, -4..]} y \hpage\ intentase asignar \texttt{show [-5, -4..]} al cuadro de texto, el int'erprete reducir a forma normal una lista infinita, c'alculo que nunca terminar'ia y por tanto, el usuario no ver'ia ning'un resultado en la pantalla.
 \subparagraph{}Si, en su lugar, el usuario quisiese interpretar la expresi'on \texttt{test}, el int'erprete generar'ia una excepci'on \texttt{Prelude.undefined} al intentar mostrar el sexto elemento de la lista (el correspondiente a \texttt{0} en la lista original) y esa excepci'on ser'ia todo lo que el usuario podr'ia saber sobre la evaluaci'on de su expresi'on.
 \subparagraph{}Entonces, en vez de asignarlo directamente, \hpage\ podr'ia evaluar la expresi'on caracter a caracter e ir presentando cada uno de ellos al usuario a medida que los va obteniendo.  En ese caso, los caracteres correspondientes a los primeros 5 elementos de la lista (\texttt{[c-,c-,c-,c-,c-,}) podr'ian ser mostrados al usuario, pero al llegar al sexto, nuevamente el int'erprete generar'ia la excepci'on y ya ning'un otro elemento de la lista podr'ia ser mostrado.  Aproximadamente de este modo es como se comportan tanto \textsl{GHCi} como \textsl{Hugs98}.
-\subparagraph{}Al dise'nar \hpage\ decidimos intentar dar un resultado a'un m'as completo.  Para ello, \hpage\ puede observar que la expresi'on \texttt{test} tiene tipo \texttt{[WithInfiniteChar2]} y ver que se trata de una lista cuyos elementos son de un tipo que es instancia de la clase \texttt{Show}.  \hpage\ \textsl{``sabe''} c'omo se representan las listas y, por lo tanto, podr'ia emular el comportamiento de \texttt{show} en esos casos.  Lo que \hpage\ podr'ia hacer pues es intentar aplicar \texttt{show} a cada elemento por separado, mostrar (de modo an'alogo a como se presentan las listas) aquellos que efectivamente puedan ser evaluados y exhibir de otro modo aquellos que no.  Para estos casos, en los que por alg'un motivo, un elemento no puede ser mostrado, hemos elegido presentar el caracter $\bot$ y permitir al usuario, a trav'es de un men'u contextual saber por qu'e no se ha podido mostrar el elemento.  En nuestro ejemplo, con esta modalidad, \hpage\ presentar'ia al usuario una lista que comenzar'ia con \texttt{[c-, c-, c-, c-, c-, $\bot$, c$\bot$, c} y, al llegar al s'eptimo elemento, dado que el int'erprete deber'ia resolver un c'alculo infinito para presentar el siguiente caracter, dejar'ia de presentar resultados y el usuario no tendr'ia alternativa otra que presionar el bot'on \textsl{Cancel} para detener la ejecuci'on.
+\subparagraph{}Al dise'nar \hpage\ decidimos intentar dar un resultado a'un m'as completo.  Para ello, \hpage\ puede observar que la expresi'on \texttt{test} tiene tipo \texttt{[WithInfiniteChar]} y ver que se trata de una lista cuyos elementos son de un tipo que es instancia de la clase \texttt{Show}.  \hpage\ \textsl{``sabe''} c'omo se representan las listas y, por lo tanto, podr'ia emular el comportamiento de \texttt{show} en esos casos.  Lo que \hpage\ podr'ia hacer pues es intentar aplicar \texttt{show} a cada elemento por separado, mostrar (de modo an'alogo a como se presentan las listas) aquellos que efectivamente puedan ser evaluados y exhibir de otro modo aquellos que no.  Para estos casos, en los que por alg'un motivo, un elemento no puede ser mostrado, hemos elegido presentar el caracter $\bot$ y permitir al usuario, a trav'es de un men'u contextual saber por qu'e no se ha podido mostrar el elemento.  En nuestro ejemplo, con esta modalidad, \hpage\ presentar'ia al usuario una lista que comenzar'ia con \texttt{[c-, c-, c-, c-, c-, $\bot$, c$\bot$, c} y, al llegar al s'eptimo elemento, dado que el int'erprete deber'ia resolver un c'alculo infinito para presentar el siguiente caracter, dejar'ia de presentar resultados y el usuario no tendr'ia alternativa otra que presionar el bot'on \textsl{Cancel} para detener la ejecuci'on.
 \subparagraph{}La versi'on actual de \hpage\ tiene en cuenta estos casos de c'alculos infinitos y, por ello, al ir evaluando caracter por caracter, verifica que ninguno de ellos requiera m'as de un segundo en ser calculado.  En caso de demorar m'as que ello, \hpage\ introudcir'a el caracter  $_{\bot}$ y, por lo tanto, presentar'a al usuario la lista, en principio, infinita que comienza con \texttt{[c-, c-, c-, c-, c-, $\bot$, c$_{\bot}$, c$_{\bot}$c, c$_{\bot}$c \ldots}
 \subparagraph{}De este modo, \hpage\ intenta mostrar al usuario tanta informaci'on como sea posible sobre la expresi'on que intenta interpretar.  Esta claro que, si bien son probablemente los m'as habituales, las acciones de entrada/salida y las listas son s'olo dos casos especiales de un gran conjunto de tipos de expresiones cuya interpretaci'on puede ser presentada de modo de brindar mayor informaci'on que la que brinda la evaluaci'on directa de \texttt{show}.  Nos explayaremos m'as sobre este tema y sobre c'omo \hpage\ podr'ia adaptarse para contemplar otros casos en la Secci'on \ref{secTaR}.
 
@@ -999,15 +1055,14 @@ $ cabal test hpage
 \paragraph{}\hpage\ es todav'ia una aplicaci'on en desarrollo y de c'odigo abierto.  A'un queda mucho por hacer y por eso la hemos publicado en internet utilizando \htmladdnormallink{github}{http://github.com}~\cite{github}.  Gracias a este servicio, se encuentra habilitada \htmladdnormallink{una lista de bugs y sugerencias}{http://github.com/elbrujohalcon/hPage/issues} en constante actualizaci'on.  Entre las tareas que all'i se encuentran al d'ia de hoy, cabe destacar:
 \begin{description}
 	\item[Mejoras Visuales] La UI de \hpage\ tiene mucho por mejorar y optimizar.  Ejemplos de esto son el coloreo de c'odigo y la autocompleci'on.  \textsl{wxHaskell} se encuentra en constante desarrollo y sus optimizaciones deber'ian ser aprovechadas por \hpage\ cuando sea posible.
-	\item[\cabal] La actual integraci'on con \cabal\ cubre lo b'asico de la configuraci'on de paquetes, como las extensiones y los m'odulos, pero \cabal\ permite describir varias cosas m'as que podr'ian ser aprovechadas por \hpage\ como la ubicaci'on de librer'ias y otros archivos
+	\item[\cabal] La actual integraci'on con \cabal\ cubre lo b'asico de la configuraci'on de paquetes, como las extensiones del lenguaje y los m'odulos, pero \cabal\ permite describir varias cosas m'as que podr'ian ser aprovechadas por \hpage\ como la ubicaci'on de librer'ias y otros archivos
 	\item[Auto Reload] Una caracter'istica que ser'ia muy 'util agregar a \hpage\ es la recarga autom'atica de los m'odulos modificados.  De este modo, el desarrollador no necesitar'ia presionar el bot'on ``reload'' cada vez que modifica un m'odulo para que \hpage\ tome los cambios realizados.
 \end{description}
 \paragraph{}Por otra parte, si bien no menores, los progresos realizados por \hpage\ en cuanto a la presentaci'on de interpretaciones de expresiones al usuario son s'olo los primeros pasos en un camino en el cual todav'ia queda mucho por explorar.  Por ejemplo:
 \begin{description}
-	\item[Otras Visualizaciones] %%TODO: TEXTO sobre IO y la consola y dem'as
-	\item[Otros Tipos] %%TODO: TEXTO sobre tuplas y registros, etc...
+	\item[Visualizaciones]Actualmente, \hpage\ al interpretar expresiones puede mostrar distintos resultados dependiendo del tipo de la expresi'on.  Sin embargo, sea cual fuese el resultado, no es otra cosa que texto.  Esto es bastante completo pero hay situaciones en las que resultar'ia m'as conveniente otro modo de visualizaci'on.  Podemos encontrar ejemplos de estos casos en los modelos de visualizaci'on que propone \htmladdnormallink{Vital}{http://www.cs.kent.ac.uk/projects/vital/}~\cite{vital}, pero tambi'en, por ejemplo, para el caso de acciones de entrada/salida, ser'ia 'util contar con una consola que expusiese lo que estas acciones intentan mostrar por \textsl{stdout} o \textsl{stderr}.
+	\item[Tipos]En su af'an de mostrar tanta informaci'on sobre las expresiones interpretadas como sea posible, \hpage\ trata de modo particular las listas.  Pero las listas son s'olo uno de los muchos tipos que pueden ser considerados a fin de presentar su interpretaci'on de un modo particular.  Podemos tomar como ejemplo el tipo \texttt{Maybe}, el tipo \texttt{Either} y, por que no, los tipos con constructores complejos que requieren varios valores de los cuales quiz'a s'olo uno genera una excepci'on y el resto pueden ser interpretados sin problemas.  Esto podr'ia generalizarse creando una nueva clase, que permitiese definir, para cada tipo que la implementa, c'omo deben ser evaluadas las expresiones de ese tipo a fin de obtener toda la informaci'on posible sobre ellas m'as all'a de que alguno(s) de sus componentes generen excepciones o calculos ``infinitos''.  \hpage\ podr'ia, luego, utilizar las funciones definidas por esa clase en caso de ser posible antes de recurrir a la funci'on \texttt{show} al momento de interpretar una expresi'on.
 \end{description}
-\subparagraph{}%%TODO: TEXTO SOBRE LA CLASE VIEW o PRESENT
 \paragraph{}Por otro lado, \hpage\ es s'olo una de las m'ultiples herramientas comunes en el desarrollo de lenguajes orientados a objetos que pueden ser ``migradas'' al paradigma funcional.  \hpage\ podr'ia integrarse alg'un d'ia en una IDE m'as grande y con mayores capacidades, que brinde al desarrollador funcionalidades tales como:
 \begin{description}
 	\item[Soporte para TDD] El ambiente de desarrollo de \textsl{Smalltalk} es un gran ejemplo de este tipo de herramientas ya que permite realizar (e incluso sugiere), al momento de detectar un test que falla, las tareas necesarias para hacerlo funcionar.  Una herramienta de este tipo, combinada con el poder de QuickCheck~\cite{quickcheck} podr'ia ser muy 'util a la hora de desarrollar software \haskell\ utilizando Test Driven Development~\cite{tdd}.
@@ -1020,8 +1075,8 @@ $ cabal test hpage
 
 \newpage
 \section{Agradecimientos}
-\paragraph{}Este proyecto nunca se podr'ia haber llevado a cabo sin la ayuda de muchas personas que contribuyeron de una u otra manera a su realizaci'on.  Entre ellas debemos agradecer especialmente a quienes nos han ayudado en la comprensi'on, \textbf{correcci'on} y manejo de \textsl{wxHaskell}: \htmladdnormallink{Arjan van IJzendoorn}{http://nl.linkedin.com/pub/arjan-van-ijzendoorn/5/ba8/480}, \htmladdnormallink{Eric Y. Kow}{mailto:eric.kow@gmail.com} y \htmladdnormallink{Jeremy O. Donoghue}{http://uk.linkedin.com/pub/jeremy-o-donoghue/4/7b/478}. Tambi'en queremos agradecer a \htmladdnormallink{Timo B. H\"ubel y Sebastian M. Schlat}{http://holumbus.fh-wedel.de/} que nos han permitido integrar \hpage\ con su herramienta \textsl{Hayoo!}.  Y no podr'iamos dejar de mencionar a nuestros ``beta-testers'': \htmladdnormallink{Abram Hindle}{http://softwareprocess.es/index.cgi/SoftwareProcess.es}, \htmladdnormallink{Mariano Perez Rodriguez}{mailto:mariano.perez.rodriguez@gmail.com}, \htmladdnormallink{Gustavo Salvini}{http://twitter.com/guspatagonico}, \htmladdnormallink{Facundo Villanueva}{http://twitter.com/facuvillanueva}, \htmladdnormallink{Federico Grassi}{http://www.google.com/profiles/federico.grassi} y \htmladdnormallink{Bernab'e Panarello}{http://www.linkedin.com/pub/bernab'e-panarello/8/512/b48}.  Por 'ultimo, pero no por eso menos importante, queremos agradecer a \htmladdnormallink{Dar'io Ruellan}{http://www.google.com/profiles/dario.ruellan} quien ha creado nuestra \htmladdnormallink{p'agina web}{http://haskell.hpage.com}.
-\paragraph{}Personalmente yo, \htmladdnormallink{Fernando Benavides}{http://google.com/profiles/greenmellon}, quisiera agradecer a mi mujer, Constanza Zappala, que me ha acompa'nado, ayudado y soportado durante el m'as de un a'no y medio que dur'o el desarrollo de este proyecto, a Juan Jos'e Comellas, Alejandro Tolomei, Francisco de Ezcurra y toda la gente de \htmladdnormallink{Novamens S.A.}{http://www.novamens.com}, la empresa en la que trabajo, por su inter'es y contribuci'on al proyecto, a todos los profesores de \textsl{Algor'itmos I} (Inclu'ida la Caja Vengadora) y \textsl{Paradigmas de Lenguajes de Programaci'on} por introducirme en el apasionante mundo de la programaci'on funcional y especialmente en \haskell, y por supuesto, a mis profesores Daniel Gor'in y Diego Garverbetsky, que desde el primer momento creyeron en m'i y en esta idea loca de ``hacer algo parecido a las cosas que tienen los que trabajan con objetos'' con la que llegu'e a aquella primera reuni'on con ellos.
+\paragraph{}Este proyecto nunca se podr'ia haber llevado a cabo sin la ayuda de muchas personas que contribuyeron de una u otra manera a su realizaci'on.  Quienes creamos \hpage\ quremos agradecer especialmente a aquellos que nos han ayudado en la comprensi'on, \textbf{correcci'on} y manejo de \textsl{wxHaskell}: \htmladdnormallink{Arjan van IJzendoorn}{http://nl.linkedin.com/pub/arjan-van-ijzendoorn/5/ba8/480}, \htmladdnormallink{Eric Y. Kow}{mailto:eric.kow@gmail.com} y \htmladdnormallink{Jeremy O. Donoghue}{http://uk.linkedin.com/pub/jeremy-o-donoghue/4/7b/478}. Tambi'en queremos agradecer a \htmladdnormallink{Timo B. H\"ubel y Sebastian M. Schlat}{http://holumbus.fh-wedel.de/} que nos han permitido integrar \hpage\ con su herramienta \textsl{Hayoo!}.  Y no podr'iamos dejar de mencionar a nuestros ``beta-testers'': \htmladdnormallink{Abram Hindle}{http://softwareprocess.es/index.cgi/SoftwareProcess.es}, \htmladdnormallink{Mariano Perez Rodriguez}{mailto:mariano.perez.rodriguez@gmail.com}, \htmladdnormallink{Gustavo Salvini}{http://twitter.com/guspatagonico}, \htmladdnormallink{Facundo Villanueva}{http://twitter.com/facuvillanueva}, \htmladdnormallink{Federico Grassi}{http://www.google.com/profiles/federico.grassi} y \htmladdnormallink{Bernab'e Panarello}{http://www.linkedin.com/pub/bernab'e-panarello/8/512/b48}.  Por 'ultimo, pero no por eso menos importante, queremos agradecer a \htmladdnormallink{Dar'io Ruellan}{http://www.google.com/profiles/dario.ruellan} quien ha creado nuestra \htmladdnormallink{p'agina web}{http://haskell.hpage.com}.
+\paragraph{}Finalmente yo, \htmladdnormallink{Fernando Benavides}{http://google.com/profiles/greenmellon}, quisiera agradecer a mi mujer, Constanza Zappala, que me ha acompa'nado, ayudado y soportado durante los casi dos a'nos que dur'o el desarrollo de este proyecto, a Juan Jos'e Comellas, Alejandro Tolomei, Francisco de Ezcurra y toda la gente de \htmladdnormallink{Novamens S.A.}{http://www.novamens.com}, la empresa en la que trabajo, por su inter'es y contribuci'on al proyecto, a todos los profesores de \textsl{Algor'itmos I} (Inclu'ida la Caja Vengadora) y \textsl{Paradigmas de Lenguajes de Programaci'on} por introducirme en el apasionante mundo de la programaci'on funcional y especialmente en \haskell, y por supuesto, a mis profesores Daniel Gor'in y Diego Garverbetsky, que desde el primer momento creyeron en m'i y en esta idea loca de ``hacer algo parecido a las cosas que tienen los que trabajan con objetos'' con la que llegu'e a aquella primera reuni'on.
 \newpage
 \bibliography{hpage}
 \end{document}
