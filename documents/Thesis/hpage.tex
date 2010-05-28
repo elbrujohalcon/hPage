@@ -810,13 +810,30 @@ $ ~/.cabal/bin/hfiar &
 	\item[Value Filler] Este proceso, iniciado por el \textbf{UI Manager} es el encargado de procesar el resultado obtenido del \textbf{HPage Server}.  Cabe recordar aqu'i que \haskell\ trabaja con evaluaci'on ``lazy'', por lo cual el resultado obtenido no ha sido a'un completamente procesado.  El \textbf{Value Filler} espera recibir un resultado y, al recibirlo, se encarga de evaluarlo y mostrarlo por pantalla, para ello env'ia y recibe mensajes del \textbf{Char Filler} a fin de procesar cada caracter a mostrar.
 	\item[Runaway Killer] Este thread, creado utilizando la clase \textsl{TimerEx} provista por \textsl{wxHaskell}, es iniciado por cada \textbf{Value Filler} al momento de enviar un nuevo caracter al \textbf{Char Filler}.  El objetivo del \textbf{Runaway Killer} es el de detectar procesamiento ``posiblemente'' infinito.  B'asicamente, pasado un segundo de procesamiento, reinicia el \textbf{Char Filler} e informa al \textbf{Value Filler} que lo inici'o que el caracter que se esperaba procesar ha demorado demasiado y podr'ia desencadenar una evaluaci'on infinita.
 \end{description}
-\paragraph{}Para un mayor detalle, la Figura \ref{seq1} nos muestra un diagrama de secuencia correspondiente a un proceso de evaluaci'on.  Para poder brindar un ejemplo completo, observaremos la evaluaci'on de una lista en la que algunos de sus valores generan error.
-%%TODO: Nuevo cuadro de secuencia
+\paragraph{}Para poder entender el funcionamiento de los distintos procesos con un mayor detalle, presentaremos un ejemplo en el cual el usuario define la expresi'on \texttt{e = [1, undefined, 3, div 0 0] ++ [5..]} e intenta interpretarla, pero, mientras \hpage\ est'a present'andole los resultados, decide cancelar la interpretaci'on.  Elegimos la expresi'on \texttt{e} por ser una lista infinita y adem'as presentar algunos elementos que generan distintos tipos de excepciones.  La Figura \ref{seq1} nos muestra el diagrama de secuencia correspondiente al ejemplo.
 \begin{figure}[hp]
 	\begin{center}
         	\fbox{\includegraphics[width=\textwidth]{pictures/sequence}}
-		\caption{Secuencia de Evaluaci'on de [1, undefined, 3, undefined]}
+		\caption{Secuencia de Evaluaci'on de \texttt{e = [1, undefined, 3, div 0 0] ++ [5, ..]}}
 		\label{seq1}
+	\end{center}
+\end{figure}
+\subparagraph{}Podemos ver en el diagrama que el \textbf{HPage Server}, al detectar que la expresi'on a evaluar es una lista, en lugar de solicitar al \textbf{Hint Server} que eval'ue la expresi'on original, le solicita la interpretaci'on de la expresi'on \texttt{map show e}, de modo de obtener una lista de \texttt{String}s para retornar al \textbf{UI Manager}.  Luego, el \textbf{Value Filler}, al recibir una lista de valores a mostrar, intenta presentar cada uno de ellos por separado, concaten'andolos del modo en que generalmente se presentan las listas en \haskell.  Cuando el usuario decide cancelar, \textbf{HPage Server} detiene el \textbf{Value Filler} y, por lo tanto, este proceso se interrumpe.
+
+\paragraph{}Con el objetivo de destacar otras interacciones m'as significativas, en el diagrama de la Figura \ref{seq1} hemos omitido la parte del proceso que involucra al \textbf{Char Filler} y al \textbf{Runaway Killer}.  Para visualizar mejor su utilidad, crearemos un tipo de datos un tanto ``artificial'' que llamaremos \texttt{WithInfiniteChar} y definiremos a continuaci'on.  Veremos en la Figura \ref{seq2} un diagrama de secuencia correspondiente a un proceso de evaluaci'on de la expresi'on \texttt{WIC}.
+\begin{center}\begin{lstlisting}
+data WithInfiniteChar = WIC
+
+instance Show WithInfiniteChar where
+    show WIC = ['c', head . show $ length [1..]]
+\end{lstlisting}\end{center}
+\subparagraph{}Como puede observarse, al intentar mostrar la expresi'on \texttt{WIC}, \hpage\ se encontrar'a con una cadena cuyo segundo caracter no puede computar pues requiere un c'alculo infinito, en la Figura representamos este caracter con la letra $\Omega$. All'i es donde entra en acci'on el \textbf{Runaway Killer} para informar esta situaci'on al usuario. 
+
+\begin{figure}[hp]
+	\begin{center}
+        	\fbox{\includegraphics[width=\textwidth]{pictures/sequence2}}
+		\caption{Secuencia de Evaluaci'on de \texttt{WIC}}
+		\label{seq2}
 	\end{center}
 \end{figure}
 
@@ -845,7 +862,7 @@ $ ~/.cabal/bin/hfiar &
 \end{description}
 \subparagraph{}La distinci'on que hace \hpage\ ante los distintos tipos de expresiones  a procesar y el comportamiento escogido al momento de mostrar el resultado de su evaluaci'on tienen como objetivo brindar al usuario la mayor cantidad de informaci'on posbile sobre la expresi'on que desea interpretar.  Sin ellos, el comportamiento natural de un programa como \hpage\ ante una expresi'on \texttt{e}, ser'ia el de asignar el resultado de \texttt{show e} al cuadro de texto que presenta el resultado al usuario.
 \subparagraph{}En el caso de las acciones de entrada/salida, \hpage\ al igual que \textsl{GHCi}, considera que el usuario no est'a simplemente interesado en conocer el tipo de las acciones, sino en ejecutarlas para producir (de ser preciso) ciertos efectos secundarios y obtener un resultado.  Es razonable pensar que quien construye una acci'on de este tipo (que no es instancia de la clase \texttt{Show}) pero que produce (al ser evaluada) un resultado de un tipo que s'i lo es, est'a interesado en ejecutar la acci'on y observar el resultado.
-\subparagraph{}Observemos con un ejemplo, qu'e suceder'ia.  Para nuestro ejemplo, vamos a crear un tipo de datos bastante artificial pero que nos va a permitir mostrar todos los casos posibles:
+\subparagraph{}Observemos con un ejemplo, qu'e suceder'ia.  Para nuestro ejemplo, vamos a crear un tipo de datos similar al utilizado para el diagrama de secuencia de la Figura \ref{seq2} que nos va a permitir mostrar todos los casos posibles:
 \begin{center}\begin{lstlisting}
 data WithInfiniteChar = WIC Int
 
