@@ -2138,9 +2138,9 @@
      inkscape:cx="253.15248"
      inkscape:cy="138.66726"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g4724-7"
      showgrid="false"
-     inkscape:window-width="1360"
+     inkscape:window-width="1280"
      inkscape:window-height="724"
      inkscape:window-x="0"
      inkscape:window-y="0"
@@ -2153,7 +2153,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -2855,7 +2855,7 @@
            id="tspan4714-2-0-9-5-1-3-4-1"
            sodipodi:role="line">try <tspan
    style="font-weight:bold"
-   id="tspan6091-0-8">show undefined</tspan></tspan></text>
+   id="tspan6091-0-8">show (dev 0 0)</tspan></tspan></text>
       <path
          id="path4512-9-9-0-5-2-6-0-5"
          d="m 160.45763,1029.6127 -211.126195,0"
