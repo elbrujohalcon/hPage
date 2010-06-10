@@ -9,8 +9,8 @@ module HPage.Control (
     HPage, evalHPage,
     
     -- PAGE CONTROLS --
-    getPageIndex, getPageText, setPageText,
-    addPage, openPage, closePage, closeAllPages, getPagePath, setPageIndex,
+    getPageIndex, setPageIndex, getPageText, setPageText,
+    addPage, openPage, closePage, closeAllPages, getPagePath,
     savePage, savePageAs, getPageCount,
     PageDescription(..), getPageNthDesc,
     
@@ -19,35 +19,28 @@ module HPage.Control (
     
     -- HINT CONTROLS --
     Hint.InterpreterError, prettyPrintError,
+    Hint.availableExtensions, Hint.Extension(..),
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
-    getPackageModules,
-    loadPackage, loadModules, getLoadedModules, reloadModules, 
+    loadPackage, getPackageModules,
+    loadModules, getLoadedModules, reloadModules, 
     importModules, getImportedModules,
-    getModuleExports, ModuleDescription(..), ModuleElemDesc(..),
-    interpret, Interpretation, intKind, intValue, intValues, intResult,
-    intType, isIntType, isIntExprs, isIntExpr, isIntIOExpr,
-    Hint.availableExtensions,
-    Hint.Extension(..),
-    cancel,
-
-    -- DEBUG --
-    ctxString
+    getModuleExports,
+    interpret,
+    cancel
  ) where
 
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
+import Data.List (isPrefixOf)
 import Control.Monad.Error
 import Control.Monad.State
-import Control.Concurrent.MVar
 import Language.Haskell.Interpreter (OptionVal((:=)))
 import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Unsafe as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
-import HPage.Utils.Log
-import Data.List (isPrefixOf)
 import qualified Data.ByteString.Char8 as Str
 import qualified Language.Haskell.Exts as Xs
 import Distribution.Simple.Configure hiding (tryGetConfigStateFile)
@@ -58,65 +51,10 @@ import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
 import qualified HPage.IOServer as HPIO
-import Control.Exception(SomeException)
-
-data Interpretation = Type  {intKind   :: String} |
-                      Expr  {intValue  :: String,   intType :: String} |
-                      IOExpr{intResult :: MVar (Either SomeException String), intType :: String} |
-                      Exprs {intValues :: [String], intType :: String} 
-    deriving (Eq)
-instance Show Interpretation where
-    show (Type x) = "type :: " ++ show x
-    show (IOExpr _ t) = " io :: " ++ show t
-    show (Expr x t) = x ++ show t
-    show (Exprs xs t) = show xs ++ " :: [" ++ show t ++ "]"
-    
-isIntType :: Interpretation -> Bool
-isIntType Type{}  = True
-isIntType IOExpr{}= False
-isIntType Expr{}  = False
-isIntType Exprs{} = False
-
-isIntExprs :: Interpretation -> Bool
-isIntExprs Type{}  = False
-isIntExprs IOExpr{}= False
-isIntExprs Expr{}  = False
-isIntExprs Exprs{} = True
-
-isIntExpr :: Interpretation -> Bool
-isIntExpr Type{}  = False
-isIntExpr IOExpr{}= False
-isIntExpr Expr{}  = True
-isIntExpr Exprs{} = False
-
-isIntIOExpr :: Interpretation -> Bool
-isIntIOExpr Type{}  = False
-isIntIOExpr IOExpr{}= True
-isIntIOExpr Expr{}  = False
-isIntIOExpr Exprs{} = False
-
-data ModuleDescription = ModDesc {modName :: String,
-                                  modInterpreted :: Bool}
-    deriving (Eq)
-
-instance Show ModuleDescription where
-    show m = show (modName m, modInterpreted m)
-
-data ModuleElemDesc = MEFun {funName :: String,
-                             funType :: String} |
-                      MEClass {clsName :: String,
-                               clsFuns :: [ModuleElemDesc]} |
-                      MEData {datName :: String,
-                              datCtors :: [ModuleElemDesc]}
-    deriving (Eq)
-
-instance Show ModuleElemDesc where
-    show MEFun{funName = fn, funType = []} = fn
-    show MEFun{funName = fn, funType = ft} = fn ++ " :: " ++ ft
-    show MEClass{clsName = cn, clsFuns = []} = "class " ++ cn
-    show MEClass{clsName = cn, clsFuns = cfs} = "class " ++ cn ++ " where " ++ joinWith "\n" (map show cfs)
-    show MEData{datName = dn, datCtors = []} = "data " ++ dn
-    show MEData{datName = dn, datCtors = dcs} = "data " ++ dn ++ " = " ++ joinWith " | " (map show dcs)
+import HPage.Control.Interpretation
+import HPage.Control.Module
+import HPage.Utils
+import HPage.Utils.Log
 
 data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
@@ -190,9 +128,6 @@ evalHPage hpt = do
                     let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs nop hpios
                     (state hpt) `evalStateT` emptyContext
 
-
-ctxString :: HPage String
-ctxString = get >>= return . show
 
 addPage :: HPage ()
 addPage = modify (\ctx -> ctx{pages = emptyPage:(pages ctx),
@@ -696,34 +631,6 @@ exprFromString' s i = (exprFromString s,
 
 toString :: Page -> String
 toString = joinWith "\n\n" . map exprText . expressions
-
-splitOn :: Eq a => [a] -> [a] -> [[a]]
-splitOn [] xs = [xs]
-splitOn _ [] = []
-splitOn s xs = splitOn' [] s xs
-
-splitOn' :: Eq a => [a] -> [a] -> [a] -> [[a]]
-splitOn' [] _ [] = []
-splitOn' acc _ [] = [reverse acc]
-splitOn' acc s r@(x:xs)
-    | isPrefixOf s r = (reverse acc) : splitOn' [] s (drop (length s) r)
-    | otherwise = splitOn' (x:acc) s xs    
-
-joinWith :: [a] -> [[a]] -> [a]
-joinWith _ [] = []
-joinWith sep (x:xs) = x ++ (concat . map (sep ++) $ xs)
-
-insertAt :: Int -> [a] -> [a] -> [a]
-insertAt 0 new [] = new
-insertAt i new old | i == length old = old ++ new
-                   | otherwise = let (before, (_:after)) = splitAt i old
-                                  in before ++ new ++ after
-
-showWithCurrent :: Show a => [a] -> Int -> String -> (String -> String) -> String
-showWithCurrent allItems curItem sep mark = 
-        drop (length sep) . concat $ map (showNth allItems curItem) [0..itemCount - 1]
-    where itemCount  = length allItems
-          showNth list sel cur = sep ++ ((if sel == cur then mark else id) $ show $ list !! cur)
 
 modifyWithUndo :: (Page -> Page) -> HPage ()
 modifyWithUndo f = modifyPage (\page ->

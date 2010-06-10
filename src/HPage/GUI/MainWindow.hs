@@ -6,7 +6,7 @@
              UndecidableInstances,
              ScopedTypeVariables #-}
              
-module HPage.GUI.FreeTextWindow ( gui ) where
+module HPage.GUI.MainWindow ( gui ) where
 
 import Prelude hiding (catch)
 import Control.Exception
@@ -33,6 +33,8 @@ import HPage.GUI.Dialogs
 import HPage.GUI.IDs
 import HPage.GUI.Constants
 import HPage.Utils.Log
+import HPage.Control.Interpretation
+import HPage.Control.Module
 import System.Environment.FindBin
 import Paths_hpage
 
@@ -94,7 +96,7 @@ data GUIContext = GUICtx { guiWin       :: Frame (),
                            guiSearch    :: FindReplaceData (),
                            guiChrVar    :: MVar (Maybe (Either GUIBottom String)),
                            guiChrFiller :: MVar (Handle String),
-                           guiValFiller :: MVar (Handle (HP.Interpretation, IO ()))} 
+                           guiValFiller :: MVar (Handle (Interpretation, IO ()))} 
 
 gui :: [String] -> IO ()
 gui args =
@@ -418,7 +420,7 @@ threadKilled _ = Nothing
 
 -- | Process that receives an interpretation, computes the value(s) of it
 --   and fills the txtValue and varErrors with it...
-valueFiller :: GUIContext -> Process (HP.Interpretation, IO ()) ()
+valueFiller :: GUIContext -> Process (Interpretation, IO ()) ()
 valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                                 resErrors = varErrors,
                                                 resValue  = txtValue},
@@ -430,20 +432,24 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                             set txtValue [text := ""]
                             varSet varErrors []
                             statusText <-
-                                if HP.isIntExprs interp
+                                if isIntExprs interp
                                     then do
                                         liftDebugIO "Values received in valueFiller"
                                         set txtValue [text := "["]
-                                        listValueFiller guiCtx $ HP.intValues interp
+                                        listValueFiller guiCtx $ intValues interp
                                         return "" -- It can't be a string error as
                                                   -- we're generating the string
-                                    else if HP.isIntExpr interp
+                                    else if isIntExpr interp
                                         then do
                                             liftDebugIO "Value received in valueFiller"
-                                            singleValueFiller guiCtx $ HP.intValue interp
-                                        else do
-                                            liftDebugIO "IO Value received in valueFiller"
-                                            ioValueFiller guiCtx $ HP.intResult interp
+                                            singleValueFiller guiCtx $ intValue interp
+                                        else if isIntIOExpr interp
+                                            then do
+                                                liftDebugIO "IO Value received in valueFiller"
+                                                ioValueFiller guiCtx $ intResult interp
+                                            else do
+                                                liftErrorIO "Unknown interpretation"
+                                                return $ "Unknown interpretation: " ++ show interp
                             errs <- varGet varErrors
                             case (statusText, errs) of
                                 ("", []) -> -- No errors
@@ -636,25 +642,25 @@ moduleContextMenu model GUICtx{guiWin = win, guiModules = (varModsSel, lstModule
                         clipboardClose cb
                     else
                         errorDialog win "Error" "Clipboard not ready"
-          createMenuItem m fn@HP.MEFun{HP.funName = fname} =
+          createMenuItem m fn@MEFun{funName = fname} =
             do
                 itemMenu <- createBasicMenuItem fname
                 menuAppendSub m wxId_HASK_MENUELEM (show fn) itemMenu ""
-          createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = []} =
+          createMenuItem m MEClass{clsName = cn, clsFuns = []} =
             do
                 itemMenu <- createBasicMenuItem cn
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) itemMenu ""
-          createMenuItem m HP.MEClass{HP.clsName = cn, HP.clsFuns = cfs} =
+          createMenuItem m MEClass{clsName = cn, clsFuns = cfs} =
             do
                 subMenu <- createBasicMenuItem cn
                 menuAppendSeparator subMenu
                 forM_ cfs $ createMenuItem subMenu
                 menuAppendSub m wxId_HASK_MENUELEM ("class " ++ cn) subMenu ""
-          createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = []} =
+          createMenuItem m MEData{datName = dn, datCtors = []} =
             do
                 itemMenu <- createBasicMenuItem dn
                 menuAppendSub m wxId_HASK_MENUELEM ("data " ++ dn) itemMenu ""
-          createMenuItem m HP.MEData{HP.datName = dn, HP.datCtors = dcs} =
+          createMenuItem m MEData{datName = dn, datCtors = dcs} =
             do
                 subMenu <- createBasicMenuItem dn
                 menuAppendSeparator subMenu
@@ -953,11 +959,11 @@ refreshPage model guiCtx@GUICtx{guiWin = win,
                     --NOTE: we know 0 == "imported" / 1 == "interpreted" / 2 == "compiled" / 3 == "package" images
                     --TODO: move that to some kind of constants or so
                     let ims' = map (\m -> (0, [m, "Imported"])) ims
-                        ms' = map (\m -> if HP.modInterpreted m
-                                            then (1, [HP.modName m, "Interpred"])
-                                            else (2, [HP.modName m, "Compiled"])) ms
+                        ms' = map (\m -> if modInterpreted m
+                                            then (1, [modName m, "Interpred"])
+                                            else (2, [modName m, "Compiled"])) ms
                         pms' = map (\m -> (3, [m, "Package"])) $
-                                        flip filter pms $ \pm -> all (\xm -> HP.modName xm /= pm) ms
+                                        flip filter pms $ \pm -> all (\xm -> modName xm /= pm) ms
                         allms = zip [0..] (ims' ++ ms' ++ pms')
                     itemsDelete lstModules
                     forM_ allms $ \(idx, (img, m@(mn:_))) ->
@@ -1047,18 +1053,18 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                 errorIO ("interpret", err) >>
                 warningDialog win "Error" err
             Right interp ->
-                if HP.isIntType interp
+                if isIntType interp
                     then do
                         set status [text := ""]
                         set txtValue [enabled := True,
                                       bgcolor := white,
-                                      text := HP.intKind interp]
+                                      text := intKind interp]
                         set lbl4Dots [visible := False]
                         set txtType [visible := False]
                         set lblInterpret [text := "Kind:"]
                     else do
                         set lbl4Dots [visible := True]
-                        set txtType [visible := True, text := HP.intType interp]
+                        set txtType [visible := True, text := intType interp]
                         set lblInterpret [text := "Value:"]
                         -- now we fill the textbox --
                         poc <- liftIO $ get btnInterpret $ on command
@@ -1096,7 +1102,7 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         readMVar vfv >>= flip sendTo (interp, poc)
 
 runTxtHPSelection :: String ->  HPS.ServerHandle ->
-                     HP.HPage (Either HP.InterpreterError HP.Interpretation) -> IO (Either ErrorString HP.Interpretation)
+                     HP.HPage (Either HP.InterpreterError Interpretation) -> IO (Either ErrorString Interpretation)
 runTxtHPSelection s model hpacc =
     do
         piRes <- tryIn' model HP.getPageIndex

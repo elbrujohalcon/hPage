@@ -1,7 +1,7 @@
 module Main where
 
 import Graphics.UI.WX
-import HPage.GUI.FreeTextWindow
+import HPage.GUI.MainWindow
 import System.Environment
 
 main :: IO ()

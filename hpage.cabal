@@ -46,8 +46,9 @@ Library
                    directory >= 1.0.1,          directory < 1.1,
                    time >= 1.1.4,               time < 2,
                    eprocess >= 1.1.2,           eprocess < 2
-    exposed-modules: HPage.Control, HPage.Server, HPage.IOServer
-    other-modules:  HPage.Utils.Log
+    exposed-modules: HPage.Control, HPage.Control.Interpretation,
+                     HPage.Control.Module, HPage.Server, HPage.IOServer
+    other-modules:  HPage.Utils, HPage.Utils.Log
     hs-source-dirs: src
     
 Executable hpage
@@ -61,6 +62,6 @@ Executable hpage
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
-    other-modules:  HPage.GUI.IDs, HPage.GUI.FreeTextWindow, HPage.GUI.Dialogs, 
+    other-modules:  HPage.GUI.IDs, HPage.GUI.MainWindow, HPage.GUI.Dialogs, 
                     HPage.Utils.Log, HPage.GUI.Constants, HPage.GUI.SplashScreen
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns
