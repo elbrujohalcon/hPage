@@ -48,8 +48,7 @@ Library
                    QuickCheck >= 2.1.0.3,       QuickCheck < 2.2,
                    time >= 1.1.4,               time < 2,
                    eprocess >= 1.1.2,           eprocess < 2
-    exposed-modules: HPage.Control, HPage.Server, HPage.IOServer,
-                    HPage.Test.Server
+    exposed-modules: HPage.Control, HPage.Server, HPage.IOServer
     other-modules:  HPage.Utils.Log
     hs-source-dirs: src
     
