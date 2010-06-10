@@ -432,24 +432,23 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                             set txtValue [text := ""]
                             varSet varErrors []
                             statusText <-
-                                if isIntExprs interp
-                                    then do
-                                        liftDebugIO "Values received in valueFiller"
-                                        set txtValue [text := "["]
-                                        listValueFiller guiCtx $ intValues interp
-                                        return "" -- It can't be a string error as
-                                                  -- we're generating the string
-                                    else if isIntExpr interp
-                                        then do
+                                case interp of
+                                    Exprs{intValues = values} ->
+                                        do
+                                            liftDebugIO "Values received in valueFiller"
+                                            set txtValue [text := "["]
+                                            listValueFiller guiCtx values
+                                            return "" -- It can't be a string error as
+                                                      -- we're generating the string
+                                    Expr{intValue = exprvalue} ->
+                                        do
                                             liftDebugIO "Value received in valueFiller"
-                                            singleValueFiller guiCtx $ intValue interp
-                                        else if isIntIOExpr interp
-                                            then do
-                                                liftDebugIO "IO Value received in valueFiller"
-                                                ioValueFiller guiCtx $ intResult interp
-                                            else do
-                                                liftErrorIO "Unknown interpretation"
-                                                return $ "Unknown interpretation: " ++ show interp
+                                            singleValueFiller guiCtx exprvalue
+                                    IOExpr{intResult = result} ->
+                                        do
+                                            liftDebugIO "IO Value received in valueFiller"
+                                            ioValueFiller guiCtx result
+                                    Type{} -> return "" -- The impossible happened
                             errs <- varGet varErrors
                             case (statusText, errs) of
                                 ("", []) -> -- No errors
@@ -1053,16 +1052,17 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                 errorIO ("interpret", err) >>
                 warningDialog win "Error" err
             Right interp ->
-                if isIntType interp
-                    then do
+                case interp of
+                Type{intKind = kind} -> 
+                    do
                         set status [text := ""]
                         set txtValue [enabled := True,
                                       bgcolor := white,
-                                      text := intKind interp]
+                                      text    := kind]
                         set lbl4Dots [visible := False]
                         set txtType [visible := False]
                         set lblInterpret [text := "Kind:"]
-                    else do
+                _ -> do
                         set lbl4Dots [visible := True]
                         set txtType [visible := True, text := intType interp]
                         set lblInterpret [text := "Value:"]
