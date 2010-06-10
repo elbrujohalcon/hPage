@@ -28,12 +28,12 @@ warnIO = logIO Warning
 errorIO = logIO Error
 fatalIO = logIO Fatal
 
+{- without log...
 liftTraceIO _ = return () 
 liftDebugIO _ = return ()
-{- with log...
+-}
 liftTraceIO = liftLogIO Trace
 liftDebugIO = liftLogIO Debug
--}
 liftInfoIO = liftLogIO Info
 liftWarnIO = liftLogIO Warning
 liftErrorIO = liftLogIO Error

@@ -49,7 +49,7 @@ Library
                    time >= 1.1.4,               time < 2,
                    eprocess >= 1.1.2,           eprocess < 2
     exposed-modules: HPage.Control, HPage.Server, HPage.IOServer
-    other-modules:  HPage.Utils.Log
+    other-modules:  HPage.Utils.Log, HPage.Test.Server
     hs-source-dirs: src
     
 Executable hpage
