@@ -12,7 +12,7 @@ import qualified Language.Haskell.Interpreter as Hint
 import qualified Language.Haskell.Interpreter.Server as HS
 import System.Directory
 import System.FilePath
-import HPage.Utils.Log
+-- import HPage.Utils.Log
 import Paths_hpage
 
 newtype ModuleName = MN {mnString :: String}
@@ -138,9 +138,9 @@ prop_get_module_exports hps hs kmn =
           match ((HP.MEData dn dcs), (Hint.Data dn2 dcs2)) = dn == dn2 && all match (zip dcs (map Hint.Fun dcs2))
           match _ = False
 
-prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Property
+prop_load_module :: HPS.ServerHandle -> HS.ServerHandle -> ModuleName -> Bool
 prop_load_module hps hs mn =
-    (show mn /= "Test") ==>
+    (show mn == "Test") || (
         unsafePerformIO $ do
                             let mname = testDir ++ "." ++ show mn
                             let ftxt = "module " ++ mname ++ " where v = 32"
@@ -174,7 +174,7 @@ prop_load_module hps hs mn =
                                                     sm <- Hint.getLoadedModules
                                                     return (fv, sv, Right fm, Right sm)
                             -- liftDebugIO (hpsr, hsr)
-                            return $ Right hpsr == hsr
+                            return $ Right hpsr == hsr )
         where mN (Right mns) = Right $ map HP.modName mns
               mN (Left err) = Left err
                             
@@ -229,9 +229,9 @@ prop_setget_text hps txt =
                                         _ <- HP.setPageText txt 0
                                         HP.getPageText >>= return . (txt ==)
 
-prop_undoredo :: HPS.ServerHandle -> String -> Property
+prop_undoredo :: HPS.ServerHandle -> String -> Bool
 prop_undoredo hps txt =
-    txt /= "" ==>
+    txt == "" || (
     unsafePerformIO $ HPS.runIn hps $ do 
                                         HP.addPage
                                         b0 <- HP.getPageText
@@ -260,19 +260,19 @@ prop_undoredo hps txt =
                                         if not result
                                             then
                                                 do
-                                                    liftDebugIO [b5, b4, b3, b2, b1, b0, "", ""]
-                                                    liftDebugIO after
-                                                    liftDebugIO [b1, b2, b3, b4, b5, b5, b5, b5]
-                                                    liftDebugIO redo
-                                                    liftDebugIO ["zz", "", "cc", "ww", "ww"]
-                                                    liftDebugIO [c0, c1, c2, c3, c4]
+                                                    -- liftDebugIO [b5, b4, b3, b2, b1, b0, "", ""]
+                                                    -- liftDebugIO after
+                                                    -- liftDebugIO [b1, b2, b3, b4, b5, b5, b5, b5]
+                                                    -- liftDebugIO redo
+                                                    -- liftDebugIO ["zz", "", "cc", "ww", "ww"]
+                                                    -- liftDebugIO [c0, c1, c2, c3, c4]
                                                     return False
                                             else
-                                                return True 
+                                                return True )
 
-prop_new_page :: HPS.ServerHandle -> Int -> Property
+prop_new_page :: HPS.ServerHandle -> Int -> Bool
 prop_new_page hps i =
-    i > 0 ==>
+    (not (i > 0)) || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             _ <- HP.setPageText "" 0
                                             HP.closeAllPages
@@ -292,28 +292,28 @@ prop_new_page hps i =
                                             return $ all (\(k, kc, ki, kt) ->
                                                             kc == k+1 &&
                                                             ki == 0 &&
-                                                            kt == "") $ results
+                                                            kt == "") $ results )
 
-prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Property
+prop_open_page, prop_open_page_fail :: HPS.ServerHandle -> String -> Bool
 prop_open_page hps file =
-    file /= "" ==>
+    file == "" || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             let path = testDir </> "Test" ++ file
                                             Hint.liftIO $ writeFile path file
                                             HP.closeAllPages
                                             HP.openPage path
-                                            liftM (file ==) HP.getPageText
+                                            liftM (file ==) HP.getPageText )
 
 prop_open_page_fail hps file =
-    file /= "" ==>
+    file == "" || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             let path = testDir </> "NO-Test" ++ file
                                             HP.closeAllPages
-                                            shouldFail $ HP.openPage path
+                                            shouldFail $ HP.openPage path )
 
-prop_setget_page, prop_set_page_index_fail :: HPS.ServerHandle -> Int -> Property
+prop_setget_page, prop_set_page_index_fail :: HPS.ServerHandle -> Int -> Bool
 prop_setget_page hps i =
-    i > 0 ==>
+    (not (i > 0)) || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             _ <- HP.setPageText "" 0
                                             HP.closeAllPages
@@ -332,17 +332,17 @@ prop_setget_page hps i =
                                             -- liftDebugIO pss
                                             return . ((pc == i+1) &&) $ all (\(k, ki, kt) ->
                                                                                 ki == (i-k) &&
-                                                                                kt == show k) $ pss
+                                                                                kt == show k) $ pss )
 prop_set_page_index_fail hps i =
-    i > 0 ==>
+    (not (i > 0)) || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             replicateM_ (i-1) HP.addPage
-                                            shouldFail $ HP.setPageIndex i
+                                            shouldFail $ HP.setPageIndex i )
 
-prop_save_page, prop_save_page_fail, prop_save_page_as :: HPS.ServerHandle -> String -> Property
+prop_save_page, prop_save_page_fail, prop_save_page_as :: HPS.ServerHandle -> String -> Bool
 prop_save_page hps file =
-    file /= "" ==>
+    file == "" || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             let path = testDir </> "Test" ++ file
                                             Hint.liftIO $ writeFile path file
@@ -357,14 +357,14 @@ prop_save_page hps file =
                                             p3 <- HP.getPageText
                                             return $ p1 == file &&
                                                      p2 == file &&
-                                                     p3 == (file ++ "\n\n" ++ file)
+                                                     p3 == (file ++ "\n\n" ++ file) )
 prop_save_page_fail hps file =
-    file /= "" ==>
+    file == "" || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
-                                            shouldFail $ HP.savePage
+                                            shouldFail $ HP.savePage )
 prop_save_page_as hps file =
-    file /= "" ==>
+    file == "" || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             let path = testDir </> "Test" ++ file
                                             HP.closeAllPages
@@ -376,11 +376,11 @@ prop_save_page_as hps file =
                                             HP.openPage path
                                             p1 <- HP.getPageText
                                             return $ p0 == file &&
-                                                     p1 == file
+                                                     p1 == file )
 
-prop_close_page :: HPS.ServerHandle -> Int -> Property
+prop_close_page :: HPS.ServerHandle -> Int -> Bool
 prop_close_page hps i =
-    i > 0 ==>
+    (not (i > 0)) || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             _ <- HP.setPageText (show i) 0
@@ -414,11 +414,11 @@ prop_close_page hps i =
                                                         kbi == k &&
                                                         kbt == show k &&
                                                         kai == k-1 &&
-                                                        kat == show (k-1) ) $ pss
+                                                        kat == show (k-1) ) $ pss )
 
-prop_close_all_pages :: HPS.ServerHandle -> Int -> Property
+prop_close_all_pages :: HPS.ServerHandle -> Int -> Bool
 prop_close_all_pages hps i =
-    i > 0 ==>
+    (not (i > 0)) || (
         unsafePerformIO $ HPS.runIn hps $ do
                                             HP.closeAllPages
                                             c0 <- HP.getPageCount
@@ -434,10 +434,10 @@ prop_close_all_pages hps i =
                                             if not result
                                                 then
                                                     do
-                                                        liftDebugIO (c0, c1, c2, i2, t2)
+                                                        -- liftDebugIO (c0, c1, c2, i2, t2)
                                                         return False
                                                 else
-                                                    return True
+                                                    return True )
 
 prop_let_fail :: HPS.ServerHandle -> HS.ServerHandle -> String -> Bool
 prop_let_fail hps hs txt =

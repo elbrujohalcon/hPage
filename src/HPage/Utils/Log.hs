@@ -12,7 +12,7 @@ logIO :: Show a => LogLevel -> a -> IO ()
 logIO lvl msg = getCurrentTime >>= \ts -> putStrLn $ (show ts) ++ " (" ++ (show lvl) ++ "): " ++ (show msg)
 
 liftLogIO :: (MonadIO m, Show a) => LogLevel -> a -> m ()
-liftLogIO lvl = liftIO . (logIO lvl) 
+liftLogIO _ _ = return () -- lvl = liftIO . (logIO lvl) 
 
 traceIO, debugIO, infoIO, warnIO, errorIO, fatalIO :: Show a => a -> IO ()
 liftTraceIO, liftDebugIO, liftInfoIO, liftWarnIO, liftErrorIO, liftFatalIO :: (MonadIO m, Show a) => a -> m ()

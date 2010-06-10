@@ -44,12 +44,10 @@ Library
                    containers >= 0.3.0.0,       containers < 0.4,
                    filepath >= 1.1.0.3,         filepath < 1.2,
                    directory >= 1.0.1,          directory < 1.1,
-                   testrunner >= 0.9,           testrunner < 1,
-                   QuickCheck >= 2.1.0.3,       QuickCheck < 2.2,
                    time >= 1.1.4,               time < 2,
                    eprocess >= 1.1.2,           eprocess < 2
     exposed-modules: HPage.Control, HPage.Server, HPage.IOServer
-    other-modules:  HPage.Utils.Log, HPage.Test.Server
+    other-modules:  HPage.Utils.Log
     hs-source-dirs: src
     
 Executable hpage
