@@ -403,7 +403,10 @@ loadModules ms = do
                             modify (\ctx -> ctx{loadedModules = union (fromList ms) (loadedModules ctx),
                                                 recoveryLog = recoveryLog ctx >> action >> return ()})
                         Left e ->
-                            liftErrorIO $ ("Error loading modules", ms, e)
+                            do
+                                liftErrorIO $ ("Error loading modules", ms, e)
+                                Right () <- syncRun $ Hint.setImports ims
+                                return ()
                     return res
 
 importModules :: [String] -> HPage (Either Hint.InterpreterError ())
@@ -419,7 +422,10 @@ importModules newms = do
                                     modify (\c -> c{importedModules = union (fromList newms) (importedModules c),
                                                     recoveryLog = recoveryLog c >> action >> return ()})
                                 Left e ->
-                                    liftErrorIO $ ("Error importing modules", ms, e)
+                                    do
+                                        liftErrorIO $ ("Error importing modules", ms, e)
+                                        Right () <- syncRun $ Hint.setImports ms
+                                        return ()
                             return res
 
 reloadModules :: HPage (Either Hint.InterpreterError ())
@@ -427,11 +433,21 @@ reloadModules = do
                     ctx <- get
                     let ms = toList $ loadedModules ctx
                         ims = toList $ importedModules ctx
-                    syncRun $ do
-                                liftTraceIO $ "reloading: " ++ (show ms)
-                                Hint.loadModules ms
-                                Hint.setImports ims
-                                Hint.getLoadedModules >>= Hint.setTopLevelModules
+                        action = do
+                                    liftTraceIO $ "reloading: " ++ (show ms)
+                                    Hint.loadModules ms
+                                    Hint.setImports ims
+                                    Hint.getLoadedModules >>= Hint.setTopLevelModules
+                    res <- syncRun action
+                    case res of
+                        Right _ ->
+                            return ()
+                        Left e ->
+                            do
+                                liftErrorIO $ ("Error reloading modules", ms, e)
+                                Right () <- syncRun $ Hint.setImports ims
+                                return ()
+                    return res
 
 getLoadedModules :: HPage (Either Hint.InterpreterError [ModuleDescription])
 getLoadedModules = syncRun $ do
