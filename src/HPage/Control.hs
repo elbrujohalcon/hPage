@@ -7,51 +7,31 @@
 module HPage.Control (
     -- MONAD CONTROLS --
     HPage, evalHPage,
+    
     -- PAGE CONTROLS --
-    getPageIndex, setPageIndex, getPageCount,
-    addPage, openPage, closePage, closeAllPages, getPagePath,
-    savePage, savePageAs,
-    isModifiedPage, isModifiedPageNth,
-    closePageNth, getPageNthPath,
-    savePageNth, savePageNthAs,
-    PageDescription(..), getPageDesc, getPageNthDesc,
-    -- SAFE PAGE CONTROLS --
-    safeClosePage, safeCloseAllPages,
-    safeSavePageAs, safeClosePageNth,
-    safeSavePageNthAs,
-    -- EXPRESSION CONTROLS --
-    setPageText, getPageText, clearPage, 
-    getExprIndex, setExprIndex, getExprCount,
-    addExpr, removeExpr,
-    setExprText, getExprText,
-    removeNth,
-    setExprNthText, getExprNthText,
+    getPageIndex, getPageText, setPageText,
+    addPage, openPage, closePage, closeAllPages, getPagePath, setPageIndex,
+    savePage, savePageAs, getPageCount,
+    PageDescription(..), getPageNthDesc,
+    
     -- EDITION CONTROLS --
     undo, redo,
+    
     -- HINT CONTROLS --
-    interpret, interpretNth, Interpretation, intKind, intValue, intValues,
-    intType, isIntType, isIntExprs,
-    valueOf, valueOfNth, kindOf, kindOfNth, typeOf, typeOfNth,
-    loadModules,
-    reloadModules, getLoadedModules,
-    importModules, getImportedModules,
-    getPackageModules,
-    getModuleExports,
+    Hint.InterpreterError, prettyPrintError,
     getLanguageExtensions, setLanguageExtensions,
     getSourceDirs, setSourceDirs,
     getGhcOpts, setGhcOpts,
-    loadPackage,
-    loadModules', 
-    reloadModules', getLoadedModules', importModules', getImportedModules',
-    getModuleExports',
-    getLanguageExtensions', setLanguageExtensions',
-    getSourceDirs', setSourceDirs',
-    getGhcOpts', setGhcOpts',
-    reset, reset',
+    getPackageModules,
+    loadPackage, loadModules, getLoadedModules, reloadModules, 
+    importModules, getImportedModules,
+    getModuleExports, ModuleDescription(..), ModuleElemDesc(..),
+    interpret, Interpretation, intKind, intValue, intValues, intResult,
+    intType, isIntType, isIntExprs, isIntExpr, isIntIOExpr,
+    Hint.availableExtensions,
+    Hint.Extension(..),
     cancel,
-    Hint.InterpreterError, prettyPrintError,
-    Hint.availableExtensions, Hint.Extension(..),
-    ModuleDescription(..), ModuleElemDesc(..),
+
     -- DEBUG --
     ctxString
  ) where
@@ -59,7 +39,6 @@ module HPage.Control (
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
-import Control.Monad.Loops
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Concurrent.MVar
@@ -79,21 +58,42 @@ import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
 import qualified HPage.IOServer as HPIO
+import Control.Exception(SomeException)
 
 data Interpretation = Type  {intKind   :: String} |
                       Expr  {intValue  :: String,   intType :: String} |
+                      IOExpr{intResult :: MVar (Either SomeException String), intType :: String} |
                       Exprs {intValues :: [String], intType :: String} 
-    deriving (Eq, Show)
+    deriving (Eq)
+instance Show Interpretation where
+    show (Type x) = "type :: " ++ show x
+    show (IOExpr _ t) = " io :: " ++ show t
+    show (Expr x t) = x ++ show t
+    show (Exprs xs t) = show xs ++ " :: [" ++ show t ++ "]"
     
 isIntType :: Interpretation -> Bool
 isIntType Type{}  = True
+isIntType IOExpr{}= False
 isIntType Expr{}  = False
 isIntType Exprs{} = False
 
 isIntExprs :: Interpretation -> Bool
 isIntExprs Type{}  = False
+isIntExprs IOExpr{}= False
 isIntExprs Expr{}  = False
 isIntExprs Exprs{} = True
+
+isIntExpr :: Interpretation -> Bool
+isIntExpr Type{}  = False
+isIntExpr IOExpr{}= False
+isIntExpr Expr{}  = True
+isIntExpr Exprs{} = False
+
+isIntIOExpr :: Interpretation -> Bool
+isIntIOExpr Type{}  = False
+isIntIOExpr IOExpr{}= True
+isIntIOExpr Expr{}  = False
+isIntIOExpr Exprs{} = False
 
 data ModuleDescription = ModDesc {modName :: String,
                                   modInterpreted :: Bool}
@@ -126,20 +126,6 @@ data PageDescription = PageDesc {pIndex :: Int,
 newtype Expression = Exp {exprText :: String}       
     deriving (Eq, Show)
 
-data InFlightData = LoadModules { loadingModules :: Set String,
-                                  runningAction :: Hint.InterpreterT IO ()
-                                  } |
-                    ImportModules { importingModules :: Set String,
-                                    runningAction :: Hint.InterpreterT IO ()
-                                    } | 
-                    SetSourceDirs { settingSrcDirs :: [FilePath],
-                                    runningAction :: Hint.InterpreterT IO ()
-                                    } |
-                    SetGhcOpts { settingGhcOpts :: String,
-                                 runningAction :: Hint.InterpreterT IO ()
-                                 } |
-                    Reset
-
 data Page = Page { -- Display --
                    expressions :: [Expression],
                    currentExpr :: Int,
@@ -167,7 +153,6 @@ data Context = Context { -- Package --
                          extraSrcDirs :: [FilePath],
                          ghcOptions :: String,
                          server :: HS.ServerHandle,
-                         running :: Maybe InFlightData,
                          recoveryLog :: Hint.InterpreterT IO (), -- To allow cancelation of actions
                          -- IO Server --
                          ioServer :: HPIO.ServerHandle
@@ -202,7 +187,7 @@ evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     hpios <- liftIO $ HPIO.start
                     let nop = return ()
-                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs Nothing nop hpios
+                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs nop hpios
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -249,9 +234,6 @@ savePageNthAs i file = do
                             modifyPageNth i (\page -> page{filePath = Just file,
                                                            original = (expressions page)})
 
-isModifiedPage :: HPage Bool
-isModifiedPage = get >>= isModifiedPageNth . currentPage
-
 isModifiedPageNth :: Int -> HPage Bool
 isModifiedPageNth i = withPageIndex i $ do
                                             page <- getPageNth i
@@ -272,9 +254,6 @@ getPageIndex = get >>= return . currentPage
 setPageIndex :: Int -> HPage ()
 setPageIndex (-1) = modify (\ctx -> ctx{currentPage = (-1)})
 setPageIndex i = withPageIndex i $ modify (\ctx -> ctx{currentPage = i})
-
-getPageDesc :: HPage PageDescription
-getPageDesc = get >>= getPageNthDesc . currentPage
 
 getPageNthDesc :: Int -> HPage PageDescription
 getPageNthDesc i = do
@@ -303,34 +282,6 @@ closeAllPages :: HPage ()
 closeAllPages = modify (\ctx -> ctx{pages = [emptyPage],
                                     currentPage = 0})
 
-safeClosePage :: HPage ()
-safeClosePage = get >>= safeClosePageNth . currentPage 
-
-safeCloseAllPages :: HPage ()
-safeCloseAllPages = do
-                        ps <- liftM (length . pages) $ get
-                        ms <- anyM isModifiedPageNth [0..ps-1]
-                        if ms then fail "There are modified pages"
-                            else closeAllPages
-
-safeClosePageNth :: Int -> HPage ()
-safeClosePageNth i = do
-                        m <- isModifiedPageNth i
-                        if m then fail "The page is modified"
-                            else closePageNth i 
-                
-safeSavePageAs :: FilePath -> HPage ()
-safeSavePageAs file = get >>=  (flip safeSavePageNthAs) file . currentPage
-
-safeSavePageNthAs :: Int -> FilePath -> HPage ()
-safeSavePageNthAs i file = do
-                                m <- liftIO $ doesFileExist file
-                                if m then fail "The page is modified"
-                                    else savePageNthAs i file
-
-clearPage :: HPage ()
-clearPage = setPageText "" 0 >> return ()
-
 setPageText :: String -> Int -> HPage Bool
 setPageText s ip = 
     do
@@ -347,55 +298,7 @@ setPageText s ip =
 
 getPageText :: HPage String
 getPageText = getPage >>= return . toString
-
-getExprIndex :: HPage Int
-getExprIndex = getPage >>= return . currentExpr
-
-setExprIndex :: Int -> HPage ()
-setExprIndex (-1) = modifyWithUndo (\p -> p{currentExpr = -1})
-setExprIndex nth = withExprIndex nth $ modifyWithUndo (\p -> p{currentExpr = nth})
-
-getExprCount :: HPage Int
-getExprCount = getPage >>= return . length . expressions 
-
-getExprText :: HPage String
-getExprText = getPage >>= getExprNthText . currentExpr
-
-setExprText :: String -> HPage ()
-setExprText expr = getPage >>= flip setExprNthText expr . currentExpr
-
-getExprNthText :: Int -> HPage String
-getExprNthText nth = withExprIndex nth $ getPage >>= return . exprText . (!! nth) . expressions
-
-setExprNthText :: Int -> String -> HPage ()
-setExprNthText nth expr = withExprIndex nth $
-                                do
-                                    page <- getPage
-                                    liftTraceIO ("setExprNthText",nth,expr,expressions page, currentExpr page)
-                                    modifyWithUndo (\p ->
-                                                        let newExprs = insertAt nth (exprFromString expr) $ expressions p
-                                                            curExpr  = currentExpr p
-                                                         in p{expressions = newExprs,
-                                                              currentExpr = if curExpr < length newExprs then
-                                                                                curExpr else
-                                                                                length newExprs -1})
                         
-addExpr :: String -> HPage ()
-addExpr expr = do
-                    p <- getPage
-                    liftTraceIO ("addExpr",expr,expressions p, currentExpr p)
-                    modifyWithUndo (\page ->
-                                        let exprs = expressions page
-                                            newExprs = insertAt (length exprs) (exprFromString expr) exprs
-                                        in  page{expressions = newExprs,
-                                                 currentExpr = length newExprs - 1})
-
-removeExpr :: HPage ()
-removeExpr = getPage >>= removeNth . currentExpr
-
-removeNth :: Int -> HPage ()
-removeNth i = setExprNthText i ""
-
 undo, redo :: HPage ()
 undo = do
             p <- getPage
@@ -431,11 +334,6 @@ redo = do
 interpret :: HPage (Either Hint.InterpreterError Interpretation)
 interpret = getPage >>= interpretNth . currentExpr
  
-valueOf, kindOf, typeOf :: HPage (Either Hint.InterpreterError String)
-valueOf = getPage >>= valueOfNth . currentExpr
-kindOf = getPage >>= kindOfNth . currentExpr
-typeOf = getPage >>= typeOfNth . currentExpr
-
 interpretNth :: Int -> HPage (Either Hint.InterpreterError Interpretation)
 interpretNth i =
         do
@@ -457,12 +355,8 @@ interpretNth i =
                                     Right ioAction ->
                                         do
                                             ctx <- get
-                                            iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
-                                            case iores of
-                                                Left err ->
-                                                    return . Left . Hint.UnknownError $ show err
-                                                Right r ->
-                                                    return . Right $ Expr{intValue = r, intType = t}
+                                            iores <- liftIO $ HPIO.runIn (ioServer ctx) $ ioAction
+                                            return . Right $ IOExpr{intResult = iores, intType = t}
                                     Left err ->
                                         return $ Left err
                             else if isList t
@@ -496,7 +390,7 @@ typeOfNth = runInExprNthWithLets Hint.typeOf
 
 loadModules :: [String] -> HPage (Either Hint.InterpreterError ())
 loadModules ms = do
-                    prevctx <- confirmRunning
+                    prevctx <- get
                     let ims = toList $ importedModules prevctx
                         action = do
                                     liftTraceIO $ "loading: " ++ show ms
@@ -514,7 +408,7 @@ loadModules ms = do
 
 importModules :: [String] -> HPage (Either Hint.InterpreterError ())
 importModules newms = do
-                            ctx <- confirmRunning
+                            ctx <- get
                             let ms = toList $ importedModules ctx
                                 action = do
                                             liftTraceIO $ "importing: " ++ show newms
@@ -530,7 +424,7 @@ importModules newms = do
 
 reloadModules :: HPage (Either Hint.InterpreterError ())
 reloadModules = do
-                    ctx <- confirmRunning
+                    ctx <- get
                     let ms = toList $ loadedModules ctx
                         ims = toList $ importedModules ctx
                     syncRun $ do
@@ -540,35 +434,30 @@ reloadModules = do
                                 Hint.getLoadedModules >>= Hint.setTopLevelModules
 
 getLoadedModules :: HPage (Either Hint.InterpreterError [ModuleDescription])
-getLoadedModules = do
-                        confirmRunning_
-                        syncRun $ do
-                                    mns <- Hint.getLoadedModules
-                                    mis <- mapM Hint.isModuleInterpreted mns
-                                    return $ zipWith ModDesc mns mis 
+getLoadedModules = syncRun $ do
+                                mns <- Hint.getLoadedModules
+                                mis <- mapM Hint.isModuleInterpreted mns
+                                return $ zipWith ModDesc mns mis 
 
 getImportedModules :: HPage [Hint.ModuleName]
-getImportedModules = confirmRunning >>= return . toList . importedModules 
+getImportedModules = get >>= return . toList . importedModules 
 
 getPackageModules :: HPage [Hint.ModuleName]
-getPackageModules = confirmRunning >>= return . pkgModules
+getPackageModules = get >>= return . pkgModules
 
 getModuleExports :: Hint.ModuleName -> HPage (Either Hint.InterpreterError [ModuleElemDesc])
-getModuleExports mn = do
-                            confirmRunning_
-                            let action = do
-                                            exs <- Hint.getModuleExports mn
-                                            mapM moduleElemDesc exs
-                            syncRun action
+getModuleExports mn = syncRun $ do
+                                    exs <- Hint.getModuleExports mn
+                                    mapM moduleElemDesc exs
 
 getLanguageExtensions :: HPage (Either Hint.InterpreterError [Hint.Extension])
-getLanguageExtensions = confirmRunning >> syncRun (Hint.get Hint.languageExtensions)
+getLanguageExtensions = get >> syncRun (Hint.get Hint.languageExtensions)
 
 setLanguageExtensions :: [Hint.Extension] -> HPage (Either Hint.InterpreterError ())
-setLanguageExtensions exs = confirmRunning >> syncRun (Hint.set [Hint.languageExtensions := exs])
+setLanguageExtensions exs = get >> syncRun (Hint.set [Hint.languageExtensions := exs])
 
 getSourceDirs :: HPage [FilePath]
-getSourceDirs = confirmRunning >>= return . extraSrcDirs
+getSourceDirs = get >>= return . extraSrcDirs
 
 setSourceDirs :: [FilePath] -> HPage (Either Hint.InterpreterError ())
 setSourceDirs ds =  do
@@ -587,7 +476,7 @@ setSourceDirs ds =  do
                         return res
 
 getGhcOpts :: HPage String
-getGhcOpts = confirmRunning >> get >>= return . ghcOptions
+getGhcOpts = get >> get >>= return . ghcOptions
 
 setGhcOpts :: String -> HPage (Either Hint.InterpreterError ())
 setGhcOpts opts =  do
@@ -647,121 +536,9 @@ loadPackage file = do
                                                 liftErrorIO $ ("Error loading package", pkgname, e)
                                                 return . Left $ prettyPrintError e
 
-reset :: HPage (Either Hint.InterpreterError ())
-reset = do
-            res <- syncRun $ do
-                                liftTraceIO $ "resetting"
-                                Hint.reset
-                                Hint.setImports ["Prelude"]
-                                ms <- Hint.getLoadedModules
-                                liftTraceIO $ "remaining modules: " ++ show ms
-            case res of
-                Right _ ->
-                    modify (\ctx -> ctx{loadedModules = empty,
-                                        importedModules = fromList ["Prelude"],
-                                        extraSrcDirs = [],
-                                        ghcOptions = "",
-                                        running = Nothing,
-                                        recoveryLog = return ()})
-                Left e ->
-                    liftErrorIO $ ("Error resetting", e)
-            return res
-
-loadModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
-loadModules' ms = do
-                    prevctx <- confirmRunning
-                    let ims = toList $ importedModules prevctx
-                        action = do
-                                    liftTraceIO $ "loading': " ++ show ms
-                                    Hint.loadModules ms
-                                    Hint.setImports ims
-                                    Hint.getLoadedModules >>= Hint.setTopLevelModules
-                    res <- asyncRun action
-                    modify (\ctx -> ctx{running = Just $ LoadModules (fromList ms) action})
-                    return res
-                            
-importModules' :: [String] -> HPage (MVar (Either Hint.InterpreterError ()))
-importModules' newms = do
-                            ctx <- confirmRunning
-                            let ms = toList $ importedModules ctx
-                                action = do
-                                            liftTraceIO $ "importing': " ++ show newms
-                                            Hint.setImports $ ms ++ newms
-                            res <- asyncRun action
-                            modify (\c -> c{running = Just $ ImportModules (fromList newms) action})
-                            return res
-
-reloadModules' :: HPage (MVar (Either Hint.InterpreterError ()))
-reloadModules' = do
-                    ctx <- confirmRunning
-                    let ims = toList $ importedModules ctx
-                        ms = toList $ loadedModules ctx
-                    asyncRun $ do
-                                    liftTraceIO $ "reloading': " ++ (show ms)
-                                    Hint.loadModules ms
-                                    Hint.setImports ims
-                                    Hint.getLoadedModules >>= Hint.setTopLevelModules
-
-getLoadedModules' :: HPage (MVar (Either Hint.InterpreterError [ModuleDescription]))
-getLoadedModules' = do
-                        confirmRunning_
-                        asyncRun $ do
-                                        mns <- Hint.getLoadedModules
-                                        mis <- mapM Hint.isModuleInterpreted mns
-                                        return $ zipWith ModDesc mns mis
-                                    
-getImportedModules' :: HPage (MVar [Hint.ModuleName])
-getImportedModules' = confirmRunning >>= liftIO . newMVar . toList . importedModules
-
-getModuleExports' :: Hint.ModuleName -> HPage (MVar (Either Hint.InterpreterError [Hint.ModuleElem]))
-getModuleExports' mn = confirmRunning >> asyncRun (Hint.getModuleExports mn)
-
-getLanguageExtensions' :: HPage (MVar (Either Hint.InterpreterError [Hint.Extension]))
-getLanguageExtensions' = confirmRunning >> asyncRun (Hint.get Hint.languageExtensions)
-
-setLanguageExtensions' :: [Hint.Extension] -> HPage (MVar (Either Hint.InterpreterError ()))
-setLanguageExtensions' exs = confirmRunning >> asyncRun (Hint.set [Hint.languageExtensions := exs])
-
-getSourceDirs' :: HPage (MVar [FilePath])
-getSourceDirs' = confirmRunning >>= liftIO . newMVar . extraSrcDirs
-
-setSourceDirs' :: [FilePath] -> HPage (MVar (Either Hint.InterpreterError ()))
-setSourceDirs' ds = do
-                        let action = do
-                                        liftTraceIO $ "setting src dirs: " ++ show ds
-                                        Hint.unsafeSetGhcOption "-i"
-                                        Hint.unsafeSetGhcOption "-i."
-                                        forM_ ds $ Hint.unsafeSetGhcOption . ("-i" ++)
-                        res <- asyncRun action
-                        modify $ \ctx -> ctx{running = Just $ SetSourceDirs ds action}
-                        return res
-
-getGhcOpts' :: HPage (MVar String)
-getGhcOpts' = confirmRunning >> get >>= liftIO . newMVar . ghcOptions
-
-setGhcOpts' :: String -> HPage (MVar (Either Hint.InterpreterError ()))
-setGhcOpts' opts =  do
-                        let action = do
-                                        liftTraceIO $ "setting ghc opts: " ++ opts
-                                        Hint.unsafeSetGhcOption opts
-                        res <- asyncRun action
-                        modify $ \ctx -> ctx{running = Just $ SetGhcOpts opts action}
-                        return res
-                                
-reset' :: HPage (MVar (Either Hint.InterpreterError ()))
-reset' = do
-            res <- asyncRun $ do
-                                liftTraceIO $ "resetting'"
-                                Hint.reset
-                                Hint.setImports ["Prelude"]
-                                ms <- Hint.getLoadedModules
-                                liftTraceIO $ "remaining modules: " ++ show ms
-            modify (\ctx -> ctx{running = Just Reset})
-            return res
-
 cancel :: HPage ()
 cancel = do
-            liftTraceIO $ "canceling"
+            liftTraceIO $ "canceling..."
             ctx <- get
             liftIO $ HS.stop $ server ctx
             liftIO $ HPIO.stop $ ioServer ctx
@@ -769,8 +546,7 @@ cancel = do
             hpios <- liftIO $ HPIO.start
             _ <- liftIO $ HS.runIn hs $ recoveryLog ctx
             modify (\c -> c{server      = hs,
-                            ioServer    = hpios,
-                            running     = Nothing})
+                            ioServer    = hpios})
 
 prettyPrintError :: Hint.InterpreterError -> String
 prettyPrintError (Hint.WontCompile ghcerrs)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerrs)
@@ -796,9 +572,6 @@ getPageNth i = withPageIndex i $ get >>= return . (!! i) . pages
 
 withPageIndex :: Int -> HPage a -> HPage a
 withPageIndex i acc = get >>= withIndex i acc . pages
-
-withExprIndex :: Int -> HPage a -> HPage a
-withExprIndex i acc = getPage >>= withIndex i acc . expressions
 
 withIndex :: Show b => Int -> HPage a -> [b] -> HPage a
 withIndex i acc is = case i of
@@ -853,42 +626,7 @@ runInExprNthWithLets action i = do
                                                                                     else action expr
 
 syncRun :: Hint.InterpreterT IO a -> HPage (Either Hint.InterpreterError a)
-syncRun action = do
-                    liftTraceIO "sync - confirming"
-                    ctx <- confirmRunning
-                    liftTraceIO "sync - running"
-                    liftIO $ HS.runIn (server ctx) action 
-
-asyncRun :: Hint.InterpreterT IO a -> HPage (MVar (Either Hint.InterpreterError a)) 
-asyncRun action = do
-                    liftTraceIO "async - running"
-                    ctx <- confirmRunning
-                    liftIO $ HS.asyncRunIn (server ctx) action
-
-confirmRunning_ :: HPage ()
-confirmRunning_ = confirmRunning >> return ()
- 
-confirmRunning :: HPage Context
-confirmRunning = modify (\ctx -> apply (running ctx) ctx) >> get
-
-apply :: Maybe InFlightData -> Context -> Context
-apply Nothing      c = c
-apply (Just Reset) c = c{loadedModules = empty,
-                         importedModules = fromList ["Prelude"],
-                         extraSrcDirs = [],
-                         ghcOptions = "",
-                         recoveryLog = return (),
-                         running = Nothing}
-apply (Just LoadModules{loadingModules = lms, runningAction = ra}) c =
-    c{loadedModules = union lms (loadedModules c),
-      recoveryLog   = (recoveryLog c) >> ra}
-apply (Just ImportModules{importingModules = ims, runningAction = ra}) c =
-    c{importedModules = union ims (importedModules c),
-      recoveryLog     = (recoveryLog c) >> ra}
-apply (Just SetSourceDirs{settingSrcDirs = ssds, runningAction = ra}) c =
-    c{extraSrcDirs = ssds, recoveryLog = (recoveryLog c) >> ra}
-apply (Just SetGhcOpts{settingGhcOpts = opts, runningAction = ra}) c =
-    c{ghcOptions = (ghcOptions c) ++ " " ++ opts, recoveryLog = (recoveryLog c) >> ra}
+syncRun action = get >>= (\ctx -> liftIO $ HS.runIn (server ctx) action) 
 
 exprFromString :: String -> [Expression]
 exprFromString s = map Exp $ splitOn "\n\n" s

@@ -32,28 +32,38 @@ source-repository head
     type:     git
     location: git://github.com/elbrujohalcon/hPage.git
 
-Executable hpage
+Library
     build-depends: base >= 4,                   base < 5,
-                   mtl >= 1.1.0.2,              mtl < 2,
-                   bytestring >= 0.9.1,         bytestring < 0.10,
                    Cabal >= 1.8.0.2,            Cabal < 1.9,
                    cabal-macosx >= 0.1.0,       cabal-macosx < 0.2,
-                   FindBin >= 0.0.2,            FindBin < 0.1,
-                   time >= 1.1.4,               time < 2,
-                   hint >= 0.3.2,               hint < 0.4,
-                   eprocess >= 1.1.2,           eprocess < 2,
-                   hint-server >= 1.2.0,        hint-server < 2,
-                   wxcore >= 0.12.1.4,          wxcore < 0.13,
-                   wx >= 0.12.1.4,              wx < 0.13,
                    haskell-src-exts >= 1.9.0,   haskell-src-exts < 2,
-                   monad-loops >= 0.3.0,        monad-loops < 0.4,
+                   bytestring >= 0.9.1,         bytestring < 0.10,
+                   hint-server >= 1.2.0,        hint-server < 2,
+                   hint >= 0.3.2,               hint < 0.4,
+                   mtl >= 1.1.0.2,              mtl < 2,
                    containers >= 0.3.0.0,       containers < 0.4,
                    filepath >= 1.1.0.3,         filepath < 1.2,
                    directory >= 1.0.1,          directory < 1.1,
+                   testrunner >= 0.9,           testrunner < 1,
+                   QuickCheck >= 2.1.0.3,       QuickCheck < 2.2,
+                   time >= 1.1.4,               time < 2,
+                   eprocess >= 1.1.2,           eprocess < 2
+    exposed-modules: HPage.Control, HPage.Server, HPage.IOServer,
+                    HPage.Test.Server
+    other-modules:  HPage.Utils.Log
+    hs-source-dirs: src
+    
+Executable hpage
+    build-depends: base >= 4,                   base < 5,
+                   FindBin >= 0.0.2,            FindBin < 0.1,
+                   wxcore >= 0.12.1.4,          wxcore < 0.13,
+                   wx >= 0.12.1.4,              wx < 0.13,
+                   monad-loops >= 0.3.0,        monad-loops < 0.4,
                    process >= 1.0.1.2,          process < 1.1,
-                   MonadCatchIO-mtl >= 0.1.0,   MonadCatchIO-mtl < 0.4
+                   eprocess >= 1.1.2,           eprocess < 2
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
-    other-modules:  HPage.GUI.IDs, HPage.GUI.FreeTextWindow, HPage.GUI.Dialogs, HPage.Control, HPage.Server, HPage.Utils.Log, HPage.GUI.Constants, HPage.IOServer, HPage.GUI.SplashScreen
+    other-modules:  HPage.GUI.IDs, HPage.GUI.FreeTextWindow, HPage.GUI.Dialogs, 
+                    HPage.Utils.Log, HPage.GUI.Constants, HPage.GUI.SplashScreen
     ghc-options: -fwarn-unused-imports -fwarn-missing-fields -fwarn-incomplete-patterns

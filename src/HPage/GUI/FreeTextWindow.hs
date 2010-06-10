@@ -437,9 +437,13 @@ valueFiller guiCtx@GUICtx{guiResults   = GUIRes{resButton = btnInterpret,
                                         listValueFiller guiCtx $ HP.intValues interp
                                         return "" -- It can't be a string error as
                                                   -- we're generating the string
-                                    else do
-                                        liftDebugIO "Value received in valueFiller"
-                                        singleValueFiller guiCtx $ HP.intValue interp
+                                    else if HP.isIntExpr interp
+                                        then do
+                                            liftDebugIO "Value received in valueFiller"
+                                            singleValueFiller guiCtx $ HP.intValue interp
+                                        else do
+                                            liftDebugIO "IO Value received in valueFiller"
+                                            ioValueFiller guiCtx $ HP.intResult interp
                             errs <- varGet varErrors
                             case (statusText, errs) of
                                 ("", []) -> -- No errors
@@ -514,6 +518,17 @@ recursiveValueFiller guiCtx@GUICtx{guiResults = GUIRes{resValue  = txtValue}} va
                 do
                     valueFill guiCtx t >>= textCtrlAppendText txtValue
                     recursiveValueFiller guiCtx $ tail val
+
+-- | Same as singleValueFiller but first we wait for the result...
+ioValueFiller :: GUIContext -> MVar (Either SomeException String) -> IO String
+ioValueFiller guiCtx var =
+    do
+        res <- takeMVar var
+        case res of
+            Left err ->
+                return $ show err
+            Right val ->
+                singleValueFiller guiCtx val
 
 valueFill :: GUIContext -> String -> IO String
 valueFill guiCtx@GUICtx{guiResults = GUIRes{resErrors = varErrors},
@@ -1049,6 +1064,12 @@ interpret model guiCtx@GUICtx{guiResults = GUIRes{resLabel  = lblInterpret,
                         poc <- liftIO $ get btnInterpret $ on command
                         let revert = do
                                         debugIO "Cancelling..."
+                                        cancelRes <- tryIn' model HP.cancel
+                                        case cancelRes of
+                                            Left err ->
+                                                errorDialog win "Error" $ "There was an unexpected error when cancelling.  It's recommended to restart the application:\n" ++ err
+                                            Right () ->
+                                                return ()
                                         newvf <- spawn $ valueFiller guiCtx
                                         debugIO "Killing the value filler..."
                                         swapMVar vfv newvf >>= kill
