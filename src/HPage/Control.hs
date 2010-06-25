@@ -3,7 +3,8 @@
              FlexibleInstances,
              FunctionalDependencies,
              TypeSynonymInstances,
-             UndecidableInstances #-} 
+             UndecidableInstances,
+             ScopedTypeVariables #-} 
 module HPage.Control (
     -- MONAD CONTROLS --
     HPage, evalHPage,
@@ -28,13 +29,17 @@ module HPage.Control (
     importModules, getImportedModules,
     getModuleExports,
     interpret,
-    cancel
+    cancel,
+    
+    -- PRESENTATION CONTROLS --
+    computeAndShow
  ) where
 
 import System.Directory
 import System.FilePath
 import Data.Set (Set, empty, union, fromList, toList)
 import Data.List (isPrefixOf)
+import Control.Exception (try, SomeException)
 import Control.Monad.Error
 import Control.Monad.State
 import Language.Haskell.Interpreter (OptionVal((:=)))
@@ -55,6 +60,8 @@ import HPage.Control.Interpretation
 import HPage.Control.Module
 import HPage.Utils
 import HPage.Utils.Log
+import Control.Concurrent.Process
+import Control.Concurrent.MVar
 
 data PageDescription = PageDesc {pIndex :: Int,
                                  pPath  :: Maybe FilePath,
@@ -93,7 +100,9 @@ data Context = Context { -- Package --
                          server :: HS.ServerHandle,
                          recoveryLog :: Hint.InterpreterT IO (), -- To allow cancelation of actions
                          -- IO Server --
-                         ioServer :: HPIO.ServerHandle
+                         ioServer :: HPIO.ServerHandle,
+                         -- Value Filler --
+                         valueFiller :: MVar (Handle ())
                        }
  
 instance Show Context where
@@ -124,8 +133,9 @@ evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
                     hpios <- liftIO $ HPIO.start
+                    vfv <- newEmptyMVar
                     let nop = return ()
-                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs nop hpios
+                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs nop hpios vfv
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -280,46 +290,24 @@ interpretNth i =
                         kindRes <- kindOfNth i
                         case kindRes of
                             Left _ -> return $ Left terr
-                            Right k -> return . Right $ Type{intKind = k}
+                            Right k -> return . Right $ KindInt{intKind = k}
                 Right t ->
                     do
-                        if isIO t
-                            then do
-                                valueRes <- getIOFromExprNth i
-                                case valueRes of
-                                    Right ioAction ->
-                                        do
-                                            ctx <- get
-                                            iores <- liftIO $ HPIO.runIn (ioServer ctx) $ ioAction
-                                            return . Right $ IOExpr{intResult = iores, intType = t}
-                                    Left err ->
-                                        return $ Left err
-                            else if isList t
-                                    then do
-                                            liftDebugIO "interpreting a list"
-                                            valueRes <- getListFromExprNth i
-                                            case valueRes of
-                                                Left verr ->
-                                                    if isNotShowable verr
-                                                        then return $ Right $ Expr{intValue = "", intType = t}
-                                                        else return $ Left verr
-                                                Right list -> return . Right $ Exprs{intValues = list, intType = t}
-                                    else do
-                                            liftDebugIO "interpreting a value"
-                                            valueRes <- valueOfNth i
-                                            case valueRes of
-                                                Left verr ->
-                                                    if isNotShowable verr
-                                                        then return $ Right $ Expr{intValue = "", intType = t}
-                                                        else return $ Left verr
-                                                Right v -> return $ Right $ Expr{intValue = v, intType = t}
-        where isNotShowable (Hint.WontCompile ghcerrs) = any complainsAboutShow ghcerrs
-              isNotShowable _ = False
-              complainsAboutShow err = let errMsg = Hint.errMsg err
-                                        in "No instance for (GHC.Show" `isPrefixOf` errMsg
+                        valueRes <- getPresentationFromExprNth i
+                        case valueRes of
+                            Left verr ->
+                                if isNotPresentable verr
+                                    then return . Right $ TypeInt{intType = t}
+                                    else return $ Left verr
+                            Right pres ->
+                                return . Right $ ValueInt{intType   = t,
+                                                          intValue  = pres}                     
+        where isNotPresentable (Hint.WontCompile ghcerrs) = any complainsAboutPresentable ghcerrs
+              isNotPresentable _ = False
+              complainsAboutPresentable err = let errMsg = Hint.errMsg err
+                                               in "No instance for (HPage.Control.Presentable" `isPrefixOf` errMsg
               
-valueOfNth, kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
-valueOfNth i = runInExprNthWithLets Hint.eval i
+kindOfNth, typeOfNth :: Int -> HPage (Either Hint.InterpreterError String)
 kindOfNth = runInExprNth Hint.kindOf
 typeOfNth = runInExprNthWithLets Hint.typeOf
 
@@ -491,6 +479,12 @@ cancel :: HPage ()
 cancel = do
             liftTraceIO $ "canceling..."
             ctx <- get
+            vfv <- liftIO . tryTakeMVar $ valueFiller ctx
+            case vfv of
+                Nothing ->
+                    return ()
+                Just vf ->
+                    kill vf
             liftIO $ HS.stop $ server ctx
             liftIO $ HPIO.stop $ ioServer ctx
             hs <- liftIO $ HS.start
@@ -498,6 +492,73 @@ cancel = do
             _ <- liftIO $ HS.runIn hs $ recoveryLog ctx
             modify (\c -> c{server      = hs,
                             ioServer    = hpios})
+
+-- | Starts a process that computes the received /Presentation/ and perform one
+--   of two actions: the first when a group of chars is computed, the other when
+--   a bottom is detected.  Example:
+-- @
+--      computeAndShow (ListPres [1..]) (\v -> textCtrlAppend textBox v) (\b -> varUpdate errors (b:))
+-- @
+computeAndShow :: Presentation ->       -- ^ The presentation to compute and show
+                  (String -> IO ()) ->  -- ^ What to do when a String is computed
+                  (String -> IO ()) ->  -- ^ What to do when a Bottom is reached
+                  IO () ->              -- ^ What to do when the process ends
+                  HPage () 
+computeAndShow p fok fnok fend =
+    do
+        ctx <- get
+        -- if there was a valueFiller already doing his work... we cancel
+        isEmpty <- liftIO . isEmptyMVar $ valueFiller ctx
+        if isEmpty
+            then return ()
+            else cancel
+        _ <- spawn . computeAndShow' ctx p fok fnok $ fend >> takeMVar (valueFiller ctx) >> return ()
+        return ()
+        
+computeAndShow' :: Context ->            -- ^ The current context
+                   Presentation ->       -- ^ The presentation to compute and show
+                   (String -> IO ()) ->  -- ^ What to do when a String is computed
+                   (String -> IO ()) ->  -- ^ What to do when a Bottom is reached
+                   IO () ->              -- ^ What to do when the process ends
+                   Process () ()
+computeAndShow' ctx (IOPres ioAction) fok fnok fend =
+    do
+        iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
+        case iores of
+            Left err ->
+                liftIO . fnok $ show err
+            Right p ->
+                computeAndShow' ctx p fok fnok fend
+computeAndShow' ctx (ListPres ps) fok fnok fend =
+    do
+        liftIO $ fok "["
+        recursiveShow "" ctx ps fok fnok fend
+computeAndShow' ctx (StringPres val) fok fnok fend =
+    do
+        h <- try (case val of
+                      [] -> return []
+                      (c:_) -> return [c])
+        case h of
+            Left (ex :: SomeException) ->
+                liftIO $ fnok (show ex) >> fend
+            Right [] ->
+                liftIO fend
+            Right t ->
+                do
+                    --TODO: Detect timeouts and keep copying things from MainWindow
+                    res <- catchNoKill (eval t) $ \err -> return . Left $ GUIBtm err t
+                    recursiveValueFiller guiCtx $ tail val
+
+        
+recursiveShow :: String -> Context -> [Presentation] -> (String -> IO ()) -> (String -> IO ()) -> IO () -> Process () ()
+recursiveShow _comma _ctx [] fok _fnok fend = liftIO $ fok "]" >> fend
+recursiveShow comma ctx (p:ps) fok fnok fend =
+    do
+        liftIO $ fok comma
+        --TODO: Detect timeouts
+        computeAndShow' ctx p fok fnok $ return ()
+        recursiveShow ", " ctx ps fok fnok fend
+
 
 prettyPrintError :: Hint.InterpreterError -> String
 prettyPrintError (Hint.WontCompile ghcerrs)  = "Can't compile: " ++ (joinWith "\n" $ map Hint.errMsg ghcerrs)
@@ -543,25 +604,17 @@ runInExprNth action i = do
                                                                         then return ""
                                                                         else action expr
 
-getIOFromExprNth :: Int -> HPage (Either Hint.InterpreterError (IO String))
-getIOFromExprNth i =
+getPresentationFromExprNth :: Int -> HPage (Either Hint.InterpreterError Presentation)
+getPresentationFromExprNth i =
     do
         page <- getPage
         let exprs = expressions page
         flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
                                        lets = filter isNamedExpr $ b ++ a
-                                       expr = "(" ++ letsToString lets ++ exprText item ++ ") >>= return . show"
-                                    in syncRun $ Hint.interpret expr (Hint.as :: IO String)
-
-getListFromExprNth :: Int -> HPage (Either Hint.InterpreterError [String])
-getListFromExprNth i =
-    do
-        page <- getPage
-        let exprs = expressions page
-        flip (withIndex i) exprs $ let (b, item : a) = splitAt i exprs
-                                       lets = filter isNamedExpr $ b ++ a
-                                       expr = "map show (" ++ letsToString lets ++ exprText item ++ ")"
-                                    in syncRun $ Hint.interpret expr (Hint.as :: [String])
+                                       expr = "present (" ++
+                                                letsToString lets ++
+                                                exprText item ++ ")"
+                                    in syncRun $ Hint.interpret expr (Hint.as :: Presentation)
 
 runInExprNthWithLets :: (String -> Hint.InterpreterT IO String) -> Int -> HPage (Either Hint.InterpreterError String)
 runInExprNthWithLets action i = do
@@ -586,42 +639,6 @@ isNamedExpr :: Expression -> Bool
 isNamedExpr e = case Xs.parseDecl (exprText e) of
                     Xs.ParseOk _ -> True
                     _ -> False
-
-isType :: (Xs.Type -> Bool) -> String -> Bool
-isType f t = case Xs.parseType t of
-                    Xs.ParseOk ty -> f ty
-                    _ -> False -- couldn't parse
-
-isList :: String -> Bool
-isList = isType isList'
-
-isChar, isList' :: Xs.Type -> Bool
-isList' (Xs.TyForall _ _ inttype)          = isList' inttype
-isList' (Xs.TyParen inttype)               = isList' inttype
-isList' (Xs.TyList inttype)                = not $ isChar inttype 
-isList' (Xs.TyCon (Xs.Special Xs.ListCon)) = True
-isList' _                                  = False
-
-isChar (Xs.TyForall _ _ inttype)                = isChar inttype
-isChar (Xs.TyParen inttype)                     = isChar inttype
-isChar (Xs.TyCon (Xs.Qual _ (Xs.Ident "Char"))) = True 
-isChar (Xs.TyCon (Xs.UnQual (Xs.Ident "Char"))) = True
-isChar _                                        = False
-
-isIO :: String -> Bool
-isIO = isType isIO'
-
-isIO'', isIO' :: Xs.Type -> Bool
-isIO' (Xs.TyForall _ _ inttype) = isIO' inttype
-isIO' (Xs.TyParen inttype)      = isIO' inttype
-isIO' (Xs.TyApp inttype _)      = isIO'' inttype
-isIO' _                         = False
-
-isIO'' (Xs.TyForall _ _ inttype)              = isIO'' inttype
-isIO'' (Xs.TyParen inttype)                   = isIO'' inttype
-isIO'' (Xs.TyCon (Xs.Qual _ (Xs.Ident "IO"))) = True 
-isIO'' (Xs.TyCon (Xs.UnQual (Xs.Ident "IO"))) = True
-isIO'' _                                      = False
 
 exprFromString' :: String -> Int -> ([Expression], Int)
 exprFromString' "" 0 = ([], -1)

@@ -6,6 +6,8 @@ import Control.Monad.Error
 import Test.QuickCheck
 import Test.Runner.Driver
 import Test.Runner
+import qualified HPage.Control.Interpretation as HP
+import qualified HPage.Control.Module as HP
 import qualified HPage.Control as HP
 import qualified HPage.Server as HPS
 import qualified Language.Haskell.Interpreter as Hint
