@@ -45,8 +45,8 @@ Library
                    filepath >= 1.1.0.3,         filepath < 1.2,
                    directory >= 1.0.1,          directory < 1.1,
                    time >= 1.1.4,               time < 2,
-                   eprocess >= 1.1.2,           eprocess < 2
-    exposed-modules: HPage.Control, HPage.Control.Interpretation,
+                   eprocess >= 1.5.0,           eprocess < 2
+    exposed-modules: HPage.Control, HPage.Control.Interpretation, HPage.Control.Constants,
                      HPage.Control.Module, HPage.Server, HPage.IOServer
     other-modules:  HPage.Utils, HPage.Utils.Log
     hs-source-dirs: src

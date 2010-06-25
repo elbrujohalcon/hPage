@@ -56,6 +56,7 @@ import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.Compiler
 import qualified HPage.IOServer as HPIO
+import HPage.Control.Constants
 import HPage.Control.Interpretation
 import HPage.Control.Module
 import HPage.Utils
@@ -132,10 +133,18 @@ type HPage = HPageT IO
 evalHPage :: HPage a -> IO a
 evalHPage hpt = do
                     hs <- liftIO $ HS.start
+                    res <- HS.runIn hs $ Hint.setImports ["HPage.Control.Interpretation"]
+                    case res of
+                        Left (Hint.NotAllowed _) ->
+                            fail "HPage is not correctly installed: HPage.Control.Interpretation missing"
+                        Left err ->
+                            fail $ show err
+                        Right () ->
+                            return ()
                     hpios <- liftIO $ HPIO.start
                     vfv <- newEmptyMVar
                     let nop = return ()
-                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["Prelude"]) [] "" hs nop hpios vfv
+                    let emptyContext = Context Nothing [] [emptyPage] 0 empty (fromList ["HPage.Control.Interpretation"]) [] "" hs nop hpios vfv
                     (state hpt) `evalStateT` emptyContext
 
 
@@ -512,32 +521,33 @@ computeAndShow p fok fnok fend =
         if isEmpty
             then return ()
             else cancel
-        _ <- spawn . computeAndShow' ctx p fok fnok $ fend >> takeMVar (valueFiller ctx) >> return ()
+        let newfend = fend >> takeMVar (valueFiller ctx) >> return ()
+        _ <- spawn $ computeAndShow' ctx fok fnok newfend p
         return ()
         
 computeAndShow' :: Context ->            -- ^ The current context
-                   Presentation ->       -- ^ The presentation to compute and show
                    (String -> IO ()) ->  -- ^ What to do when a String is computed
                    (String -> IO ()) ->  -- ^ What to do when a Bottom is reached
                    IO () ->              -- ^ What to do when the process ends
-                   Process () ()
-computeAndShow' ctx (IOPres ioAction) fok fnok fend =
+                   Presentation ->       -- ^ The presentation to compute and show
+                   Process (Either SomeException String) ()
+computeAndShow' ctx fok fnok fend (IOPres ioAction) =
     do
         iores <- liftIO $ HPIO.runIn (ioServer ctx) ioAction
         case iores of
             Left err ->
                 liftIO . fnok $ show err
             Right p ->
-                computeAndShow' ctx p fok fnok fend
-computeAndShow' ctx (ListPres ps) fok fnok fend =
+                computeAndShow' ctx fok fnok fend p
+computeAndShow' ctx fok fnok fend (ListPres ps) =
     do
         liftIO $ fok "["
-        recursiveShow "" ctx ps fok fnok fend
-computeAndShow' ctx (StringPres val) fok fnok fend =
+        recursiveShow "" ctx fok fnok fend ps
+computeAndShow' ctx fok fnok fend (StringPres val) =
     do
-        h <- try (case val of
-                      [] -> return []
-                      (c:_) -> return [c])
+        h <- liftIO $ try (case val of
+                              [] -> return []
+                              (c:_) -> return [c])
         case h of
             Left (ex :: SomeException) ->
                 liftIO $ fnok (show ex) >> fend
@@ -546,18 +556,32 @@ computeAndShow' ctx (StringPres val) fok fnok fend =
             Right t ->
                 do
                     --TODO: Detect timeouts and keep copying things from MainWindow
-                    res <- catchNoKill (eval t) $ \err -> return . Left $ GUIBtm err t
-                    recursiveValueFiller guiCtx $ tail val
+                    me <- self
+                    evaluator <- spawn $ liftIO (compute t) >>= sendTo me
+                    res <- recvIn charTimeout
+                    kill evaluator
+                    case res of
+                        Nothing ->
+                            liftIO $ fnok "Timed out"
+                        Just (Left err) ->
+                            liftIO . fnok $ show err
+                        Just (Right v) ->
+                            liftIO $ fok v
+                    computeAndShow' ctx fok fnok fend $ StringPres $ tail val
+                    
+compute :: String -> IO (Either SomeException String)
+compute x = try $ eval x
+    where eval t = t `seq` length t `seq` head (t ++ "x") `seq` return t
 
         
-recursiveShow :: String -> Context -> [Presentation] -> (String -> IO ()) -> (String -> IO ()) -> IO () -> Process () ()
-recursiveShow _comma _ctx [] fok _fnok fend = liftIO $ fok "]" >> fend
-recursiveShow comma ctx (p:ps) fok fnok fend =
+recursiveShow :: String -> Context -> (String -> IO ()) -> (String -> IO ()) -> IO () -> [Presentation] -> Process (Either SomeException String) ()
+recursiveShow _comma _ctx fok _fnok fend [] = liftIO $ fok "]" >> fend
+recursiveShow comma ctx fok fnok fend (p:ps) =
     do
         liftIO $ fok comma
         --TODO: Detect timeouts
-        computeAndShow' ctx p fok fnok $ return ()
-        recursiveShow ", " ctx ps fok fnok fend
+        computeAndShow' ctx fok fnok (return ()) p
+        recursiveShow ", " ctx fok fnok fend ps
 
 
 prettyPrintError :: Hint.InterpreterError -> String
