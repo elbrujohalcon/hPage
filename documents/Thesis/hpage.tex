@@ -608,7 +608,7 @@ aiDropIn :: Monad m => HFiaRT m (Either HFiaRError ())
 
 \newpage
 \subparagraph{}Podemos observar entonces la nueva versi—n de \texttt{bestColumn} y sus funciones adicionales:
-\begin{center}\begin{lstlisting}  %%TODO: este c—digo es m‡s nuevo que el de hfiar
+\begin{center}\begin{lstlisting}
 module HFiaR.AI (aiDropIn) where
 
 import HFiaR
@@ -669,13 +669,63 @@ firstEnded games = case (length $ takeWhile onCourse games) of
 \end{figure}
 
 \newpage
-%%TODO: Ac‡ round tendr’a que loggear a un archivo o algo as’
-\paragraph{} La funci—n \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin} pero, como el c—digo est‡ en un m—dulo que ha sido cargado dentro de \hpage, lo que F‡tima puede hacer es ir construyendo paso a paso una expresi—n que represente un partido entre ella y \textsl{el Jugador Computadora}.  Para ello, define la funci—n auxiliar \texttt{round} y, tal como lo vemos en la Figura~\ref{tut211}, la utiliza una y otra vez para modificar el partido que pretende ``jugar''.  De ese modo puede probar el comportamiento de su m—dulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.  Cabe destacar una vez m‡s aqu’ que, cada vez que F‡tima desee realizar cambios en su m—dulo, puede hacerlo con su editor favorito, luego presionar el bot—n \textsl{Reload} al volver a \hpage\ e interpretar nuevamente sus expresiones, que no han sido perdidas pues est‡n todav’a en la(s) p‡gina(s) con la(s) que est‡ trabajando.
+\paragraph{} La funci—n \texttt{testGame} ya no es suficiente para testear el funcionamiento de \texttt{aiDropin}.  Lo que hace F‡tima, aprovechando la facilidad que le brinda \hpage\ para ejecutar acciones de la m—nada \texttt{IO}, es crear una funci—n auxiliar llamada \texttt{round} que, adem‡s de completar una ronda del juego (o sea, un turno jugado por el usuario y otro por la inteligencia artificial) guarda registro del estado del juego en un archivo de log.  De ese modo puede probar el comportamiento de su m—dulo de inteligencia artificial ante las distintas circunstancias de un partido tan extenso como ella desee.  Cabe destacar una vez m‡s aqu’ que, cada vez que F‡tima desee realizar cambios en su m—dulo, puede hacerlo con su editor favorito, luego presionar el bot—n \textsl{Reload} al volver a \hpage\ e interpretar nuevamente sus expresiones, que no han sido perdidas pues est‡n todav’a en la(s) p‡gina(s) con la(s) que est‡ trabajando.  A modo de ejemplo, en la Figura \ref{tut212}, presentamos el archivo resultante de la interpretaci—n de la expresi—n que muestra la figura \ref{tut211}.
 \begin{figure}[hp]
 	\begin{center}
         	\includegraphics[width=.75\textwidth]{pictures/tut2/08}
 		\caption{Tutorial 2 - \textsl{Jugando} contra \texttt{HFiaR.AI}}
 		\label{tut211}
+	\end{center}
+\end{figure}
+\begin{figure}[hp]
+	\begin{center}
+	\hbox{}
+		\begin{lstlisting}
+Human turn: Right ()
+	[[],[],[],[Green],[],[],[]]
+	Left Game is still on course
+AI turn: Right ()
+	[[],[],[],[Red,Green],[],[],[]]
+	Left Game is still on course
+Human turn: Right ()
+	[[],[],[],[Green,Red,Green],[],[],[]]
+	Left Game is still on course
+AI turn: Right ()
+	[[],[],[],[Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+Human turn: Right ()
+	[[],[Green],[],[Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+AI turn: Right ()
+	[[],[Green],[],[Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+Human turn: Right ()
+	[[],[Green],[],[Green,Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+AI turn: Right ()
+	[[],[Green],[],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+Human turn: Right ()
+	[[],[Green],[Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+AI turn: Left That column is full
+	[[],[Green],[Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+Human turn: Right ()
+	[[],[Green],[Red,Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Left Game is still on course
+AI turn: Right ()
+	[[Green],[Green],[Red,Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Right (WonBy Green)
+Human turn: Left Game ended
+	[[Green],[Green],[Red,Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Right (WonBy Green)
+AI turn: Left Game ended
+	[[Green],[Green],[Red,Green],[Red,Green,Red,Red,Green,Red,Green],[],[],[]]
+	Right (WonBy Green)
+		\end{lstlisting}
+		\caption{Tutorial 2 - Log del partido contra \texttt{HFiaR.AI}}
+		\label{tut212}
 	\end{center}
 \end{figure}
 \paragraph{}Resta pues modificar la interfaz gr‡fica para que permita al usuario jugar contra la computadora, utilizando la funci—n \texttt{aiDropIn} en los turnos correspondientes a la m‡quina.  Para ello, F‡tima abre el m—dulo \texttt{HFiaR.GUI} y realiza los cambios pertinentes.   Se trata b‡sicamente de modificaciones de c—digo relacionado vinculado a \textsl{wxHaskell}, para las cuales \hpage\ no es de m‡s ayuda que en los ejemplos que hemos visto a lo largo de este tutorial.  Por ese motivo no los detallamos en este informe.  Para quien desee observarlos puede encontrarlos en \htmladdnormallink{la p‡gina web del proyecto hfiar en github}{bihttp://github.com/elbrujohalcon/hfiar/commit/d69ab637bf32866e7e4550b6ea51cdd5fba33a90\#diff-2}~\cite{hfiar}
