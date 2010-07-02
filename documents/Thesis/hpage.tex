@@ -857,9 +857,6 @@ $ ~/.cabal/bin/hfiar &
 		\label{arq1}
 	\end{center}
 \end{figure}
-%%TODO: Modificar el dibujo:
-%%		elementFiller -> elementFiller :: Process
-%%		
 \subparagraph{}Teniendo en cuenta estos requerimientos, la arquitectura resultante puede ser descripta con el diagrama de la Figura~\ref{arq1}.  Esta figura presenta el estado del sistema en un instante dado.  Cada bloque representa un proceso o ``thread'' en ejecuci—n.  Es importante no confundir estos \textsl{threads} con los threads del sistema operativo.  Los ``threads'' utilizados por \hpage\ son administrados por la m‡quina virtual de \textsl{GHC}.  Por este motivo, en un thread de sistema operativo pueden coexistir varios \textsl{threads} \haskell.
 \subparagraph{}Cada uno de estos procesos se ejecuta dentro del entorno de una m—nada, la cual se encuentra identificada en la esquina superior derecha del bloque.  En el diagrama podemos identificar los siguientes componentes:
 \begin{description}
@@ -871,10 +868,7 @@ $ ~/.cabal/bin/hfiar &
 	\item[Element Filler] Este proceso, iniciado por el \textbf{UI Manager} cumple una muy sencilla funci—n: utilizando los procedimientos de env’o y recepci—n de mensajes provistos por \textsl{eprocess}, espera recibir una lista de caracteres (para ser precisos, espera recibir una expresi—n de tipo \texttt{String}), para evaluarla y enviar como respuesta su valor en forma normal.
 	\item[Runaway Killer] Este thread, instancia del tipo \textsl{TimerEx} provisto por \textsl{wxHaskell}, es iniciado por el \textbf{Value Filler} al momento de enviar un nuevo elemento al \textbf{Element Filler}.  El objetivo del \textbf{Runaway Killer} es el de detectar procesamiento ``posiblemente'' infinito.  B‡sicamente, pasado un segundo de procesamiento, reinicia el \textbf{Element Filler} e informa al \textbf{Value Filler} que lo inici— que el elemento que se esperaba procesar ha demorado demasiado y podr’a desencadenar una evaluaci—n infinita.
 \end{description}
-\paragraph{}Para poder entender el funcionamiento de los distintos procesos con un mayor detalle, presentaremos un ejemplo en el cual el usuario define la expresi—n \texttt{e = let loop = loop in [1, loop, 3, div 0 0] ++ [5..]} e intenta interpretarla, pero, mientras \hpage\ est‡ present‡ndole los resultados, decide cancelar la interpretaci—n.  Elegimos la expresi—n \texttt{e} por ser una lista infinita y adem‡s presentar algunos elementos que generan distintos tipos de excepciones.  La Figura~\ref{seq1} nos muestra el diagrama de secuencia correspondiente al ejemplo.
-%%TODO: Modificar el dibujo:
-%%		elementFiller -> elementFiller :: Process
-%%		ahora anda como WIC!!
+\paragraph{}Para poder entender el funcionamiento de los distintos procesos con un mayor detalle, presentaremos un ejemplo en el cual el usuario define la expresi—n \texttt{e = let loop = loop in [1, loop, 3, div 0 0] ++ [5..]} e intenta interpretarla pero, mientras \hpage\ est‡ present‡ndole los resultados, decide cancelar la interpretaci—n.  Elegimos la expresi—n \texttt{e} por ser una lista infinita y adem‡s presentar algunos elementos que generan distintos tipos de excepciones e incluso uno que requerir’a un c‡lculo infinito para presentarlo.  La Figura~\ref{seq1} nos muestra el diagrama de secuencia correspondiente al ejemplo.
 \begin{figure}[hp]
 	\begin{center}
         	\fbox{\includegraphics[width=\textwidth]{pictures/sequence}}
@@ -882,11 +876,8 @@ $ ~/.cabal/bin/hfiar &
 		\label{seq1}
 	\end{center}
 \end{figure}
-\subparagraph{}Podemos ver en el diagrama que el \textbf{HPage Server}, al detectar que la expresi—n a evaluar es una lista, en lugar de solicitar al \textbf{Hint Server} que evalœe la expresi—n original, le solicita la interpretaci—n de la expresi—n \texttt{map show e}, de modo de obtener una lista de \texttt{String}s para retornar al \textbf{UI Manager}.  Luego, el \textbf{Value Filler}, al recibir una lista de valores a mostrar, intenta presentar cada uno de ellos por separado, concaten‡ndolos del modo en que generalmente se presentan las listas en \haskell.  Cuando el usuario decide cancelar, \textbf{HPage Server} detiene el \textbf{Value Filler} y, por lo tanto, este proceso se interrumpe.
-\subparagraph{}Con el objetivo de destacar otras interacciones m‡s significativas, en el diagrama de la Figura~\ref{seq1} hemos omitido la parte del proceso que involucra al \textbf{Element Filler} y al \textbf{Runaway Killer}.  Para visualizar mejor su utilidad, la Figura~\ref{seq2} nos muestra en detalle lo que sucede cuando se intentan presentar los dos primeros elementos de la lista.  Como puede verse, al intentar mostrar la expresi—n \texttt{e}, \hpage\ se encontrar‡ con una lista cuyo segundo elemento no puede computar pues requiere un c‡lculo infinito, en la Figura~\ref{seq2} representamos este caracter con la letra $\Omega$. All’ es donde entra en acci—n el \textbf{Runaway Killer} para informar esta situaci—n al usuario.
-%%TODO: Modificar el dibujo:
-%%		elementFiller -> elementFiller :: Process
-%%		ahora son elementos y no est‡ m‡s WIC
+\subparagraph{}Podemos ver en el diagrama que el \textbf{HPage Server}, al detectar que la expresi—n a evaluar es una lista, en lugar de solicitar al \textbf{Hint Server} que evalœe la expresi—n original, le solicita la interpretaci—n de la expresi—n \texttt{map show e}, de modo de obtener una lista de \texttt{String}s para retornar al \textbf{UI Manager}.  Luego, el \textbf{Value Filler}, al recibir una lista de valores a mostrar, intenta presentar cada uno de ellos por separado, concaten‡ndolos del modo en que generalmente se presentan las listas en \haskell.  Cuando detecta una excepci—n o un elemento que demora demasiado en ser computado, informa esta situaci—n al usuario presentando el caracter $\bot$ asociado al error correspondiente. Cuando el usuario decide cancelar, \textbf{HPage Server} detiene el \textbf{Value Filler} y, por lo tanto, este proceso se interrumpe.
+\subparagraph{}Con el objetivo de destacar otras interacciones m‡s significativas, en el diagrama de la Figura~\ref{seq1} hemos omitido la parte del proceso que involucra al \textbf{Element Filler} y al \textbf{Runaway Killer}.  Para visualizar mejor su utilidad, la Figura~\ref{seq2} nos muestra en detalle lo que sucede cuando se intentan presentar los dos primeros elementos de la lista.  Como puede verse, al intentar mostrar cada elemento de la expresi—n \texttt{e}, el \textbf{Value Filler} inicia en simult‡neo al \textbf{Element Filler} y al \textbf{Runaway Killer} y luego espera que alguno de los dos concluya su labor.  Cuando eso sucede, detiene al proceso que ha ``perdido la carrera'' e indica al \textbf{UI Manager} c—mo mostrar el valor y/o el error generado por el proceso ``ganador''.
 \begin{figure}[hp]
 	\begin{center}
         	\fbox{\includegraphics[width=\textwidth]{pictures/sequence2}}
