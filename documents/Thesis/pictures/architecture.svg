@@ -16,7 +16,7 @@
    version="1.1"
    inkscape:version="0.47 r22583"
    sodipodi:docname="architecture.svg"
-   inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/architecture.png"
+   inkscape:export-filename="/Users/elbrujohalcon/Projects/haskell/hpage/documents/Thesis/pictures/architecture.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -1481,13 +1481,13 @@
      inkscape:cx="231.09966"
      inkscape:cy="240.72331"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g7987"
      showgrid="false"
      inkscape:window-width="1360"
      inkscape:window-height="724"
-     inkscape:window-x="0"
+     inkscape:window-x="-4"
      inkscape:window-y="0"
-     inkscape:window-maximized="1" />
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -1780,7 +1780,7 @@
            y="923.27051"
            x="455.91629"
            id="tspan7979"
-           sodipodi:role="line">Char</tspan><tspan
+           sodipodi:role="line">Element</tspan><tspan
            y="937.27051"
            x="455.91629"
            id="tspan7981"
@@ -1799,7 +1799,7 @@
            id="tspan7985"
            sodipodi:role="line"
            x="449.70978"
-           y="899.3222">(Char)</tspan></text>
+           y="899.3222">(String)</tspan></text>
     </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Mstart-5);marker-end:url(#Arrow1Mend-6)"

@@ -10,6 +10,7 @@ import Control.Monad
 import Distribution.PackageDescription
 import Distribution.Simple.Setup
 import Distribution.Simple
+import Distribution.Simple.Utils
 import Distribution.Simple.LocalBuildInfo
 
 main :: IO ()
@@ -18,7 +19,8 @@ main = do
          let usefulres = flip filter resources $ \r -> r /= ("res" </> "images" </> "icon" </> "hpage.icns")
          defaultMainWithHooks $ simpleUserHooks {
                 postBuild = appBundleBuildHook $ [guiApp usefulres], -- no-op if not MacOS X
-                postInst = appBundleInstall $ guiApp usefulres
+                postInst = appBundleInstall $ guiApp usefulres,
+                runTests = runTests'
          }
 
 guiApp :: [FilePath] -> MacApp
@@ -60,3 +62,10 @@ appBundleInstall app _ _ pkg localb =
         
 copyDirectory :: FilePath -> FilePath -> IO ExitCode
 copyDirectory dir newLocation = rawSystem "cp" ["-rf", dir, newLocation]
+
+runTests' :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ()
+runTests' _ _ _ lbi = do
+          built <- doesDirectoryExist $ buildDir lbi
+          unless built $ die "Run the 'build' command first."
+          system $ "cd src && runhaskell -i../dist/build/autogen HPage.Test.Server && cd .."
+          return ()
