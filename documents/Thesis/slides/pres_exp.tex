@@ -62,7 +62,7 @@
 \subsection{Motivación}
 \begin{frame}
 	\frametitle{Contexto}
-	Presenciamos actualmente la aparición de aplicaciones desarrolladas dentro del \textsl{paradigma funcional}:
+	Presenciamos actualmente la aparición de varias aplicaciones desarrolladas dentro del \textsl{paradigma funcional}:
 		\begin{itemize}
 			\item CouchDB
 			\item ejabberd
@@ -114,7 +114,7 @@
 \frametitle{Interpretación de Expresiones}
 	\hpage\ permite interpretar expresiones como:
 	\begin{lstlisting}
-		[1,2,3]::[Float]
+		[1,2,3]
 	\end{lstlisting}
 	\pause
 	\begin{lstlisting}
@@ -143,55 +143,82 @@
 \subsection{Expresiones Complejas}
 \begin{frame}[fragile]
 \frametitle{Acciones con Efectos Colaterales}
-	En \haskell\ para realizar acciones que puedan generar efectos colaterales se utiliza la mónada \texttt{IO}.  Por ejemplo:
+	Para realizar acciones que puedan generar efectos colaterales, en \haskell\ se utiliza la mónada \texttt{IO}.  Por ejemplo:
 	\begin{lstlisting}
 		readFile ``README'' :: IO String
 	\end{lstlisting}
 	\pause
 	\texttt{IO String} no es un tipo ``visible'', por lo que el valor de la expresión no se podría mostrar.
 	\pause \\
-	\hpage\ toma el modelo de \textsl{GHCi} y ejecuta la acción, presentando su resultado
+	Pero \hpage\ toma el modelo de \textsl{GHCi} y ejecuta la acción, presentando su resultado
 \end{frame}
 \begin{frame}[fragile]
 \frametitle{Listas}
 	\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
-	Por ejemplo, al evaluar la siguiente expresión:
+	Tomemos como ejemplo la siguiente expresión:
 	\begin{lstlisting}
 		let loop = loop in [1, div 0 0, 2,
 		                    undefined, 3, loop, 4]
 	\end{lstlisting}
-	\pause
-	\hpage\ podría presentar como resultado
-	\begin{center}
-	[1,
-	\end{center}
-	\pause
-	o, en caso de detectar excepciones en los elementos de la lista,
-	\begin{center}
-	[1, $_{\bot}$, 2, $_{\bot}$, 3, 
-	\end{center}
 \end{frame}
 \begin{frame}[fragile]
-\frametitle{Listas}
-	\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
-	Por ejemplo, al evaluar la siguiente expresión:
+	\frametitle{Listas}
 	\begin{lstlisting}
 		let loop = loop in [1, div 0 0, 2,
 		                    undefined, 3, loop, 4]
-	\end{lstlisting}
-	\hpage\ presenta como resultado:
-	\begin{center}
-	[1, $_{\bot}$, 2, $_{\bot}$, 3, $_{\bot}$, 4]
-	\end{center}
+	\end{lstlisting} ~\\
+	Si \hpage\ presentase su evaluación tal como lo hace con las demás expresiones, el resultado sería\\~\\
+	\framebox[1\textwidth]{\texttt{[1,}} \\~\\
+	e informaría al usuario la excepción encontrada (o sea, \texttt{DivideByZero})
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Listas}
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting} ~\\
+	\hpage\, en cambio, podría evaluar cada elemento por separado y detectar excepciones.  En tal caso, el resultado sería\\~\\
+	\framebox[1\textwidth]{\texttt{[1, $_{\bot}$, 2, $_{\bot}$, 3, }} \\~\\
+	y continuaría intentando calcular el siguiente elemento hasta que el usuario decidiese cancelar
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Listas}
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting} ~\\
+	\hpage, sin embargo, detecta cálculos posiblemente infinitos y presenta como resultado:\\~\\
+	\framebox[1\textwidth]{\texttt{[1, $_{\bot}$, 2, $_{\bot}$, 3,  $_{\bot}$, 4]}} \\~\\
+	permitiendo luego al usuario conocer el motivo de cada $_{\bot}$ a través de un menú contextual
 \end{frame}
 
 \subsection{Otras Características}
 \begin{frame}
-\frametitle{Otras Características}
-	TODO: Paralelismo\\
-	TODO: Hablar de la integración con Cabal y Hayoo!\\
-	TODO: Hablar de Importar/Cargar/Recargar Módulos\\
-	TODO: Hablar de Género
+\frametitle{Paralelismo}
+	Muchas cosas suceden al mismo tiempo en \hpage\:
+	\begin{itemize}
+		\item Manejo de Páginas (crear, abrir, modificar, guardar, cerrar, etc.)
+		\item Interpretación de Expresiones
+		\item Evaluación de Acciones de Entrada/Salida
+	\end{itemize}
+	\pause
+	Para lograrlo, creamos \textsl{eprocess}:
+	\begin{itemize}
+		\item Basada conceptualmente en \textsl{Erlang}
+		\item Construída utilizando \textsl{Threads}, \textsl{Channels} y \textsl{MVars}
+	\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Manejo de Módulos}
+	Utilizando \hpage, el usuario puede
+	\begin{itemize}
+		\item Importar módulos
+		\item Cargar módulos
+		\item Recargar módulos
+		\item Ver los módulos de un paquete \textsl{Cabal}
+		\item Ver la documentación de un módulo utilizando \textsl{Hayoo!}
+	\end{itemize}
+	Todo esto \textsl{sin perder las expresiones que ya tiene definidas}
 \end{frame}
 
 \section{\hpage\ por Dentro}
