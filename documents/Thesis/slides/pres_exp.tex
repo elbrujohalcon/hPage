@@ -4,6 +4,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{latexsym}
+\usepackage{listings}
 
 %\newcommand{\speech}[1]{{\small #1}}
 \newcommand{\hpage}{$\lambda Page$}
@@ -24,11 +25,14 @@
 
 \begin{document}
 
-\frame{\titlepage}
+\begin{frame}
+	\titlepage
+\end{frame}
 
 \section{Presentación}
 \subsection{El Orador}
-\frame{
+\begin{frame}
+	\frametitle{El Orador}
      \emph{>quién soy?}\\
      \begin{itemize}
        \item Fernando Benavides
@@ -36,87 +40,204 @@
 	\pause
      \emph{>cómo llegué hasta aquí?}\\
      \begin{itemize}
-       \item Alumno UBA desde 2001
+       \item Alumno de Computación desde 2001
        \item Programador desde hace más de 10 años
        \item Programador \textsl{Funcional} desde hace 2 años
 	\end{itemize}
-}
+\end{frame}
 
 \subsection{El Proyecto}
-\frame{
-     \emph{\hpage}\\
-     \begin{itemize}
-	     \item Un bloc de notas para usuarios \haskell
-	\end{itemize}
-     \emph{Una herramienta para...}\\
+\begin{frame}
+     \frametitle{\hpage}
+     \emph{Un bloc de notas para usuarios \haskell}\\~\\
+	\pause
+     \emph{Una herramienta para...}
 	\begin{itemize}
 		\item debuggear
 		\item entender código
-		\item micro-testing
+		\item realizar \textsl{micro-testing}
 	\end{itemize}
-}
+\end{frame}
 
 \subsection{Motivación}
-\frame{
-	TODO: Hablar también de los \textsl{Trabajos Relacionados}
-}
+\begin{frame}
+	\frametitle{Contexto}
+	Presenciamos actualmente la aparición de aplicaciones desarrolladas dentro del \textsl{paradigma funcional}:
+		\begin{itemize}
+			\item CouchDB
+			\item ejabberd
+			\item Chat de Facebook
+		\end{itemize}
+		\pause
+	Desarrolladas en lenguajes como:
+		\begin{itemize}
+			\item Erlang
+			\item Haskell
+		\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Necesidades}
+	Para desarrollar en \haskell\, existen herramientas como:
+		\begin{itemize}
+			\item GHCi
+			\item Hugs
+			\item Hat
+		\end{itemize}
+	\pause
+	Pero no existen herramientas como
+	\begin{itemize}
+		\item \textbf{Java} Scrapbook Pages
+		\item Workspace de \textbf{Smalltalk}
+	\end{itemize}
+\end{frame}
+\begin{frame}
+	\frametitle{\hpage}
+	\hpage\ es una herramienta similar al Workspace de Smalltalk, en tanto:
+	\begin{itemize}
+		\item permite al desarrollador trabajar con texto libre
+		\item detecta expresiones y definiciones válidas
+		\item permite inspeccionarlas y evaluarlas
+	\end{itemize}
+	\pause
+	Además, \hpage, brinda otras facilidades particulares para \haskell:
+	\begin{itemize}
+		\item Integración con \textsl{Cabal} y \textsl{Hayoo!}
+		\item Aprovecha \textsl{lazy evaluation} y \textsl{tipado estático}
+		\item Presenta resultados dinámicamente
+	\end{itemize}
+\end{frame}
 
+\lstset{language=haskell, frame=single, tabsize=2}
 \section{Características Principales}
 \subsection{Expresiones Simples}
-\frame{
-	TODO: Hablar de lo que se vé en el tut1
-	TODO: Destacar paralelismo
-}
+\begin{frame}[fragile]
+\frametitle{Interpretación de Expresiones}
+	\hpage\ permite interpretar expresiones como:
+	\begin{lstlisting}
+		[1,2,3]::[Float]
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		xs = [1,2,3] :: [Float]
+		ys = map (+) xs
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		[1,2..]
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		let loop = loop in 1:loop
+	\end{lstlisting}
+\end{frame}
+\begin{frame}
+\frametitle{Presentación de Resultados}
+	\begin{itemize}
+		\item Para expresiones inválidas, \hpage\ presenta el error informado por \textsl{GHC}
+		\item Para expresiones sin resultado ``visible'', \hpage\ permite conocer su tipo
+		\item Para expresiones infinitas, \hpage\ presenta su valor incrementalmente hasta que el usuario cancela la evaluación
+		\item Para expresiones que requieren cálculos infinitos, \hpage\ permite al usuario cancelar la evaluación
+	\end{itemize}
+\end{frame}
 
 \subsection{Expresiones Complejas}
-\frame{
-	TODO: Hablar de las listas y las IO actions
-	TODO: Destacar paralelismo
-}
+\begin{frame}[fragile]
+\frametitle{Acciones con Efectos Colaterales}
+	En \haskell\ para realizar acciones que puedan generar efectos colaterales se utiliza la mónada \texttt{IO}.  Por ejemplo:
+	\begin{lstlisting}
+		readFile ``README'' :: IO String
+	\end{lstlisting}
+	\pause
+	\texttt{IO String} no es un tipo ``visible'', por lo que el valor de la expresión no se podría mostrar.
+	\pause \\
+	\hpage\ toma el modelo de \textsl{GHCi} y ejecuta la acción, presentando su resultado
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Listas}
+	\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
+	Por ejemplo, al evaluar la siguiente expresión:
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting}
+	\pause
+	\hpage\ podría presentar como resultado
+	\begin{center}
+	[1,
+	\end{center}
+	\pause
+	o, en caso de detectar excepciones en los elementos de la lista,
+	\begin{center}
+	[1, $_{\bot}$, 2, $_{\bot}$, 3, 
+	\end{center}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Listas}
+	\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
+	Por ejemplo, al evaluar la siguiente expresión:
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting}
+	\hpage\ presenta como resultado:
+	\begin{center}
+	[1, $_{\bot}$, 2, $_{\bot}$, 3, $_{\bot}$, 4]
+	\end{center}
+\end{frame}
 
 \subsection{Otras Características}
-\frame{
-	TODO: Hablar de la integración con Cabal y Hayoo!
-	TODO: Hablar de Importar/Cargar
-}
+\begin{frame}
+\frametitle{Otras Características}
+	TODO: Paralelismo\\
+	TODO: Hablar de la integración con Cabal y Hayoo!\\
+	TODO: Hablar de Importar/Cargar/Recargar Módulos\\
+	TODO: Hablar de Género
+\end{frame}
 
-\subsection{Demostración}
-\frame{
-	Y pasemos a la demo...
-}
-
-\section{Arquitectura, Diseño e Implementación}
+\section{\hpage\ por Dentro}
 \subsection{Arquitectura}
-\frame{
+\begin{frame}
+\frametitle{Arquitectura}
 	TODO: Gráfico de la arquitectura y su explicación
-}
+\end{frame}
+\begin{frame}
+\frametitle{Secuencia}
+	TODO: Gráfico de la secuencia y su explicación?
+\end{frame}
 
 \subsection{Diseño}
-\frame{
+\begin{frame}
+\frametitle{Principales Decisiones de Diseño}
 	TODO: Principales temas de diseño
-}
-\frame{
-	...se pueden poner 2 frames, x ejemplo...
-}
+\end{frame}
 
 \subsection{Implementación}
-\frame{
+\begin{frame}
+\frametitle{Implementación}
 	TODO: Principales temas de implementación
-}
+\end{frame}
+
 
 \section{Resultados}
-\subsection{Objetivos Alcanzados}
-\frame{
+\subsection{Logros}
+\begin{frame}
+\frametitle{Objetivos Alcanzados}
 	TODO: Objetivos Alcanzados
-}
+\end{frame}
+\begin{frame}
+\frametitle{Logros Adicionales}
+	TODO: Otras cosas logradas más allá de lo que originalmente nos propusimos
+\end{frame}
+
 \subsection{Trabajo a Futuro}
-\frame{
+\begin{frame}
+\frametitle{Tareas a Realizar}
 	TODO: Trabajo a Futuro
-}
+\end{frame}
+
 \subsection{Agradecimientos / Preguntas}
-\frame{
-	\emph{!`Gracias a todos!}\\ ~\\
-	\pause ~\\
+\begin{frame}
+\frametitle{!`Gracias a todos!}
 	\emph{?`En qué los puedo ayudar?}
-}
+\end{frame}
 \end{document}

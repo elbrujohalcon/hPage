@@ -1,0 +1,11 @@
+\frametitle {Listas}
+\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
+Por ejemplo, al evaluar la siguiente expresi—n:
+\begin{lstlisting}
+let loop = loop in [1, div 0 0, 2,
+                    undefined, 3, loop, 4]
+\end{lstlisting}
+\hpage\ presenta como resultado:
+\begin{center}
+[1, $_{\bot}$, 2, $_{\bot}$, 3, $_{\bot}$, 4]
+\end{center}
