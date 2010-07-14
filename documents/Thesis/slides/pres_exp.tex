@@ -225,23 +225,126 @@
 \subsection{Arquitectura}
 \begin{frame}
 \frametitle{Arquitectura}
-	TODO: Gr‡fico de la arquitectura y su explicaci—n
+\begin{columns}[c]
+	\column{.5\textwidth}Principales Requerimientos:
+	\begin{itemize}
+		\item Conexi—n con GHC
+		\item Paralelismo
+		\item Errores Controlados
+		\item Presentaci—n de Resultados
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture}
+\end{columns}
 \end{frame}
 \begin{frame}
-\frametitle{Secuencia}
-	TODO: Gr‡fico de la secuencia y su explicaci—n?
+\frametitle{Componentes}
+	\begin{description}
+		\item[\texttt{~~~~UI Manager}] Administrador de la GUI
+		\item[\texttt{~~HPage Server}] Interfaz entre la GUI y \textsl{GHC}
+		\item[\texttt{~~~~~IO Server}] Para ejecutar acciones de entrada/salida
+		\item[\texttt{~~~Hint Server}] Conecta \textsl{HPage} y \textsl{GHC}
+		\item[\texttt{~~Value Filler}] Encargado de procesar y mostrar expresiones
+		\item[\texttt{Element Filler}] Encargado de evaluar elementos
+		\item[\texttt{Runaway Killer}] Detector de c‡lculos infinitos
+	\end{description}
 \end{frame}
 
 \subsection{Dise–o}
 \begin{frame}
 \frametitle{Principales Decisiones de Dise–o}
-	TODO: Principales temas de dise–o
+	\begin{itemize}
+		\item Creaci—n de \textsl{eprocess}
+		\item Creaci—n de \textbf{servers}
+		\item Presentaci—n de Interpretaciones
+			\begin{itemize}
+				\item Entrada/Salida
+				\item Listas
+				\item Tipos
+				\item Expresiones ``visibles''
+				\item Expresiones ``no visibles''
+			\end{itemize}
+		\item Integraci—n con \textsl{Cabal} y \textsl{Hayoo!}		
+	\end{itemize}
+\end{frame}
+\lstset{basicstyle=\small}
+\subsection{Implementaci—n}
+\begin{frame}[fragile]
+\frametitle{\textsl{eprocess}}
+	\begin{lstlisting}
+newtype ReceiverT r m a
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+type Process r = ReceiverT r IO
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+spawn :: MonadIO m => Process r k -> m (Handle r)
+kill :: MonadIO m => Handle a -> m ()
+self :: Monad m => ReceiverT r m (Handle r)
+sendTo :: MonadIO m => Handle a -> a -> m ()
+recv :: MonadIO m => ReceiverT r m r
+	\end{lstlisting}
 \end{frame}
 
-\subsection{Implementaci—n}
-\begin{frame}
-\frametitle{Implementaci—n}
-	TODO: Principales temas de implementaci—n
+\begin{frame}[fragile]
+\frametitle{Servers (\texttt{IOServer})}
+\begin{lstlisting}
+newtype ServerHandle = SH {handle :: Handle (IO ())}
+
+start :: IO ServerHandle
+start = spawn ioRunner >>= return . SH
+    where ioRunner = forever $ recv >>= liftIO
+
+runIn :: ServerHandle -> IO a ->
+         IO (Either SomeException a)
+runIn server action = runHere $ do
+    me <- self
+    sendTo (handle server) $ try action >>=
+                                    sendTo me
+                                    recv
+stop :: ServerHandle -> IO ()
+stop = kill . handle
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{\texttt{HPage.Control}}
+\begin{lstlisting}
+newtype Expression = Exp {exprText :: String}       
+    deriving (Eq, Show)
+
+data Page = Page { -- Display --
+                   expressions :: [Expression],
+                   currentExpr :: Int,
+                   undoActions :: [HPage ()],
+                   redoActions :: [HPage ()],
+                   -- File System --
+                   original :: [Expression],
+                   filePath    :: Maybe FilePath
+                  }
+\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{\texttt{HPage.Control}}
+\begin{lstlisting}
+data Context = Context { -- Package --
+    activePackage :: Maybe PackageIdentifier,
+    pkgModules :: [Hint.ModuleName],
+    -- Pages --
+    pages :: [Page],
+    currentPage :: Int,
+    -- GHC State --
+    loadedModules :: Set String,
+    importedModules :: Set String,
+    extraSrcDirs :: [FilePath],
+    ghcOptions :: String,
+    server :: HS.ServerHandle,
+    ioServer :: HPIO.ServerHandle,
+    -- Actions --
+    recoveryLog :: Hint.InterpreterT IO () }
+\end{lstlisting}
 \end{frame}
 
 
@@ -249,17 +352,53 @@
 \subsection{Logros}
 \begin{frame}
 \frametitle{Objetivos Alcanzados}
-	TODO: Objetivos Alcanzados
+	\hpage\ permite al usuario
+	\begin{itemize}
+		\item Configurar de entorno segœn paquetes \textsl{Cabal}
+		\item Editar p‡ginas mientras se evalœa una expresi—n
+		\item Visualizar expresiones con errores o c‡lculos infinitos sin bloquearse mostrando el resultado m‡s completo posible
+		\item Importar, cargar y recargar m—dulos sin perder las expresiones con las que est‡ trabajando
+		\item Intercalar definiciones, expresiones y texto libre
+	\end{itemize}
 \end{frame}
 \begin{frame}
 \frametitle{Logros Adicionales}
-	TODO: Otras cosas logradas m‡s all‡ de lo que originalmente nos propusimos
+	M‡s all‡ de los objetivos propuestos para esta tesis, \hpage\ permite
+	\begin{itemize}
+		\item Consultar la API de \haskell utilizando \textsl{Hayoo!}
+		\item Trabajar en \textsl{OSX}, \textsl{Windows} y \textsl{Linux}
+		\item Administrar varias p‡ginas con expresiones, pudiendo cargarlas, guardarlas, etc.
+		\item Determinar el contexto de evaluaci—n din‡micamente
+		\item Navegar m—dulos importados o cargados
+	\end{itemize}
 \end{frame}
 
 \subsection{Trabajo a Futuro}
 \begin{frame}
 \frametitle{Tareas a Realizar}
-	TODO: Trabajo a Futuro
+	\begin{itemize}
+		\item Mejoras visuales
+		\pause
+		\item Presentaci—n de resultados:
+		\begin{itemize}
+			\item Nuevas visualizaciones
+			\item Distintos tipos a tratar de modo particular
+			\item Composici—n
+		\end{itemize}
+		\pause
+		\item Otras herramientas
+		\begin{itemize}
+			\item Soporte para TDD
+			\item Refactoring
+			\item An‡lisis de Terminaci—n
+			\item Debugging
+		\end{itemize}
+		\pause
+		\item Otros lenguajes
+		\begin{itemize}
+			\item Erlang
+		\end{itemize}
+	\end{itemize}
 \end{frame}
 
 \subsection{Agradecimientos / Preguntas}

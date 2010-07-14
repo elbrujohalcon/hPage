@@ -53,24 +53,30 @@
 \headcommand {\slideentry {3}{2}{1}{29/29}{Dise\~no}{0}}
 \headcommand {\beamer@framepages {29}{29}}
 \headcommand {\beamer@subsectionentry {0}{3}{3}{30}{Implementaci\'on}}\headcommand {\beamer@subsectionpages {29}{29}}
-\headcommand {\slideentry {3}{3}{1}{30/30}{Implementaci\'on}{0}}
-\headcommand {\beamer@framepages {30}{30}}
-\headcommand {\sectionentry {4}{Resultados}{31}{Resultados}{0}}
-\headcommand {\beamer@sectionpages {27}{30}}
-\headcommand {\beamer@subsectionpages {30}{30}}
-\headcommand {\beamer@subsectionentry {0}{4}{1}{31}{Logros}}\headcommand {\beamer@subsectionpages {31}{30}}
-\headcommand {\slideentry {4}{1}{1}{31/31}{Logros}{0}}
-\headcommand {\beamer@framepages {31}{31}}
-\headcommand {\slideentry {4}{1}{2}{32/32}{Logros}{0}}
-\headcommand {\beamer@framepages {32}{32}}
-\headcommand {\beamer@subsectionentry {0}{4}{2}{33}{Trabajo a Futuro}}\headcommand {\beamer@subsectionpages {31}{32}}
-\headcommand {\slideentry {4}{2}{1}{33/33}{Trabajo a Futuro}{0}}
+\headcommand {\slideentry {3}{3}{1}{30/32}{Implementaci\'on}{0}}
+\headcommand {\beamer@framepages {30}{32}}
+\headcommand {\slideentry {3}{3}{2}{33/33}{Implementaci\'on}{0}}
 \headcommand {\beamer@framepages {33}{33}}
-\headcommand {\beamer@subsectionentry {0}{4}{3}{34}{Agradecimientos / Preguntas}}\headcommand {\beamer@subsectionpages {33}{33}}
-\headcommand {\slideentry {4}{3}{1}{34/34}{Agradecimientos / Preguntas}{0}}
+\headcommand {\slideentry {3}{3}{3}{34/34}{Implementaci\'on}{0}}
 \headcommand {\beamer@framepages {34}{34}}
-\headcommand {\beamer@partpages {1}{34}}
-\headcommand {\beamer@subsectionpages {34}{34}}
-\headcommand {\beamer@sectionpages {31}{34}}
-\headcommand {\beamer@documentpages {34}}
-\headcommand {\def \inserttotalframenumber {23}}
+\headcommand {\slideentry {3}{3}{4}{35/35}{Implementaci\'on}{0}}
+\headcommand {\beamer@framepages {35}{35}}
+\headcommand {\sectionentry {4}{Resultados}{36}{Resultados}{0}}
+\headcommand {\beamer@sectionpages {27}{35}}
+\headcommand {\beamer@subsectionpages {30}{35}}
+\headcommand {\beamer@subsectionentry {0}{4}{1}{36}{Logros}}\headcommand {\beamer@subsectionpages {36}{35}}
+\headcommand {\slideentry {4}{1}{1}{36/36}{Logros}{0}}
+\headcommand {\beamer@framepages {36}{36}}
+\headcommand {\slideentry {4}{1}{2}{37/37}{Logros}{0}}
+\headcommand {\beamer@framepages {37}{37}}
+\headcommand {\beamer@subsectionentry {0}{4}{2}{38}{Trabajo a Futuro}}\headcommand {\beamer@subsectionpages {36}{37}}
+\headcommand {\slideentry {4}{2}{1}{38/41}{Trabajo a Futuro}{0}}
+\headcommand {\beamer@framepages {38}{41}}
+\headcommand {\beamer@subsectionentry {0}{4}{3}{42}{Agradecimientos / Preguntas}}\headcommand {\beamer@subsectionpages {38}{41}}
+\headcommand {\slideentry {4}{3}{1}{42/42}{Agradecimientos / Preguntas}{0}}
+\headcommand {\beamer@framepages {42}{42}}
+\headcommand {\beamer@partpages {1}{42}}
+\headcommand {\beamer@subsectionpages {42}{42}}
+\headcommand {\beamer@sectionpages {36}{42}}
+\headcommand {\beamer@documentpages {42}}
+\headcommand {\def \inserttotalframenumber {26}}
