@@ -75,19 +75,77 @@
 			\item Haskell
 		\end{itemize}
 \end{frame}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{GHCi}
+		\begin{description}
+			\item[Descripción] Es la consola de \textsl{GHC}
+			\item[Ventajas]
+			\begin{itemize}
+				\item Permite evaluar expresiones, verificar su tipo o su género
+				\item Permite cargar o importar módulos
+				\item Permite ejecutar acciones de entrada/salida
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item No permite editar más de una expresión a la vez
+				\item Las opciones del compilador se setean una única vez al iniciar
+				\item Las definiciones se pierden al recargar módulos o cerrar el programa
+			\end{itemize}
+		\end{description}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{Hugs98}
+		\begin{description}
+			\item[Descripción] Es un intérprete \haskell\ escrito en \textsl{C}
+			\item[Ventajas]
+			\begin{itemize}
+				\item Es pequeño y portable
+				\item Ideal para aprender \haskell
+				\item Provee una interfaz gráfica para \textsl{Windows} (\textsl{WinHugs})
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item Bajo rendimiento en tiempo de ejecución
+				\item No permite compilar código
+			\end{itemize}
+		\end{description}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{Hat}
+		\begin{description}
+			\item[Descripción] Herramienta para realizar seguimiento a través de trazas
+			\item[Ventajas]
+			\begin{itemize}
+				\item Ayuda a localizar errores en los programas
+				\item Permite entender el funcionamiento de los mismos
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item Requiere que el programa compile para poder ejecutarse
+				\item Requiere ejecutar un programa antes de poder analizarlo
+				\item Se encuentra sin mantenimiento activo
+			\end{itemize}
+		\end{description}
+\end{frame}
 \begin{frame}
 \frametitle{Necesidades}
-	Para desarrollar en \haskell\, existen herramientas como:
-		\begin{itemize}
-			\item GHCi
-			\item Hugs
-			\item Hat
-		\end{itemize}
-	\pause
-	Pero no existen herramientas como
+	Quienes programan en lenguajes orientados a objetos utilizan herramientas como
 	\begin{itemize}
 		\item \textbf{Java} Scrapbook Pages
 		\item Workspace de \textbf{Smalltalk}
+	\end{itemize}
+	\pause
+	Estas aplicaciones permiten 
+	\begin{itemize}
+		\item introducir pequeñas porciones de código para ejecutarlas, inspeccionarlas y  analizar los resultados obtenidos
+		\item administrar varias paginas de texto en las que dichas expresiones pueden intercalarse con texto libre
+		\item crear objetos localmente y utilizarlos
 	\end{itemize}
 \end{frame}
 \begin{frame}
@@ -221,7 +279,51 @@
 	Todo esto \textsl{sin perder las expresiones que ya tiene definidas}
 \end{frame}
 
+\begin{frame}
+\frametitle{Resumen}
+	En síntesis, además de lo que puede hacer con las herramientas existentes, el usuario de \hpage\ puede:
+	\begin{itemize}
+		\item Evaluar expresiones al tiempo que se realizan otras tareas
+		\item Administrar varias páginas de texto libre con expresiones \haskell
+		\item Seleccionar cuál es el contexto de evaluación deseado al momento de interpretar una expresión
+		\item Configurar las opciones del compilador dinámicamente ya sea a través de un menú o utilizando un paquete \textsl{Cabal}
+	\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Resumen}
+	En síntesis, además de lo que puede hacer con las herramientas existentes, el usuario de \hpage\ puede:
+	\begin{itemize}
+		\item Navegar visualmente los módulos cargados y sus funciones, tipos, clases, etc. utilizando \textsl{Hayoo!} para observar su documentación
+		\item Importar, cargar y recargar módulos sin perder sus expresiones
+		\item Visualizar una porción mayor de los resultados de la evaluación de expresiones como las listas
+		\item Trabajar con expresiones pese a que parte de su evaluación requiera un cálculo infinito o genere excepciones
+	\end{itemize}
+\end{frame}
+
 \section{\hpage\ por Dentro}
+\subsection{Diseño}
+\begin{frame}
+\frametitle{Principales Decisiones de Diseño}
+	\hpage\ es el fruto de un diseño evolutivo que atravezó las siguientes etapas:
+	\begin{itemize}
+		\item Conexión con \textsl{GHC} utilizando \textsl{hint}
+		\pause
+		\item Paralelismo a través de \textsl{eprocess}
+		\pause
+		\item Creación de \textbf{servers}
+		\pause
+		\item Integración con \textsl{Cabal} y \textsl{Hayoo!}
+		\pause
+		\item Presentación de Interpretaciones
+			\begin{itemize}
+				\item Expresiones ``visibles''
+				\item Expresiones ``no visibles''
+				\item Entrada / Salida
+				\item Listas
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
 \subsection{Arquitectura}
 \begin{frame}
 \frametitle{Arquitectura}
@@ -237,36 +339,88 @@
 		\includegraphics[height=.75\textheight]{pictures/architecture}
 \end{columns}
 \end{frame}
-\begin{frame}
-\frametitle{Componentes}
-	\begin{description}
-		\item[\texttt{~~~~UI Manager}] Administrador de la GUI
-		\item[\texttt{~~HPage Server}] Interfaz entre la GUI y \textsl{GHC}
-		\item[\texttt{~~~~~IO Server}] Para ejecutar acciones de entrada/salida
-		\item[\texttt{~~~Hint Server}] Conecta \textsl{HPage} y \textsl{GHC}
-		\item[\texttt{~~Value Filler}] Encargado de procesar y mostrar expresiones
-		\item[\texttt{Element Filler}] Encargado de evaluar elementos
-		\item[\texttt{Runaway Killer}] Detector de cálculos infinitos
-	\end{description}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+	Veremos cómo interactúan estos componentes para evaluar la siguiente expresión:
+	\begin{lstlisting}
+		readFile "hpage.cabal" >>=
+		    return . length . head . lines
+	\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El usuario indica al \texttt{UI~Manager} que desea interpretar la expresión
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/01}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{UI~Manager} solicita la evaluación del texto al \texttt{HPage~Server}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/02}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{HPage~Server} envía al \texttt{Hint~Server} la expresión para conocer su valor y su tipo
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/03}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{Hint~Server} se comunica con GHC utilizando \textsl{hint} y obtiene los valores solicitados, que luego informa al \texttt{HPage~Server}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/04}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}
+		El \texttt{HPage~Server}, al detectar que se trata de una acción de la mónada \texttt{IO}, crea una \texttt{MVar} y envía un mensaje al \texttt{IO~Server} para que ejecute la acción y llene la \texttt{MVar} con su resultado. Luego informa al \texttt{UI~Manager} el tipo de la expresión y la \texttt{MVar} en la que se volcará su resultado una vez ejecutada
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/05}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{UI~Manager} muestra el tipo al usuario y vacía el cuadro de texto donde se encuentra el resultado.  Luego, informándole la \texttt{MVar} recibida, solicita al \texttt{Value~Filler} que espere el resultado y llene el cuadro de texto con él.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/06}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{Value~Filler} se bloquea a la espera de que un valor sea depositado en la \texttt{MVar} recibida.  Una vez conseguido ese valor, que es una cadena de caracteres (\texttt{''11''}), toma el primero y lo envía al \texttt{Element~Filler} al tiempo que inicia el \texttt{Runaway~Killer}.  Luego, se bloquea esperando recibir un mensaje de alguno de ellos.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/07}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}Antes de transcurrido un segundo, el \texttt{Element~Filler} computa el caracter \texttt{1} y envía un mensaje al \texttt{Value~Filler} con el mismo.  El \texttt{Value~Filler} lo agrega al cuadro de texto del resultado y detiene el \texttt{Runaway~Killer}.  Luego repite el paso anterior y éste para el segundo caracter.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/07}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}Finalmente, el \texttt{Value~Filler} informa al \texttt{UI~Manager} que ha presentado el resultado con éxito, para que éste se lo informe al usuario.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/06}
+\end{columns}
 \end{frame}
 
-\subsection{Diseño}
-\begin{frame}
-\frametitle{Principales Decisiones de Diseño}
-	\begin{itemize}
-		\item Creación de \textsl{eprocess}
-		\item Creación de \textbf{servers}
-		\item Presentación de Interpretaciones
-			\begin{itemize}
-				\item Entrada/Salida
-				\item Listas
-				\item Tipos
-				\item Expresiones ``visibles''
-				\item Expresiones ``no visibles''
-			\end{itemize}
-		\item Integración con \textsl{Cabal} y \textsl{Hayoo!}		
-	\end{itemize}
-\end{frame}
 \lstset{basicstyle=\small}
 \subsection{Implementación}
 \begin{frame}[fragile]
@@ -293,7 +447,7 @@ recv :: MonadIO m => ReceiverT r m r
 \begin{lstlisting}
 newtype ServerHandle = SH {handle :: Handle (IO ())}
 
-start :: IO ServerHandle
+start :: IO~ServerHandle
 start = spawn ioRunner >>= return . SH
     where ioRunner = forever $ recv >>= liftIO
 
@@ -365,7 +519,7 @@ data Context = Context { -- Package --
 \frametitle{Logros Adicionales}
 	Más allá de los objetivos propuestos para esta tesis, \hpage\ permite
 	\begin{itemize}
-		\item Consultar la API de \haskell utilizando \textsl{Hayoo!}
+		\item Consultar la API de \haskell\ utilizando \textsl{Hayoo!}
 		\item Trabajar en \textsl{OSX}, \textsl{Windows} y \textsl{Linux}
 		\item Administrar varias páginas con expresiones, pudiendo cargarlas, guardarlas, etc.
 		\item Determinar el contexto de evaluación dinámicamente
@@ -404,6 +558,19 @@ data Context = Context { -- Package --
 \subsection{Agradecimientos / Preguntas}
 \begin{frame}
 \frametitle{!`Gracias a todos!}
-	\emph{?`En qué los puedo ayudar?}
+	\begin{itemize}
+		\item \textsl{Sitio Web de \hpage}:
+		\begin{itemize}
+			\item http://hpage.haskell.com
+		\end{itemize}
+		\item \textsl{\hpage\ en Github}
+		\begin{itemize}
+			\item http://github.com/elbrujohalcon/hPage
+		\end{itemize}
+		\item \textsl{Fernando Benavides en la Internet}
+		\begin{itemize}
+			\item http://profiles.google.com/greenmellon
+		\end{itemize}
+	\end{itemize}
 \end{frame}
 \end{document}
