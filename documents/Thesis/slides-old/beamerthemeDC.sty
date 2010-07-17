@@ -1,0 +1,28 @@
+\ProvidesPackageRCS $Header: /var/cvs/tesis/papers/exp_fam/presentacion/beamerthemeDC.sty,v 1.1 2006/10/17 10:52:00 fran Exp $
+
+\mode<presentation>
+
+\usepackage{pgf}
+\usepackage{colortbl}
+
+\definecolor{dgreen}{cmyk}{1,0,0.31,0.24}
+\definecolor{lgreen}{cmyk}{0.38,0,0.15,0}
+
+\usecolortheme[cmyk={1,0,0.31,0.24}]{structure}
+\useoutertheme{split}
+\usecolortheme{dc}
+
+\setbeamercolor*{titlelike}{parent=structure}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamercovered{dynamic}
+
+\pgfdeclareimage[height=\paperheight]{logodc}{logo}
+
+\usebackgroundtemplate{\pgfuseimage{logodc}}
+
+
+
+
+\mode
+<all>

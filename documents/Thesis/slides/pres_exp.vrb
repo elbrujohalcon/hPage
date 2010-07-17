@@ -1,18 +1,6 @@
-\frametitle {\texttt{HPage.Control}}
-\begin{lstlisting}
-data Context = Context { -- Package --
-    activePackage :: Maybe PackageIdentifier,
-    pkgModules :: [Hint.ModuleName],
-    -- Pages --
-    pages :: [Page],
-    currentPage :: Int,
-    -- GHC State --
-    loadedModules :: Set String,
-    importedModules :: Set String,
-    extraSrcDirs :: [FilePath],
-    ghcOptions :: String,
-    server :: HS.ServerHandle,
-    ioServer :: HPIO.ServerHandle,
-    -- Actions --
-    recoveryLog :: Hint.InterpreterT IO () }
-\end{lstlisting}
+\frametitle {Ejemplo de Interacci—n}
+\begin{columns}[c]
+\column{.5\textwidth}Finalmente, el \texttt{Value~Filler} informa al \texttt{UI~Manager} que ha presentado el resultado con Žxito, para que Žste se lo informe al usuario.
+\column{.5\textwidth}
+\includegraphics[height=.75\textheight]{pictures/architecture/06}
+\end{columns}

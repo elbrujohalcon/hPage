@@ -1,0 +1,557 @@
+\documentclass{beamer}
+\usepackage[applemac]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{listings}
+
+%\newcommand{\speech}[1]{{\small #1}}
+\newcommand{\hpage}{$\lambda Page$}
+\newcommand{\haskell}{\textsl{Haskell}}
+\newcommand{\speech}[1]{}
+\newcommand{\G}{\mathcal{G}}
+\usetheme{DC}
+
+
+\title{\hpage}
+\author{\textsl{Fernando~Benavides}}
+	
+\institute{Departamento de Computaci—n, FCEyN,Universidad de Buenos Aires.}
+
+\date{\today}
+
+%\beamerdefaultoverlayspecification{<+->}
+
+%%TODO: Quitar Hayoo!
+%%TODO: Recordar ctrl+1 -> alt-tab
+%%TODO: Agregar t’tulos divisores
+%%TODO: Contar c—mo surgi— diciendo: ``el pobre desarrollador funcional....'' vs. ``sus grossos amigos objeteros...'' (poner un screenshot del Workspace)
+%%TODO: IncapiŽ en laziness
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\section{Presentaci—n}
+\subsection{El Orador}
+\begin{frame}
+	\frametitle{El Orador}
+     \emph{>quiŽn soy?}\\
+     \begin{itemize}
+       \item Fernando Benavides
+	 \end{itemize}
+	\pause
+     \emph{>c—mo lleguŽ hasta aqu’?}\\
+     \begin{itemize}
+       \item Alumno de Computaci—n desde 2001
+       \item Programador desde hace m‡s de 10 a–os
+       \item Programador \textsl{Funcional} desde hace 2 a–os
+	\end{itemize}
+\end{frame}
+
+\subsection{El Proyecto}
+\begin{frame}
+	%%TODO: Mi objetivo inicial y ac‡ va lo del desarrolador funcional, pobrecito...
+     \frametitle{\hpage}
+     \emph{Un bloc de notas para usuarios \haskell}\\~\\
+	\pause
+     \emph{Una herramienta para...}
+	\begin{itemize}
+		\item debuggear
+		\item entender c—digo
+		\item realizar \textsl{micro-testing}
+	\end{itemize}
+\end{frame}
+
+\subsection{Motivaci—n}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{GHCi}
+		\begin{description}
+			\item[Descripci—n] Es la consola de \textsl{GHC}
+			\item[Ventajas]
+			\begin{itemize}
+				\item Permite evaluar expresiones, verificar su tipo o su gŽnero
+				\item Permite cargar o importar m—dulos
+				\item Permite ejecutar acciones de entrada/salida
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item No permite editar m‡s de una expresi—n a la vez
+				\item Las opciones del compilador se setean una œnica vez al iniciar
+				\item Las definiciones se pierden al recargar m—dulos o cerrar el programa
+			\end{itemize}
+		\end{description}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{Hugs98}
+		\begin{description}
+			\item[Descripci—n] Es un intŽrprete \haskell\ escrito en \textsl{C}
+			\item[Ventajas]
+			\begin{itemize}
+				\item Es peque–o y portable
+				\item Ideal para aprender \haskell
+				\item Provee una interfaz gr‡fica para \textsl{Windows} (\textsl{WinHugs})
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item Bajo rendimiento en tiempo de ejecuci—n
+				\item No permite compilar c—digo
+			\end{itemize}
+		\end{description}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Herramientas del Programador Funcional}
+	\textsl{Hat}
+		\begin{description}
+			\item[Descripci—n] Herramienta para realizar seguimiento a travŽs de trazas
+			\item[Ventajas]
+			\begin{itemize}
+				\item Ayuda a localizar errores en los programas
+				\item Permite entender el funcionamiento de los mismos
+			\end{itemize}
+			\pause
+			\item[Desventajas]
+			\begin{itemize}
+				\item Requiere que el programa compile para poder ejecutarse
+				\item Requiere ejecutar un programa antes de poder analizarlo
+				\item Se encuentra sin mantenimiento activo
+			\end{itemize}
+		\end{description}
+\end{frame}
+\begin{frame}
+\frametitle{Necesidades}
+	Quienes programan en lenguajes orientados a objetos utilizan herramientas como
+	\begin{itemize}
+		\item \textbf{Java} Scrapbook Pages
+		\item Workspace de \textbf{Smalltalk}
+	\end{itemize}
+	\pause
+	Estas aplicaciones permiten 
+	\begin{itemize}
+		\item introducir peque–as porciones de c—digo para ejecutarlas, inspeccionarlas y  analizar los resultados obtenidos
+		\item administrar varias paginas de texto en las que dichas expresiones pueden intercalarse con texto libre
+		\item crear objetos localmente y utilizarlos
+	\end{itemize}
+\end{frame}
+\begin{frame}
+	\frametitle{\hpage}
+	\hpage\ es una herramienta similar al Workspace de Smalltalk, en tanto:
+	\begin{itemize}
+		\item permite al desarrollador trabajar con texto libre
+		\item detecta expresiones y definiciones v‡lidas
+		\item permite inspeccionarlas y evaluarlas
+	\end{itemize}
+	\pause
+	Adem‡s, \hpage, brinda otras facilidades particulares para \haskell:
+	\begin{itemize}
+		\item Integraci—n con \textsl{Cabal} y \textsl{Hayoo!}
+		\item Aprovecha \textsl{lazy evaluation} y \textsl{tipado est‡tico}
+		\item Presenta resultados din‡micamente
+	\end{itemize}
+\end{frame}
+
+\lstset{language=haskell, frame=single, tabsize=2}
+\section{Caracter’sticas Principales}
+\subsection{Expresiones Simples}
+\begin{frame}[fragile]
+\frametitle{Interpretaci—n de Expresiones}
+	\hpage\ permite interpretar expresiones como:
+	\begin{lstlisting}
+		[1,2,3]
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		xs = [1,2,3] :: [Float]
+		map (+) xs
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		[1,2..]
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+		let loop = loop in 1:loop
+	\end{lstlisting}
+\end{frame}
+\begin{frame}
+%%TODO: esto en la demo o nada
+\frametitle{Presentaci—n de Resultados}
+	\begin{itemize}
+		\item Para expresiones inv‡lidas, \hpage\ presenta el error informado por \textsl{GHC}
+		\item Para expresiones sin resultado ``visible'', \hpage\ permite conocer su tipo
+		\item Para expresiones infinitas, \hpage\ presenta su valor incrementalmente hasta que el usuario cancela la evaluaci—n
+		\item Para expresiones que requieren c‡lculos infinitos, \hpage\ permite al usuario cancelar la evaluaci—n
+	\end{itemize}
+\end{frame}
+
+\subsection{Expresiones Complejas}
+\begin{frame}[fragile]
+%%TODO: repensar la explicaci—n en comparaci—n con el mundo de objetos (sobre todo lo verbal)
+%%TODO: explicar IO como la ``orden de...''
+\frametitle{Acciones con Efectos Colaterales}
+	Para realizar acciones que puedan generar efectos colaterales, en \haskell\ se utiliza la m—nada \texttt{IO}.  Por ejemplo:
+	\begin{lstlisting}
+		readFile ``README'' :: IO String
+	\end{lstlisting}
+	\pause
+	\texttt{IO String} no es un tipo ``visible'', por lo que el valor de la expresi—n no se podr’a mostrar.
+	\pause \\
+	Pero \hpage\ toma el modelo de \textsl{GHCi} y ejecuta la acci—n, presentando su resultado
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Listas}
+	\hpage\ interpreta de modo particular las listas (expresiones de tipo \texttt{Show a => [a]})\\
+	Tomemos como ejemplo la siguiente expresi—n:
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Listas}
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting} ~\\
+	Si \hpage\ presentase su evaluaci—n tal como lo hace con las dem‡s expresiones, el resultado ser’a\\~\\
+	\framebox[1\textwidth]{\texttt{[1,}} \\~\\
+	e informar’a al usuario la excepci—n encontrada (o sea, \texttt{DivideByZero})
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Listas}
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting} ~\\
+	\hpage\, en cambio, podr’a evaluar cada elemento por separado y detectar excepciones.  En tal caso, el resultado ser’a\\~\\
+	\framebox[1\textwidth]{\texttt{[1, $_{\bot}$, 2, $_{\bot}$, 3, }} \\~\\
+	y continuar’a intentando calcular el siguiente elemento hasta que el usuario decidiese cancelar
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Listas}
+	\begin{lstlisting}
+		let loop = loop in [1, div 0 0, 2,
+		                    undefined, 3, loop, 4]
+	\end{lstlisting} ~\\
+	\hpage, sin embargo, detecta c‡lculos posiblemente infinitos y presenta como resultado:\\~\\
+	\framebox[1\textwidth]{\texttt{[1, $_{\bot}$, 2, $_{\bot}$, 3,  $_{\bot}$, 4]}} \\~\\
+	permitiendo luego al usuario conocer el motivo de cada $_{\bot}$ a travŽs de un menœ contextual
+\end{frame}
+
+\subsection{Otras Caracter’sticas}
+\begin{frame}
+\frametitle{Manejo de M—dulos}
+	Utilizando \hpage, el usuario puede
+	\begin{itemize}
+		\item Importar m—dulos
+		\item Cargar m—dulos
+		\item Recargar m—dulos
+		\item Ver los m—dulos de un paquete \textsl{Cabal}
+		\item Ver la documentaci—n de un m—dulo utilizando \textsl{Hayoo!}
+	\end{itemize}
+	Todo esto \textsl{sin perder las expresiones que ya tiene definidas}
+\end{frame}
+\begin{frame}
+\frametitle{Paralelismo}
+%%TODO: esto ir’a mucho m‡s adelante
+	Muchas cosas suceden al mismo tiempo en \hpage\:
+	\begin{itemize}
+		\item Manejo de P‡ginas (crear, abrir, modificar, guardar, cerrar, etc.)
+		\item Interpretaci—n de Expresiones
+		\item Evaluaci—n de Acciones de Entrada/Salida
+	\end{itemize}
+	\pause
+	Para lograrlo, creamos \textsl{eprocess}:
+	\begin{itemize}
+		\item Basada conceptualmente en \textsl{Erlang}
+		\item Constru’da utilizando \textsl{Threads}, \textsl{Channels} y \textsl{MVars}
+	\end{itemize}
+\end{frame}
+
+\section{\hpage\ por Dentro}
+\subsection{Dise–o}
+\begin{frame}
+%%TODO: En vez de contar las decisiones, hablar de las herramientas: Haskell, API de GHC, wxHaskell, etc...
+%%TODO: Ac‡ puede venir lo de paralelismo
+\frametitle{Principales Decisiones de Dise–o}
+	\hpage\ es el fruto de un dise–o evolutivo que atravez— las siguientes etapas:
+	\begin{itemize}
+		\item Conexi—n con \textsl{GHC} utilizando \textsl{hint}
+		\pause
+		\item Paralelismo a travŽs de \textsl{eprocess}
+		\pause
+		\item Creaci—n de \textbf{servers}
+		\pause
+		\item Integraci—n con \textsl{Cabal} y \textsl{Hayoo!}
+		\pause
+		\item Presentaci—n de Interpretaciones
+			\begin{itemize}
+				\item Expresiones ``visibles''
+				\item Expresiones ``no visibles''
+				\item Entrada / Salida
+				\item Listas
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\subsection{Arquitectura}
+%%TODO: En dibujos, HintServer -> GHCServer
+%%								Vuela GHC
+%%								Diapositiva de ValueFiller est‡ esperando a IO Server
+%%			 En texto, mostrar quiŽnes est‡n ``trabajando'', ``esperando'', etc...
+\begin{frame}
+\frametitle{Arquitectura}
+\begin{columns}[c]
+	\column{.5\textwidth}Principales Requerimientos:
+	\begin{itemize}
+		\item Conexi—n con GHC
+		\item Paralelismo
+		\item Errores Controlados
+		\item Presentaci—n de Resultados
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+	Veremos c—mo interactœan estos componentes para evaluar la siguiente expresi—n:
+	\begin{lstlisting}
+		readFile "hpage.cabal" >>=
+		    return . length . head . lines
+	\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El usuario indica al \texttt{UI~Manager} que desea interpretar la expresi—n
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/01}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{UI~Manager} solicita la evaluaci—n del texto al \texttt{HPage~Server}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/02}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{HPage~Server} env’a al \texttt{Hint~Server} la expresi—n para conocer su valor y su tipo
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/03}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{Hint~Server} se comunica con GHC utilizando \textsl{hint} y obtiene los valores solicitados, que luego informa al \texttt{HPage~Server}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/04}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}
+		El \texttt{HPage~Server}, al detectar que se trata de una acci—n de la m—nada \texttt{IO}, crea una \texttt{MVar} y env’a un mensaje al \texttt{IO~Server} para que ejecute la acci—n y llene la \texttt{MVar} con su resultado. Luego informa al \texttt{UI~Manager} el tipo de la expresi—n y la \texttt{MVar} en la que se volcar‡ su resultado una vez ejecutada
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/05}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{UI~Manager} muestra el tipo al usuario y vac’a el cuadro de texto donde se encuentra el resultado.  Luego, inform‡ndole la \texttt{MVar} recibida, solicita al \texttt{Value~Filler} que espere el resultado y llene el cuadro de texto con Žl.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/06}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}El \texttt{Value~Filler} se bloquea a la espera de que un valor sea depositado en la \texttt{MVar} recibida.  Una vez conseguido ese valor, que es una cadena de caracteres (\texttt{''11''}), toma el primero y lo env’a al \texttt{Element~Filler} al tiempo que inicia el \texttt{Runaway~Killer}.  Luego, se bloquea esperando recibir un mensaje de alguno de ellos.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/07}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}Antes de transcurrido un segundo, el \texttt{Element~Filler} computa el caracter \texttt{1} y env’a un mensaje al \texttt{Value~Filler} con el mismo.  El \texttt{Value~Filler} lo agrega al cuadro de texto del resultado y detiene el \texttt{Runaway~Killer}.  Luego repite el paso anterior y Žste para el segundo caracter.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/07}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacci—n}
+\begin{columns}[c]
+	\column{.5\textwidth}Finalmente, el \texttt{Value~Filler} informa al \texttt{UI~Manager} que ha presentado el resultado con Žxito, para que Žste se lo informe al usuario.
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/06}
+\end{columns}
+\end{frame}
+
+\lstset{basicstyle=\small}
+\subsection{Implementaci—n}
+\begin{frame}[fragile]
+\frametitle{\textsl{eprocess}}
+	\begin{lstlisting}
+newtype ReceiverT r m a
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+type Process r = ReceiverT r IO
+	\end{lstlisting}
+	\pause
+	\begin{lstlisting}
+spawn :: MonadIO m => Process r k -> m (Handle r)
+kill :: MonadIO m => Handle a -> m ()
+self :: Monad m => ReceiverT r m (Handle r)
+sendTo :: MonadIO m => Handle a -> a -> m ()
+recv :: MonadIO m => ReceiverT r m r
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Servers (\texttt{IOServer})}
+\begin{lstlisting}
+newtype ServerHandle = SH {handle :: Handle (IO ())}
+
+start :: IO~ServerHandle
+start = spawn ioRunner >>= return . SH
+    where ioRunner = forever $ recv >>= liftIO
+
+runIn :: ServerHandle -> IO a ->
+         IO (Either SomeException a)
+runIn server action = runHere $ do
+    me <- self
+    sendTo (handle server) $ try action >>=
+                                    sendTo me
+                                    recv
+stop :: ServerHandle -> IO ()
+stop = kill . handle
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{\texttt{HPage.Control}}
+\begin{lstlisting}
+newtype Expression = Exp {exprText :: String}       
+    deriving (Eq, Show)
+
+data Page = Page { -- Display --
+                   expressions :: [Expression],
+                   currentExpr :: Int,
+                   undoActions :: [HPage ()],
+                   redoActions :: [HPage ()],
+                   -- File System --
+                   original :: [Expression],
+                   filePath    :: Maybe FilePath
+                  }
+\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{\texttt{HPage.Control}}
+\begin{lstlisting}
+data Context = Context { -- Package --
+    activePackage :: Maybe PackageIdentifier,
+    pkgModules :: [Hint.ModuleName],
+    -- Pages --
+    pages :: [Page],
+    currentPage :: Int,
+    -- GHC State --
+    loadedModules :: Set String,
+    importedModules :: Set String,
+    extraSrcDirs :: [FilePath],
+    ghcOptions :: String,
+    server :: HS.ServerHandle,
+    ioServer :: HPIO.ServerHandle,
+    -- Actions --
+    recoveryLog :: Hint.InterpreterT IO () }
+\end{lstlisting}
+\end{frame}
+
+
+\section{Resultados}
+\subsection{Logros}
+\begin{frame}
+%%TODO: En vez de resumir de nuevo, contar s—lo lo que no se not— en lo anterior
+\frametitle{Objetivos Alcanzados}
+	\hpage\ permite al usuario
+	\begin{itemize}
+		\item Configurar de entorno segœn paquetes \textsl{Cabal}
+		\item Editar p‡ginas mientras se evalœa una expresi—n
+		\item Visualizar expresiones con errores o c‡lculos infinitos sin bloquearse mostrando el resultado m‡s completo posible
+		\item Importar, cargar y recargar m—dulos sin perder las expresiones con las que est‡ trabajando
+		\item Intercalar definiciones, expresiones y texto libre
+	\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Logros Adicionales}
+	M‡s all‡ de los objetivos propuestos para esta tesis, \hpage\ permite
+	\begin{itemize}
+		\item Consultar la API de \haskell\ utilizando \textsl{Hayoo!}
+		\item Trabajar en \textsl{OSX}, \textsl{Windows} y \textsl{Linux}
+		\item Administrar varias p‡ginas con expresiones, pudiendo cargarlas, guardarlas, etc.
+		\item Determinar el contexto de evaluaci—n din‡micamente
+		\item Navegar m—dulos importados o cargados
+	\end{itemize}
+\end{frame}
+
+\subsection{Trabajo a Futuro}
+%%TODO: Limitaciones (con casos que no andan)
+\begin{frame}
+\frametitle{Tareas a Realizar}
+	\begin{itemize}
+		\item Presentaci—n de resultados:
+		\begin{itemize}
+			\item Nuevas visualizaciones
+			\item Distintos tipos a tratar de modo particular
+			\item Composici—n
+		\end{itemize}
+		\pause
+		\item Otras herramientas
+		\begin{itemize}
+			\item Soporte para TDD
+			\item Refactoring
+			\item An‡lisis de Terminaci—n
+			\item Debugging
+		\end{itemize}
+		\pause
+		\item Otros lenguajes
+		\begin{itemize}
+			\item Erlang
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\subsection{Agradecimientos / Preguntas}
+\begin{frame}
+\frametitle{!`Gracias a todos!}
+	\begin{itemize}
+		\item \textsl{Sitio Web de \hpage}:
+		\begin{itemize}
+			\item http://hpage.haskell.com
+		\end{itemize}
+		\item \textsl{\hpage\ en Github}
+		\begin{itemize}
+			\item http://github.com/elbrujohalcon/hPage
+		\end{itemize}
+		\item \textsl{Fernando Benavides en la Internet}
+		\begin{itemize}
+			\item http://profiles.google.com/greenmellon
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\end{document}

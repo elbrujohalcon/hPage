@@ -1,0 +1,1 @@
+readFile "README" :: IO String
