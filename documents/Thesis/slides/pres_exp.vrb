@@ -1,6 +1,6 @@
 \frametitle {Ejemplo de Interacci—n}
-\begin{columns}[c]
-\column{.5\textwidth}Finalmente, el \texttt{Value~Filler} informa al \texttt{UI~Manager} que ha presentado el resultado con xito, para que ste se lo informe al usuario.
-\column{.5\textwidth}
-\includegraphics[height=.75\textheight]{pictures/architecture/06}
-\end{columns}
+Veremos c—mo interactœan estos componentes para evaluar la siguiente expresi—n:
+\begin{lstlisting}
+readFile "hpage.cabal" >>=
+    return . length . head . lines
+\end{lstlisting}

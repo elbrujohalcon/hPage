@@ -61,6 +61,7 @@
 	\frametitle{Trabajando en \haskell}
 	\begin{columns}[c]
 		\column{.5\textwidth}?`Cómo trabaja un desarrollador \haskell?
+			\pause
 			\begin{itemize}
 				\item Crea o modifica módulos con su editor de texto favorito
 				\pause
@@ -80,6 +81,7 @@
 		\column{.5\textwidth}
 			\includegraphics[width=\textwidth]{pictures/photos/java}
 		\column{.5\textwidth}En cambio quienes programan en \textsl{Java}, \textsl{.NET} o \textsl{Smalltalk} cuentan con una \textsl{IDE} que provee
+			\pause
 			\begin{itemize}
 				\item Autocompleción de código
 				\pause
@@ -137,31 +139,6 @@
 		\item Administración de módulos %%MARK: Demo
 	\end{itemize}
 \end{frame}
-\begin{frame}[fragile]
-	\frametitle{Lazy Evaluation}
-	%%TODO: Explicar cómo funciona \haskell y qué es la evaluación perezosa
-	%%				Notar cómo decidimos aprovechar eso en nuestro programa
-	%%				RECORDAR: Mostrar cómo la lista puede estar parcialmente indefinida, pero igual ser una lista
-	%%TODO: NECESITA DIAPOSITIVA??
-\end{frame}
-\begin{frame}[fragile]
-	\frametitle{Efectos Colaterales}
-	%%TODO: Explicar cómo funciona \haskell en cuanto a la mónada IO (represetan ORDENES)
-	%%				Notar cómo decidimos aprovechar eso en nuestro programa
-	%%				RECORDAR: Mostrar cómo la lista puede estar parcialmente indefinida, pero igual ser una lista
-	%%TODO: NECESITA DIAPOSITIVA??
-\end{frame}
-\begin{frame}
-\frametitle{Administración de Módulos}
-	%%TODO: Revisar si queda bien esta diap.
-	Utilizando \hpage, el usuario puede
-	\begin{itemize}
-		\item Importar módulos
-		\item Cargar módulos
-		\item Recargar módulos
-	\end{itemize}
-	Todo esto \textsl{sin perder las expresiones que ya tiene definidas}
-\end{frame}
 
 \section{\hpage\ por Dentro}
 \begin{frame}
@@ -171,7 +148,6 @@
 \end{frame}
 \subsection{Diseño}
 \begin{frame}
-	\frametitle{Conceptos Centrales}
 	\hpage\ está desarrollado en \haskell
 	\pause \\~\\
 	En gran parte está desarrollado utilizando \hpage
@@ -179,28 +155,11 @@
 	Se conecta con \textsl{GHC} a través de su API
 	\pause \\~\\
 	Su interfaz gráfica fué creada usando \textsl{wxHaskell}
-\end{frame}
-\begin{frame}
-\frametitle{Paralelismo}
-	Muchas cosas suceden simultáneamente en \hpage\:
-	\begin{itemize}
-		\item Manejo de Páginas (crear, abrir, modificar, guardar, etc.)
-		\item Interpretación de Expresiones
-		\item Evaluación de Acciones de Entrada/Salida
-	\end{itemize}
-	\pause
-	Para lograrlo, creamos \textsl{eprocess}:
-	\begin{itemize}
-		\item Basada conceptualmente en \textsl{Erlang}
-		\item Construída utilizando \textsl{Threads}, \textsl{Channels} y \textsl{MVars}
-	\end{itemize}
+	\pause \\~\\
+	Su alto grado de paralelismo se logra utilizando \textsl{eprocess}
 \end{frame}
 
 \subsection{Arquitectura}
-%%TODO: En dibujos, HintServer -> GHCServer
-%%								Vuela GHC
-%%								Diapositiva de ValueFiller está esperando a IO Server
-%%			 En texto, mostrar quiénes están ``trabajando'', ``esperando'', etc...
 \begin{frame}
 \frametitle{Arquitectura}
 \begin{columns}[c]
@@ -212,7 +171,7 @@
 		\item Presentación de Resultados
 	\end{itemize}
 	\column{.5\textwidth}
-		\includegraphics[height=.75\textheight]{pictures/architecture}
+		\includegraphics[height=.75\textheight]{pictures/architecture/00}
 \end{columns}
 \end{frame}
 \begin{frame}[fragile]
@@ -223,79 +182,82 @@
 		    return . length . head . lines
 	\end{lstlisting}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}El usuario indica al \texttt{UI~Manager} que desea interpretar la expresión
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+	\end{itemize}
 	\column{.5\textwidth}
 		\includegraphics[height=.75\textheight]{pictures/architecture/01}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}El \texttt{UI~Manager} solicita la evaluación del texto al \texttt{HPage~Server}
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} esperando
+		\item \texttt{HPage~Server} \textbf{operando}
+	\end{itemize}
 	\column{.5\textwidth}
 		\includegraphics[height=.75\textheight]{pictures/architecture/02}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}El \texttt{HPage~Server} envía al \texttt{Hint~Server} la expresión para conocer su valor y su tipo
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} esperando
+		\item \texttt{HPage~Server} esperando
+		\item \texttt{GHC~Server} \textbf{operando}
+	\end{itemize}
 	\column{.5\textwidth}
 		\includegraphics[height=.75\textheight]{pictures/architecture/03}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}El \texttt{Hint~Server} se comunica con GHC utilizando \textsl{hint} y obtiene los valores solicitados, que luego informa al \texttt{HPage~Server}
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+		\item \texttt{IO~Server} \textbf{operando}
+		\item \texttt{Value~Filler} esperando
+	\end{itemize}
 	\column{.5\textwidth}
 		\includegraphics[height=.75\textheight]{pictures/architecture/04}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}
-		El \texttt{HPage~Server}, al detectar que se trata de una acción de la mónada \texttt{IO}, crea una \texttt{MVar} y envía un mensaje al \texttt{IO~Server} para que ejecute la acción y llene la \texttt{MVar} con su resultado. Luego informa al \texttt{UI~Manager} el tipo de la expresión y la \texttt{MVar} en la que se volcará su resultado una vez ejecutada
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+		\item \texttt{Value~Filler} esperando
+		\item \texttt{Element~Filler} \textbf{operando}
+		\item \texttt{Runaway~Killer} \textbf{operando}
+	\end{itemize}
 	\column{.5\textwidth}
 		\includegraphics[height=.75\textheight]{pictures/architecture/05}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
+\begin{frame}
 \frametitle{Ejemplo de Interacción}
 \begin{columns}[c]
-	\column{.5\textwidth}El \texttt{UI~Manager} muestra el tipo al usuario y vacía el cuadro de texto donde se encuentra el resultado.  Luego, informándole la \texttt{MVar} recibida, solicita al \texttt{Value~Filler} que espere el resultado y llene el cuadro de texto con él.
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+	\end{itemize}
 	\column{.5\textwidth}
-		\includegraphics[height=.75\textheight]{pictures/architecture/06}
+		\includegraphics[height=.75\textheight]{pictures/architecture/01}
 \end{columns}
 \end{frame}
-\begin{frame}[fragile]
-\frametitle{Ejemplo de Interacción}
-\begin{columns}[c]
-	\column{.5\textwidth}El \texttt{Value~Filler} se bloquea a la espera de que un valor sea depositado en la \texttt{MVar} recibida.  Una vez conseguido ese valor, que es una cadena de caracteres (\texttt{''11''}), toma el primero y lo envía al \texttt{Element~Filler} al tiempo que inicia el \texttt{Runaway~Killer}.  Luego, se bloquea esperando recibir un mensaje de alguno de ellos.
-	\column{.5\textwidth}
-		\includegraphics[height=.75\textheight]{pictures/architecture/07}
-\end{columns}
-\end{frame}
-\begin{frame}[fragile]
-\frametitle{Ejemplo de Interacción}
-\begin{columns}[c]
-	\column{.5\textwidth}Antes de transcurrido un segundo, el \texttt{Element~Filler} computa el caracter \texttt{1} y envía un mensaje al \texttt{Value~Filler} con el mismo.  El \texttt{Value~Filler} lo agrega al cuadro de texto del resultado y detiene el \texttt{Runaway~Killer}.  Luego repite el paso anterior y éste para el segundo caracter.
-	\column{.5\textwidth}
-		\includegraphics[height=.75\textheight]{pictures/architecture/07}
-\end{columns}
-\end{frame}
-\begin{frame}[fragile]
-\frametitle{Ejemplo de Interacción}
-\begin{columns}[c]
-	\column{.5\textwidth}Finalmente, el \texttt{Value~Filler} informa al \texttt{UI~Manager} que ha presentado el resultado con éxito, para que éste se lo informe al usuario.
-	\column{.5\textwidth}
-		\includegraphics[height=.75\textheight]{pictures/architecture/06}
-\end{columns}
-\end{frame}
+
+
 
 \section{Próximos Pasos}
 \begin{frame}
