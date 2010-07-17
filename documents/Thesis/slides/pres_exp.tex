@@ -1,3 +1,4 @@
+%%TODO: MARK
 \documentclass{beamer}
 \usepackage[applemac]{inputenc}
 \usepackage[spanish,activeacute]{babel}
@@ -25,9 +26,7 @@
 
 %\beamerdefaultoverlayspecification{<+->}
 
-%%TODO: Quitar Hayoo!
 %%TODO: Recordar ctrl+1 -> alt-tab
-%%TODO: Agregar títulos divisores
 %%TODO: Incapié en laziness
 
 \begin{document}
@@ -60,47 +59,100 @@
 \subsection{Motivación}
 \begin{frame}[fragile]
 	\frametitle{Trabajando en \haskell}
-	%%TODO: Les presentamos al programador funcional...
-	%%				así desarrolla un proyecto típico (un item para cada herramienta que usa)
+	\begin{columns}[c]
+		\column{.5\textwidth}?`Cómo trabaja un desarrollador \haskell?
+			\begin{itemize}
+				\item Crea o modifica módulos con su editor de texto favorito
+				\pause
+				\item Los compila utilizando \textsl{GHC}
+				\pause
+				\item Genera paquetes con \textsl{Cabal}
+				\pause
+				\item Para realizar pruebas, recurre a \textsl{GHCi}
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[height=.75\textheight]{pictures/photos/haskell}
+		\end{columns}
 \end{frame}
 \begin{frame}[fragile]
 	\frametitle{Trabajando con Lenguajes Orientados a Objetos}
-	%%TODO: Acá está el programador objetoso...
-	%%				El tipo tiene muchas herramientas cool que le hacen la vida más fácil
-	%%				(un item para cada herramienta)
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/photos/java}
+		\column{.5\textwidth}En cambio quienes programan en \textsl{Java}, \textsl{.NET} o \textsl{Smalltalk} cuentan con una \textsl{IDE} que provee
+			\begin{itemize}
+				\item Autocompleción de código
+				\pause
+				\item Compilación automática
+				\pause
+				\item Herramientas de \textsl{refactoring}
+				\pause
+				\item Debugger integrado
+				\pause
+				\item Herramientas para \textsl{``micro-testing''}
+			\end{itemize}
+		\end{columns}
 \end{frame}
 \begin{frame}[fragile]
-	\frametitle{Workspace}
-	%%TODO: En particular vamos a prestar especial atención a una de estas herramientas
-	%%				El Workspace de \smalltalk
-	%%				pictures/workspace
+	\frametitle{``Micro-testing''}
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			El \textsl{Workspace} de \smalltalk\ permite:
+			\begin{itemize}
+				\item introducir código para ejecutarlo, inspeccionarlo y  analizar los resultados obtenidos
+				\item administrar varias paginas de texto
+				\item crear objetos y utilizarlos
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/workspace}
+	\end{columns}
 \end{frame}
 
 
-\section{Descubriendo \hpage}
+\section{Conociendo \hpage}
+\begin{frame}
+	\begin{center}
+		{\Huge \emph{Conociendo \hpage}}
+	\end{center}
+\end{frame}
 \subsection{Como el Workspace  de Smalltalk \ldots}
 \begin{frame}[fragile]
-	%%TODO: \hpage es como el Workspace de \smalltalk, miren
-	%%			 Demo...
-	%%TODO: Evaluación de expresiones
-	%%			  Captura de excepciones
-	%%			  Definiciones
+	\hpage\ es similar al \textsl{Workspace} de \smalltalk\ pues permite al usuario
+	\begin{itemize}
+		\item Evaluar expresiones
+		\item Detectar excepciones
+		\item Administrar páginas de texto libre
+		\item Intercalar expresiones y definiciones
+	\end{itemize}
 \end{frame}
+%%MARK: Demo
 \subsection{\ldots pero para Haskell}
+\begin{frame}
+	Pero, a su vez, por estar hecho para \haskell, toma en cuenta sus características:
+	\begin{itemize}
+		\item \textsl{Lazy evaluation} %%MARK: Demo
+		\pause
+		\item Acciones con efectos colaterales %%MARK: Demo
+		\pause
+		\item Administración de módulos %%MARK: Demo
+	\end{itemize}
+\end{frame}
 \begin{frame}[fragile]
 	\frametitle{Lazy Evaluation}
 	%%TODO: Explicar cómo funciona \haskell y qué es la evaluación perezosa
 	%%				Notar cómo decidimos aprovechar eso en nuestro programa
 	%%				RECORDAR: Mostrar cómo la lista puede estar parcialmente indefinida, pero igual ser una lista
+	%%TODO: NECESITA DIAPOSITIVA??
 \end{frame}
 \begin{frame}[fragile]
 	\frametitle{Efectos Colaterales}
 	%%TODO: Explicar cómo funciona \haskell en cuanto a la mónada IO (represetan ORDENES)
 	%%				Notar cómo decidimos aprovechar eso en nuestro programa
 	%%				RECORDAR: Mostrar cómo la lista puede estar parcialmente indefinida, pero igual ser una lista
+	%%TODO: NECESITA DIAPOSITIVA??
 \end{frame}
 \begin{frame}
-\frametitle{Manejo de Módulos}
+\frametitle{Administración de Módulos}
 	%%TODO: Revisar si queda bien esta diap.
 	Utilizando \hpage, el usuario puede
 	\begin{itemize}
@@ -119,17 +171,20 @@
 \end{frame}
 \subsection{Diseño}
 \begin{frame}
+	\frametitle{Conceptos Centrales}
 	\hpage\ está desarrollado en \haskell
+	\pause \\~\\
+	En gran parte está desarrollado utilizando \hpage
 	\pause \\~\\
 	Se conecta con \textsl{GHC} a través de su API
 	\pause \\~\\
-	La interfaz gráfica está desarrollada usando \textsl{wxHaskell}
+	Su interfaz gráfica fué creada usando \textsl{wxHaskell}
 \end{frame}
 \begin{frame}
 \frametitle{Paralelismo}
 	Muchas cosas suceden simultáneamente en \hpage\:
 	\begin{itemize}
-		\item Manejo de Páginas (crear, abrir, modificar, guardar, cerrar, etc.)
+		\item Manejo de Páginas (crear, abrir, modificar, guardar, etc.)
 		\item Interpretación de Expresiones
 		\item Evaluación de Acciones de Entrada/Salida
 	\end{itemize}
@@ -243,15 +298,33 @@
 \end{frame}
 
 \section{Próximos Pasos}
+\begin{frame}
+	\begin{center}
+		{\Huge \emph{Próximos Pasos}}
+	\end{center}
+\end{frame}
 \subsection{Limitaciones}
 \begin{frame}
-%%TODO: Extender el texto
-\frametitle{Limitaciones}
 	?`Qué falta?
 	\begin{itemize}
-		\item Nuevas visualizaciones %%TODO: Hablar de que sólo es un cuadro de texto y eso
-		\item Distintos tipos a tratar de modo particular %%TODO: List vs. Either, Maybe, Tuplas...
-		\item Composición %%TODO: dar ejemplos
+		\item Nuevas visualizaciones
+			\begin{itemize}
+				\item Más que un cuadro de texto
+			\end{itemize}
+		\pause
+		\item Más tipos \textsl{especiales}
+			\begin{itemize}
+				\item Tuplas
+				\item Either
+				\item Maybe
+			\end{itemize}
+		\pause
+		\item Composición
+			\begin{itemize}
+				\item Listas de listas
+				\item Acciones que generen listas
+				\item Listas de acciones
+			\end{itemize} %%MARK: Demo
 	\end{itemize}
 	\pause
 	?`Qué se puede hacer?
@@ -261,23 +334,27 @@
 \end{frame}
 
 \subsection{Trabajo a Futuro}
-%%TODO: Limitaciones (con casos que no andan)
 \begin{frame}
-\frametitle{Otras Tareas a Realizar}
-	\begin{itemize}
-		\item Otras herramientas
-		\begin{itemize}
-			\item Soporte para TDD
-			\item Refactoring
-			\item Análisis de Terminación
-			\item Debugging
-		\end{itemize}
-		\pause
-		\item Otros lenguajes
-		\begin{itemize}
-			\item Erlang
-		\end{itemize}
-	\end{itemize}
+	Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
+			\begin{itemize}
+				\item Soporte para TDD
+				\item Refactoring
+				\item Análisis de Terminación
+				\item Debugging
+			\end{itemize}
+\end{frame}
+\begin{frame}
+	\begin{columns}[c]
+		\column{.5\textwidth}Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
+			\begin{itemize}
+				\item Soporte para TDD
+				\item Refactoring
+				\item Análisis de Terminación
+				\item Debugging
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[height=.75\textheight]{pictures/photos/haskellcoolman}
+		\end{columns}
 \end{frame}
 
 \subsection{Agradecimientos / Preguntas}
