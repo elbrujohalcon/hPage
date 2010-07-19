@@ -1,4 +1,3 @@
-%%TODO: MARK
 \documentclass{beamer}
 \usepackage[applemac]{inputenc}
 \usepackage[spanish,activeacute]{babel}
@@ -8,7 +7,6 @@
 \usepackage{listings}
 \lstset{language=haskell, frame=single, tabsize=2}
 
-%\newcommand{\speech}[1]{{\small #1}}
 \newcommand{\hpage}{$\lambda Page$}
 \newcommand{\haskell}{\textsl{Haskell}}
 \newcommand{\smalltalk}{\textsl{Smalltalk}}
@@ -23,11 +21,6 @@
 \institute{Departamento de Computación, FCEyN,Universidad de Buenos Aires.}
 
 \date{\today}
-
-%\beamerdefaultoverlayspecification{<+->}
-
-%%TODO: Recordar ctrl+1 -> alt-tab
-%%TODO: Incapié en laziness
 
 \begin{document}
 
@@ -76,6 +69,20 @@
 		\end{columns}
 \end{frame}
 \begin{frame}[fragile]
+	\frametitle{GHCi}
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/ghci}
+		\column{.5\textwidth}
+			\textsl{GHCi} permite:
+			\begin{itemize}
+				\item introducir código para ejecutarlo y observar los resultados obtenidos
+				\item definir expresiones y utilizarlas
+				\item cargar módulos para utilizar sus funciones, tipos de datos, etc.
+			\end{itemize}
+	\end{columns}
+\end{frame}
+\begin{frame}[fragile]
 	\frametitle{Trabajando con Lenguajes Orientados a Objetos}
 	\begin{columns}[c]
 		\column{.5\textwidth}
@@ -86,8 +93,6 @@
 				\item Autocompleción de código
 				\pause
 				\item Compilación automática
-				\pause
-				\item Herramientas de \textsl{refactoring}
 				\pause
 				\item Debugger integrado
 				\pause
@@ -119,6 +124,7 @@
 \end{frame}
 \subsection{Como el Workspace  de Smalltalk \ldots}
 \begin{frame}[fragile]
+	\frametitle{Como el Workspace  de Smalltalk \ldots}
 	\hpage\ es similar al \textsl{Workspace} de \smalltalk\ pues permite al usuario
 	\begin{itemize}
 		\item Evaluar expresiones
@@ -127,16 +133,16 @@
 		\item Intercalar expresiones y definiciones
 	\end{itemize}
 \end{frame}
-%%MARK: Demo
 \subsection{\ldots pero para Haskell}
 \begin{frame}
-	Pero, a su vez, por estar hecho para \haskell, toma en cuenta sus características:
+	\frametitle{\ldots pero para Haskell}
+	Pero, a su vez, por estar hecho para \haskell, presenta otros desafíos
 	\begin{itemize}
-		\item \textsl{Lazy evaluation} %%MARK: Demo
+		\item \textsl{Lazy evaluation}
 		\pause
-		\item Acciones con efectos colaterales %%MARK: Demo
+		\item Expresiones puras vs. Expresiones con efectos
 		\pause
-		\item Administración de módulos %%MARK: Demo
+		\item Administración de módulos
 	\end{itemize}
 \end{frame}
 
@@ -146,17 +152,20 @@
 		{\Huge \emph{\hpage\ por Dentro}}
 	\end{center}
 \end{frame}
-\subsection{Diseño}
+\subsection{Desarrollo}
 \begin{frame}
-	\hpage\ está desarrollado en \haskell
-	\pause \\~\\
-	En gran parte está desarrollado utilizando \hpage
-	\pause \\~\\
-	Se conecta con \textsl{GHC} a través de su API
-	\pause \\~\\
-	Su interfaz gráfica fué creada usando \textsl{wxHaskell}
-	\pause \\~\\
-	Su alto grado de paralelismo se logra utilizando \textsl{eprocess}
+	\frametitle{Desarrollo de \hpage}
+	\begin{itemize}
+		\item \hpage\ está desarrollado en \haskell
+		\pause
+		\item En gran parte está desarrollado utilizando \hpage
+		\pause
+		\item Se conecta con \textsl{GHC} a través de su API
+		\pause
+		\item Su interfaz gráfica fue creada usando \textsl{wxHaskell}
+		\pause
+		\item Su alto grado de paralelismo se logra utilizando \textsl{eprocess}
+	\end{itemize}
 \end{frame}
 
 \subsection{Arquitectura}
@@ -267,13 +276,8 @@
 \end{frame}
 \subsection{Limitaciones}
 \begin{frame}
-	?`Qué falta?
+	\frametitle{Limitaciones}
 	\begin{itemize}
-		\item Nuevas visualizaciones
-			\begin{itemize}
-				\item Más que un cuadro de texto
-			\end{itemize}
-		\pause
 		\item Más tipos \textsl{especiales}
 			\begin{itemize}
 				\item Tuplas
@@ -286,7 +290,12 @@
 				\item Listas de listas
 				\item Acciones que generen listas
 				\item Listas de acciones
-			\end{itemize} %%MARK: Demo
+			\end{itemize}
+		\pause
+		\item Nuevas visualizaciones
+			\begin{itemize}
+				\item Más que un cuadro de texto
+			\end{itemize}
 	\end{itemize}
 	\pause
 	?`Qué se puede hacer?
@@ -297,31 +306,32 @@
 
 \subsection{Trabajo a Futuro}
 \begin{frame}
+	\frametitle{Otras Herramientas}
 	Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
 			\begin{itemize}
-				\item Soporte para TDD
+				\item Mejores herramientas para TDD
 				\item Refactoring
 				\item Análisis de Terminación
-				\item Debugging
+				\item \ldots
 			\end{itemize}
 \end{frame}
 \begin{frame}
+	\frametitle{Otras Herramientas}
 	\begin{columns}[c]
 		\column{.5\textwidth}Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
 			\begin{itemize}
-				\item Soporte para TDD
+				\item Mejores herramientas para TDD
 				\item Refactoring
 				\item Análisis de Terminación
-				\item Debugging
+				\item \ldots
 			\end{itemize}
 		\column{.5\textwidth}
 			\includegraphics[height=.75\textheight]{pictures/photos/haskellcoolman}
 		\end{columns}
 \end{frame}
 
-\subsection{Agradecimientos / Preguntas}
 \begin{frame}
-\frametitle{!`Gracias a todos!}
+\frametitle{Agradecimientos / Preguntas}
 	\begin{itemize}
 		\item \textsl{Sitio Web de \hpage}:
 		\begin{itemize}

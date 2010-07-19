@@ -10,14 +10,16 @@
 \headcommand {\beamer@subsectionentry {0}{1}{2}{5}{Motivaci\'on}}\headcommand {\beamer@subsectionpages {2}{4}}
 \headcommand {\slideentry {1}{2}{1}{5/9}{Motivaci\'on}{0}}
 \headcommand {\beamer@framepages {5}{9}}
-\headcommand {\slideentry {1}{2}{2}{10/15}{Motivaci\'on}{0}}
-\headcommand {\beamer@framepages {10}{15}}
-\headcommand {\slideentry {1}{2}{3}{16/16}{Motivaci\'on}{0}}
+\headcommand {\slideentry {1}{2}{2}{10/10}{Motivaci\'on}{0}}
+\headcommand {\beamer@framepages {10}{10}}
+\headcommand {\slideentry {1}{2}{3}{11/15}{Motivaci\'on}{0}}
+\headcommand {\beamer@framepages {11}{15}}
+\headcommand {\slideentry {1}{2}{4}{16/16}{Motivaci\'on}{0}}
 \headcommand {\beamer@framepages {16}{16}}
 \headcommand {\sectionentry {2}{Conociendo $\lambda Page$}{17}{Conociendo $\lambda Page$}{0}}
 \headcommand {\beamer@sectionpages {2}{16}}
 \headcommand {\beamer@subsectionpages {5}{16}}
-\headcommand {\slideentry {2}{0}{4}{17/17}{}{0}}
+\headcommand {\slideentry {2}{0}{5}{17/17}{}{0}}
 \headcommand {\beamer@framepages {17}{17}}
 \headcommand {\beamer@subsectionentry {0}{2}{1}{18}{Como el Workspace de Smalltalk \ldots }}\headcommand {\beamer@subsectionpages {17}{17}}
 \headcommand {\slideentry {2}{1}{1}{18/18}{Como el Workspace de Smalltalk \ldots }{0}}
@@ -30,8 +32,8 @@
 \headcommand {\beamer@subsectionpages {19}{21}}
 \headcommand {\slideentry {3}{0}{2}{22/22}{}{0}}
 \headcommand {\beamer@framepages {22}{22}}
-\headcommand {\beamer@subsectionentry {0}{3}{1}{23}{Dise\~no}}\headcommand {\beamer@subsectionpages {22}{22}}
-\headcommand {\slideentry {3}{1}{1}{23/27}{Dise\~no}{0}}
+\headcommand {\beamer@subsectionentry {0}{3}{1}{23}{Desarrollo}}\headcommand {\beamer@subsectionpages {22}{22}}
+\headcommand {\slideentry {3}{1}{1}{23/27}{Desarrollo}{0}}
 \headcommand {\beamer@framepages {23}{27}}
 \headcommand {\beamer@subsectionentry {0}{3}{2}{28}{Arquitectura}}\headcommand {\beamer@subsectionpages {23}{27}}
 \headcommand {\slideentry {3}{2}{1}{28/28}{Arquitectura}{0}}
@@ -63,11 +65,10 @@
 \headcommand {\beamer@framepages {41}{41}}
 \headcommand {\slideentry {4}{2}{2}{42/42}{Trabajo a Futuro}{0}}
 \headcommand {\beamer@framepages {42}{42}}
-\headcommand {\beamer@subsectionentry {0}{4}{3}{43}{Agradecimientos / Preguntas}}\headcommand {\beamer@subsectionpages {41}{42}}
-\headcommand {\slideentry {4}{3}{1}{43/43}{Agradecimientos / Preguntas}{0}}
+\headcommand {\slideentry {4}{2}{3}{43/43}{Trabajo a Futuro}{0}}
 \headcommand {\beamer@framepages {43}{43}}
 \headcommand {\beamer@partpages {1}{43}}
-\headcommand {\beamer@subsectionpages {43}{43}}
+\headcommand {\beamer@subsectionpages {41}{43}}
 \headcommand {\beamer@sectionpages {36}{43}}
 \headcommand {\beamer@documentpages {43}}
-\headcommand {\def \inserttotalframenumber {23}}
+\headcommand {\def \inserttotalframenumber {24}}
