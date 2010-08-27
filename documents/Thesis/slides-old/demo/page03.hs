@@ -1,1 +1,0 @@
-let loop = loop in [1, div 0 0, 2, undefined, 3, loop, 4]
