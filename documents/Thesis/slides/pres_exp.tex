@@ -1,0 +1,350 @@
+\documentclass{beamer}
+\usepackage[applemac]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{listings}
+\lstset{language=haskell, frame=single, tabsize=2}
+
+\newcommand{\hpage}{$\lambda Page$}
+\newcommand{\haskell}{\textsl{Haskell}}
+\newcommand{\smalltalk}{\textsl{Smalltalk}}
+\newcommand{\speech}[1]{}
+\newcommand{\G}{\mathcal{G}}
+\usetheme{DC}
+
+
+\title{\hpage}
+\author{\textsl{Fernando~Benavides}}
+	
+\institute{Departamento de Computación, FCEyN,Universidad de Buenos Aires.}
+
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\section{Introducción}
+\subsection{Presentación}
+\begin{frame}
+     \emph{El Orador}\\
+     \begin{itemize}
+       \item Fernando Benavides
+	 \end{itemize}
+	\pause
+     \emph{El camino recorrido}\\
+     \begin{itemize}
+       \item Alumno de Computación desde 2001
+       \item Programador desde hace más de 10 años
+       \item Programador \textsl{Funcional} desde hace 2 años
+	\end{itemize}
+	\pause
+     \emph{La idea}\\
+     \begin{itemize}
+       \item Desarrollar una herramienta para los programadores funcionales como las que existen en el paradigma de orientación a objetos
+	\end{itemize}
+\end{frame}
+
+\subsection{Motivación}
+\begin{frame}[fragile]
+	\frametitle{Trabajando en \haskell}
+	\begin{columns}[c]
+		\column{.5\textwidth}?`Cómo trabaja un desarrollador \haskell?
+			\pause
+			\begin{itemize}
+				\item Crea o modifica módulos con su editor de texto favorito
+				\pause
+				\item Los compila utilizando \textsl{GHC}
+				\pause
+				\item Genera paquetes con \textsl{Cabal}
+				\pause
+				\item Para realizar pruebas, recurre a \textsl{GHCi}
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[height=.75\textheight]{pictures/photos/haskell}
+		\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{GHCi}
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/ghci}
+		\column{.5\textwidth}
+			\textsl{GHCi} permite:
+			\begin{itemize}
+				\item introducir código para ejecutarlo y observar los resultados obtenidos
+				\item definir expresiones y utilizarlas
+				\item cargar módulos para utilizar sus funciones, tipos de datos, etc.
+			\end{itemize}
+	\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{Trabajando con Lenguajes Orientados a Objetos}
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/photos/java}
+		\column{.5\textwidth}En cambio quienes programan en \textsl{Java}, \textsl{.NET} o \textsl{Smalltalk} cuentan con una \textsl{IDE} que provee
+			\pause
+			\begin{itemize}
+				\item Autocompleción de código
+				\pause
+				\item Compilación automática
+				\pause
+				\item Debugger integrado
+				\pause
+				\item Herramientas para \textsl{``micro-testing''}
+			\end{itemize}
+		\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+	\frametitle{``Micro-testing''}
+	\begin{columns}[c]
+		\column{.5\textwidth}
+			El \textsl{Workspace} de \smalltalk\ permite:
+			\begin{itemize}
+				\item introducir código para ejecutarlo, inspeccionarlo y  analizar los resultados obtenidos
+				\item administrar varias paginas de texto
+				\item crear objetos y utilizarlos
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[width=\textwidth]{pictures/workspace}
+	\end{columns}
+\end{frame}
+
+
+\section{Conociendo \hpage}
+\begin{frame}
+	\begin{center}
+		{\Huge \emph{Conociendo \hpage}}
+	\end{center}
+\end{frame}
+\subsection{Como el Workspace  de Smalltalk \ldots}
+\begin{frame}[fragile]
+	\frametitle{Como el Workspace  de Smalltalk \ldots}
+	\hpage\ es similar al \textsl{Workspace} de \smalltalk\ pues permite al usuario
+	\begin{itemize}
+		\item Evaluar expresiones
+		\item Detectar excepciones
+		\item Administrar páginas de texto libre
+		\item Intercalar expresiones y definiciones
+	\end{itemize}
+\end{frame}
+\subsection{\ldots pero para Haskell}
+\begin{frame}
+	\frametitle{\ldots pero para Haskell}
+	Pero, a su vez, por estar hecho para \haskell, presenta otros desafíos
+	\begin{itemize}
+		\item \textsl{Lazy evaluation}
+		\pause
+		\item Expresiones puras vs. Expresiones con efectos
+		\pause
+		\item Administración de módulos
+	\end{itemize}
+\end{frame}
+
+\section{\hpage\ por Dentro}
+\begin{frame}
+	\begin{center}
+		{\Huge \emph{\hpage\ por Dentro}}
+	\end{center}
+\end{frame}
+\subsection{Desarrollo}
+\begin{frame}
+	\frametitle{Desarrollo de \hpage}
+	\begin{itemize}
+		\item \hpage\ está desarrollado en \haskell
+		\pause
+		\item En gran parte está desarrollado utilizando \hpage
+		\pause
+		\item Se conecta con \textsl{GHC} a través de su API
+		\pause
+		\item Su interfaz gráfica fue creada usando \textsl{wxHaskell}
+		\pause
+		\item Su alto grado de paralelismo se logra utilizando \textsl{eprocess}
+	\end{itemize}
+\end{frame}
+
+\subsection{Arquitectura}
+\begin{frame}
+\frametitle{Arquitectura}
+\begin{columns}[c]
+	\column{.5\textwidth}Principales Requerimientos:
+	\begin{itemize}
+		\item Conexión con GHC
+		\item Paralelismo
+		\item Errores Controlados
+		\item Presentación de Resultados
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/00}
+\end{columns}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Ejemplo de Interacción}
+	Veremos cómo interactúan estos componentes para evaluar la siguiente expresión:
+	\begin{lstlisting}
+		readFile "hpage.cabal" >>=
+		    return . length . head . lines
+	\end{lstlisting}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/01}
+\end{columns}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} esperando
+		\item \texttt{HPage~Server} \textbf{operando}
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/02}
+\end{columns}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} esperando
+		\item \texttt{HPage~Server} esperando
+		\item \texttt{GHC~Server} \textbf{operando}
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/03}
+\end{columns}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+		\item \texttt{IO~Server} \textbf{operando}
+		\item \texttt{Value~Filler} esperando
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/04}
+\end{columns}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+		\item \texttt{Value~Filler} esperando
+		\item \texttt{Element~Filler} \textbf{operando}
+		\item \texttt{Runaway~Killer} \textbf{operando}
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/05}
+\end{columns}
+\end{frame}
+\begin{frame}
+\frametitle{Ejemplo de Interacción}
+\begin{columns}[c]
+	\column{.5\textwidth}\textsl{Procesos Involucrados:}
+	\begin{itemize}
+		\item \texttt{UI~Manager} \textbf{operando}
+	\end{itemize}
+	\column{.5\textwidth}
+		\includegraphics[height=.75\textheight]{pictures/architecture/01}
+\end{columns}
+\end{frame}
+
+
+
+\section{Próximos Pasos}
+\begin{frame}
+	\begin{center}
+		{\Huge \emph{Próximos Pasos}}
+	\end{center}
+\end{frame}
+\subsection{Limitaciones}
+\begin{frame}
+	\frametitle{Limitaciones}
+	\begin{itemize}
+		\item Más tipos \textsl{especiales}
+			\begin{itemize}
+				\item Tuplas
+				\item Either
+				\item Maybe
+			\end{itemize}
+		\pause
+		\item Composición
+			\begin{itemize}
+				\item Listas de listas
+				\item Acciones que generen listas
+				\item Listas de acciones
+			\end{itemize}
+		\pause
+		\item Nuevas visualizaciones
+			\begin{itemize}
+				\item Más que un cuadro de texto
+			\end{itemize}
+	\end{itemize}
+	\pause
+	?`Qué se puede hacer?
+	\begin{itemize}
+		\item Clase \texttt{Presentable}
+	\end{itemize}
+\end{frame}
+
+\subsection{Trabajo a Futuro}
+\begin{frame}
+	\frametitle{Otras Herramientas}
+	Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
+			\begin{itemize}
+				\item Mejores herramientas para TDD
+				\item Refactoring
+				\item Análisis de Terminación
+				\item \ldots
+			\end{itemize}
+\end{frame}
+\begin{frame}
+	\frametitle{Otras Herramientas}
+	\begin{columns}[c]
+		\column{.5\textwidth}Con \hpage\ hemos acercado al desarrollador \haskell\ sólo \textbf{una} de muchas herramientas:
+			\begin{itemize}
+				\item Mejores herramientas para TDD
+				\item Refactoring
+				\item Análisis de Terminación
+				\item \ldots
+			\end{itemize}
+		\column{.5\textwidth}
+			\includegraphics[height=.75\textheight]{pictures/photos/haskellcoolman}
+		\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Agradecimientos / Preguntas}
+	\begin{itemize}
+		\item \textsl{Sitio Web de \hpage}:
+		\begin{itemize}
+			\item http://hpage.haskell.com
+		\end{itemize}
+		\item \textsl{\hpage\ en Github}
+		\begin{itemize}
+			\item http://github.com/elbrujohalcon/hPage
+		\end{itemize}
+		\item \textsl{Fernando Benavides en la Internet}
+		\begin{itemize}
+			\item http://profiles.google.com/greenmellon
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\end{document}

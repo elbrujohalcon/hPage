@@ -1,0 +1,6 @@
+\frametitle {Ejemplo de Interacci—n}
+Veremos c—mo interactœan estos componentes para evaluar la siguiente expresi—n:
+\begin{lstlisting}
+readFile "hpage.cabal" >>=
+    return . length . head . lines
+\end{lstlisting}

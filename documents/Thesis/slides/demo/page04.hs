@@ -1,0 +1,1 @@
+readFile "hpage.cabal" >>= return . length . head . lines
