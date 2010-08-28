@@ -1,5 +1,5 @@
 name: hpage
-version: 0.12.1
+version: 0.12.2
 cabal-version: >=1.6
 build-type: Custom
 license: BSD3
@@ -42,6 +42,7 @@ Executable hpage
                    time >= 1.1.4,               time < 1.2,
                    mtl >= 1.1.0.2,              mtl < 1.2,
                    Cabal >= 1.8.0.2,            Cabal < 1.9,
+                   cabal-macosx >= 0.1.1,       cabal-macosx < 0.2,
                    haskell-src-exts >= 1.9.0,   haskell-src-exts < 2,
                    bytestring >= 0.9.1.5,       bytestring < 0.9.2,
                    containers >= 0.3.0.0,       containers < 0.4,
